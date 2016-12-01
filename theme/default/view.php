@@ -27,18 +27,18 @@
 					  <span class="badge"><i class="fa fa-eye fa-lg" aria-hidden="true"></i> <?php echo $p_views; ?></span>
 					  <h6 style="text-align: center;"><?php echo ucfirst($p_title); ?> <small><?php echo 'By ' . $p_member . ' on ' . $p_date ;?></small></h6>
 					  <ul class="panel-tools">
-						<li><a class="icon" href="."><i class="fa fa-plus-square fa-lg"></i></a></li>
-						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg"></i></a></li>
-						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg"></i></a></li>
+						<li><a class="icon" href="."><i class="fa fa-plus-square fa-lg" title="New Paste"></i></a></li>
+						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg" title="View Raw"></i></a></li>
+						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg" title="Download Paste"></i></a></li>
 						<?php if ( $p_code != "markdown" ) {
 							?>
-						    <li><a class="icon" href="javascript:togglev();"><i class="fa fa-list-ol fa-lg"></i></a></li>
+						    <li><a class="icon" href="javascript:togglev();"><i class="fa fa-list-ol fa-lg" title="Toggle Line Numbers"></i></a></li>
 							<?php
 							}
 						?>
-						<li><a class="icon" href="#" onmouseover="selectText('paste');"><i class="fa fa-clipboard fa-lg"></i></a></li>
-						<!-- <li><a class="icon search-tool"><i class="fa fa-search fa-lg"></i></a></li> -->
-						<li><a class="icon expand-tool"><i class="fa fa-expand fa-lg"></i></a></li>
+						<li><a class="icon" href="#" onmouseover="selectText('paste');"><i class="fa fa-clipboard fa-lg" title="Select Text"></i></a></li>
+						<!-- <li><a class="icon search-tool"><i class="fa fa-search fa-lg" title="Search"></i></a></li> -->
+						<li><a class="icon expand-tool"><i class="fa fa-expand fa-lg" title="Full Screen"></i></a></li>
 					  </ul>
 					</div>
 
