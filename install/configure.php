@@ -208,6 +208,7 @@ $geshiformats =array(' . "
     'magiksf' => 'MagikSF',
     'make' => 'GNU make',
     'mapbasic' => 'MapBasic',
+    'markdown' => 'Markdown',
     'matlab' => 'Matlab M',
     'mirc' => 'mIRC Scripting',
     'mmix' => 'MMIX',
@@ -333,7 +334,8 @@ $popular_formats=array(' . "
     'java',
     'c',
     'csharp',
-    'cpp'
+    'cpp',
+    'markdown'
 );
 ?>";
 
