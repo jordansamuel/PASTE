@@ -301,7 +301,9 @@ cap_e VARCHAR(255),
 mode VARCHAR(255),
 mul VARCHAR(255),
 allowed text,
-color mediumtext
+color mediumtext,
+recaptcha_sitekey text,
+recaptcha_secretkey text
 )";
 	// Execute query
 	
