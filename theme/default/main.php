@@ -164,7 +164,14 @@
 									</div>
 								</div><br /><br />
 
-						  <?php if ($cap_e == "on" && !isset($_SESSION['username'])) { ?>
+						  <?php if ($cap_e == "on" && !isset($_SESSION['username'])) { 
+                            if ($_SESSION['captcha_mode'] == "recaptcha") {
+                                ?>
+                                <div class="g-recaptcha" data-sitekey="<?php echo $_SESSION['captcha']; ?>"></div>
+                                <br />
+                                <?php
+                            } else {
+                            ?>
 								<!-- Captcha -->
 								<div class="form-group pull-left captcha">
 									<div class="col-md-12 col-lg-3">
@@ -178,7 +185,8 @@
 										</div>
 									</div>
 								</div>
-						  <?php } ?>
+						  <?php }
+                          } ?>
 					  
 							<div class="col-md-12 col-lg-3">
 								<div class="control-group">

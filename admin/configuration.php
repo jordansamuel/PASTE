@@ -91,7 +91,9 @@ while ($row = mysqli_fetch_array($result)) {
     $mode    = Trim($row['mode']);
     $mul     = Trim($row['mul']);
     $allowed = Trim($row['allowed']);
-    $color   = Trim($row['color']);
+    $color   = Trim($row['color']);    
+    $recaptcha_sitekey = Trim($row['recaptcha_sitekey']);
+    $recaptcha_secretkey   = Trim($row['recaptcha_secretkey']);
 }
 
 $query  = "SELECT * FROM site_permissions WHERE id='1'";
@@ -240,8 +242,10 @@ while ($row = mysqli_fetch_array($result)) {
 								$mul     = Trim($_POST['mul']);
 								$allowed = Trim($_POST['allowed']);
 								$color   = Trim($_POST['color']);
+                                $recaptcha_sitekey = Trim($_POST['recaptcha_sitekey']);
+								$recaptcha_secretkey   = Trim($_POST['recaptcha_secretkey']);
 								
-								$query = "UPDATE captcha SET cap_e='$cap_e', mode='$mode', mul='$mul', allowed='$allowed', color='$color' WHERE id='1'";
+								$query = "UPDATE captcha SET cap_e='$cap_e', mode='$mode', mul='$mul', allowed='$allowed', color='$color', recaptcha_sitekey='$recaptcha_sitekey', recaptcha_secretkey='$recaptcha_secretkey' WHERE id='1'";
 								mysqli_query($con, $query);
 								
 								if (mysqli_errno($con)) {
@@ -432,10 +436,15 @@ while ($row = mysqli_fetch_array($result)) {
 													Enable Captcha
 												</label>
 											</div>
-
+                                            <br />
 											<label class="control-label form-label">Captcha Type</label>
 												<select class="selectpicker" name="mode">
 												<?php
+                                                if ($mode == "reCAPTCHA") {
+													echo '<option selected="">reCAPTCHA</option>';
+												} else {
+													echo '<option>reCAPTCHA</option>';
+												}
 												if ($mode == "Easy") {
 													echo '<option selected="">Easy</option>';
 												} else {
@@ -454,16 +463,17 @@ while ($row = mysqli_fetch_array($result)) {
 												?>
 												</select>               
 																					
+											<hr />
+											
+                                            Internal Captcha Settings:    
+
 											<div class="checkbox checkbox-primary">
 												<input <?php if ($mul == "on") echo 'checked="true"'; ?> type="checkbox" name="mul" id="mul">
 												<label for="mul">
 													Enable multiple backgrounds
 												</label>
 											</div>
-
-											
-											<br />
-																					
+                                            
 											<div class="form-group">
 												<label>Captcha characters</label>
 												<input type="text" name="allowed"  placeholder="Allowed characters" value="<?php echo $allowed; ?>">
@@ -473,6 +483,22 @@ while ($row = mysqli_fetch_array($result)) {
 												<label>Captcha text colour</label>
 												<input type="text" name="color"  placeholder="Captcha text colour" value="<?php echo $color; ?>">
 											</div>
+                                            
+                                            <hr />
+                                            
+                                            reCAPTCHA Settings:
+                                            
+											<div class="form-group">
+												<label>Site Key</label>
+												<input type="text" name="recaptcha_sitekey" placeholder="Site Key" value="<?php echo $recaptcha_sitekey; ?>">
+											</div>
+											
+											<div class="form-group">
+												<label>Secret Key</label>
+												<input type="text" name="recaptcha_secretkey" placeholder="Secret Key" value="<?php echo $recaptcha_secretkey; ?>">
+											</div>                                            
+                                            
+                                            
 											
 											<input type="hidden" name="cap" value="cap" />
 											
