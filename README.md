@@ -21,13 +21,6 @@ Requirements
 
 ---
 
-Upgrade from 1.9 to 2.0
-===
-Run /upgrade/1.9-to.2.0.php
-Remove /upgrade directory
-
----
-
 Install
 ===
 * Create a database for PASTE.
@@ -35,8 +28,15 @@ Install
 * Point your browser to http://yourpas.te/installation/install
 * Input some settings, DELETE the install folder and you're ready to go.
 
+Upgrade from 1.9 to 2.0
+===
+Run /upgrade/1.9-to.2.0.php
+Remove /upgrade directory
+
+---
+
 Any bugs can be reported at:
-http://bitbucket.org/j-samuel/paste/issues/new/
+https://github.com/jordansamuel/PASTE/issues/new
 
 You can find support on IRC by connecting to irc.collectiveirc.net in channel #PASTE
 
