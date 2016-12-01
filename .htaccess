@@ -9,6 +9,8 @@ RewriteEngine on
  RewriteRule ^profile profile.php [L] 
  RewriteRule ^mypastes mypastes.php [L] 
  RewriteRule ^contact contact.php [L]
+ RewriteRule ^download/(.*)$  paste.php?download&id=$1 [L]
+ RewriteRule ^raw/(.*)$  paste.php?raw&id=$1 [L]
 </IfModule>
 
 <IfModule mod_rewrite.c>

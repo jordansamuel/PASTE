@@ -221,6 +221,21 @@ function doDownload($paste_id, $p_title, $p_content, $p_code)
     return $stats;
 }
 
+function rawView($paste_id, $p_title, $p_content, $p_code)
+{
+    $stats = false;
+    if ($p_code) {
+        // Raw
+        header('Content-type: text/plain');
+        echo $p_content;
+        $stats = true;
+    } else {
+        // 404
+        header('HTTP/1.1 404 Not Found');
+    }
+    return $stats;
+}
+
 function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
 {
     $c_date    = date('Y-m-d');

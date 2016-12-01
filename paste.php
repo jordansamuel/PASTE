@@ -29,6 +29,9 @@ require_once('includes/functions.php');
 // Path of GeSHi object
 $path = 'includes/geshi/';
 
+// Path of Parsedown object
+$parsedown_path = 'includes/Parsedown/Parsedown.php';
+
 // GET Paste ID
 if (isset($_GET['id'])) {
     $paste_id = Trim(htmlspecialchars($_GET['id']));
@@ -260,6 +263,25 @@ if (mysqli_num_rows($result) > 0) {
             }
         }
     }
+	
+    // Raw view   
+    if (isset($_GET['raw'])) {
+        if ($p_password == "NONE") {
+            rawView($paste_id, $p_title, $op_content, $p_code);
+            exit();
+        } else {
+            if (isset($_GET['password'])) {
+                if (password_verify($_GET['password'],$p_password)) {
+                    rawView($paste_id, $p_title, $op_content, $p_code);
+                    exit();
+                } else {
+                    $error = $lang['wrongpassword']; // 'Wrong password';
+                }
+            } else {
+                $error = $lang['pwdprotected']; // 'Password protected paste';
+            }
+        }
+    }
     
     // Preprocess
     $highlight   = array();
@@ -279,21 +301,27 @@ if (mysqli_num_rows($result) > 0) {
     
     // Apply syntax highlight
     $p_content = htmlspecialchars_decode($p_content);
-    $geshi     = new GeSHi($p_content, $p_code, $path);
-    $geshi->enable_classes();
-    $geshi->set_header_type(GESHI_HEADER_DIV);
-    $geshi->set_line_style('color: #aaaaaa; width:auto;');
-	$geshi->set_code_style('color: #757584;');
-    if (count($highlight)) {
-        $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-        $geshi->highlight_lines_extra($highlight);
-        $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+    if ( $p_code == "markdown" ) {
+        include( $parsedown_path );
+        $Parsedown = new Parsedown();
+        $p_content = $Parsedown->text( $p_content );
     } else {
-        $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
+        $geshi     = new GeSHi($p_content, $p_code, $path);
+        $geshi->enable_classes();
+        $geshi->set_header_type(GESHI_HEADER_DIV);
+        $geshi->set_line_style('color: #aaaaaa; width:auto;');
+        $geshi->set_code_style('color: #757584;');
+        if (count($highlight)) {
+            $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+            $geshi->highlight_lines_extra($highlight);
+            $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+        } else {
+            $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
+        }
+        $p_content = $geshi->parse_code();
+        $style     = $geshi->get_stylesheet();
+        $ges_style = '<style>' . $style . '</style>';
     }
-    $p_content = $geshi->parse_code();
-    $style     = $geshi->get_stylesheet();
-    $ges_style = '<style>' . $style . '</style>';
 } else {
 	header("HTTP/1.1 404 Not Found");
     $notfound = $lang['notfound']; // "Not found";
@@ -305,7 +333,18 @@ if ($p_password == "NONE") {
     // No password & diplay the paste
     
     // Set download URL
-    $p_download = "paste.php?download&id=$paste_id";
+	if ($mod_rewrite == '1') {
+		$p_download = "download/$paste_id";
+	} else {
+		$p_download = "paste.php?download&id=$paste_id";
+	}
+	
+	// Set raw URL
+	if ($mod_rewrite == '1') {
+		$p_raw = "raw/$paste_id";
+	} else {
+		$p_raw = "paste.php?raw&id=$paste_id";
+	}
     
     // Theme
     require_once('theme/' . $default_theme . '/view.php');
@@ -315,6 +354,7 @@ if ($p_password == "NONE") {
     }
 } else {
     $p_download = "paste.php?download&id=$paste_id&password=" . password_hash($_POST['mypass'], PASSWORD_DEFAULT);
+    $p_raw = "paste.php?raw&id=$paste_id&password=" . password_hash($_POST['mypass'], PASSWORD_DEFAULT);
     // Check password
     if (isset($_POST['mypass'])) {
         if (password_verify($_POST['mypass'], $p_password)) {
