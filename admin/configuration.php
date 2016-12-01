@@ -91,7 +91,9 @@ while ($row = mysqli_fetch_array($result)) {
     $mode    = Trim($row['mode']);
     $mul     = Trim($row['mul']);
     $allowed = Trim($row['allowed']);
-    $color   = Trim($row['color']);
+    $color   = Trim($row['color']);    
+    $recaptcha_sitekey = Trim($row['recaptcha_sitekey']);
+    $recaptcha_secretkey   = Trim($row['recaptcha_secretkey']);
 }
 
 $query  = "SELECT * FROM site_permissions WHERE id='1'";
@@ -240,8 +242,10 @@ while ($row = mysqli_fetch_array($result)) {
 								$mul     = Trim($_POST['mul']);
 								$allowed = Trim($_POST['allowed']);
 								$color   = Trim($_POST['color']);
+                                $recaptcha_sitekey = Trim($_POST['recaptcha_sitekey']);
+								$recaptcha_secretkey   = Trim($_POST['recaptcha_secretkey']);
 								
-								$query = "UPDATE captcha SET cap_e='$cap_e', mode='$mode', mul='$mul', allowed='$allowed', color='$color' WHERE id='1'";
+								$query = "UPDATE captcha SET cap_e='$cap_e', mode='$mode', mul='$mul', allowed='$allowed', color='$color', recaptcha_sitekey='$recaptcha_sitekey', recaptcha_secretkey='$recaptcha_secretkey' WHERE id='1'";
 								mysqli_query($con, $query);
 								
 								if (mysqli_errno($con)) {
@@ -426,16 +430,21 @@ while ($row = mysqli_fetch_array($result)) {
 									<div role="tabpanel" class="tab-pane" id="captcha">
 										<form class="form-horizontal" method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
 											
+                                            
+                                            
 											<div class="checkbox checkbox-primary">
 												<input <?php if ($cap_e == "on") echo 'checked="true"'; ?> type="checkbox" name="cap_e" id="cap_e">
-												<label for="cap_e">
-													Enable Captcha
-												</label>
+												<label for="cap_e">Enable Captcha</label>
 											</div>
-
+                                            <br />
 											<label class="control-label form-label">Captcha Type</label>
-												<select class="selectpicker" name="mode">
+                                            <select class="selectpicker" name="mode">
 												<?php
+                                                if ($mode == "reCAPTCHA") {
+													echo '<option selected="">reCAPTCHA</option>';
+												} else {
+													echo '<option>reCAPTCHA</option>';
+												}
 												if ($mode == "Easy") {
 													echo '<option selected="">Easy</option>';
 												} else {
@@ -452,28 +461,49 @@ while ($row = mysqli_fetch_array($result)) {
 													echo '<option>Tough</option>';
 												}
 												?>
-												</select>               
+                                            </select>               
 																					
+											<hr />
+											
+                                            Internal Captcha Settings:
+                                            <br />
 											<div class="checkbox checkbox-primary">
 												<input <?php if ($mul == "on") echo 'checked="true"'; ?> type="checkbox" name="mul" id="mul">
-												<label for="mul">
-													Enable multiple backgrounds
-												</label>
+												<label for="mul">Enable multiple backgrounds</label>
 											</div>
-
-											
-											<br />
-																					
-											<div class="form-group">
-												<label>Captcha characters</label>
-												<input type="text" name="allowed"  placeholder="Allowed characters" value="<?php echo $allowed; ?>">
+                                            <br />
+                                            <div class="form-group row">
+												<label for="allowed" class="col-sm-1 col-form-label">Captcha Characters</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" id="allowed" name="allowed" placeholder="Allowed Characters" value="<?php echo $allowed; ?>">
+                                                </div>
+											</div>
+                                            
+                                            <div class="form-group row">
+												<label for="color" class="col-sm-1 col-form-label">Captcha Text Colour</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" id="color" name="color" placeholder="Captcha Text Colour" value="<?php echo $color; ?>">
+                                                </div>
+											</div>
+                                            
+                                            <hr />
+                                            
+                                            reCAPTCHA Settings:
+                                            <br />
+											<div class="form-group row">
+												<label for="recaptcha_sitekey" class="col-sm-1 col-form-label">Site Key</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" id="recaptcha_sitekey" name="recaptcha_sitekey" placeholder="Site Key" value="<?php echo $recaptcha_sitekey; ?>">
+                                                </div>
 											</div>
 											
-											<div class="form-group">
-												<label>Captcha text colour</label>
-												<input type="text" name="color"  placeholder="Captcha text colour" value="<?php echo $color; ?>">
+                                            <div class="form-group row">
+												<label for="recaptcha_secretkey" class="col-sm-1 col-form-label">Secret Key</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" id="recaptcha_secretkey" name="recaptcha_secretkey" placeholder="Site Key" value="<?php echo $recaptcha_secretkey; ?>">
+                                                </div>
 											</div>
-											
+                                          
 											<input type="hidden" name="cap" value="cap" />
 											
 											<div class="form-group">

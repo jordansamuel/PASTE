@@ -108,12 +108,22 @@ while ($row = mysqli_fetch_array($result)) {
     $mul     = Trim($row['mul']);
     $allowed = Trim($row['allowed']);
     $cap_e   = Trim($row['cap_e']);
+    $recaptcha_sitekey   = Trim($row['recaptcha_sitekey']);
+    $recaptcha_secretkey   = Trim($row['recaptcha_secretkey']);
 }
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 } else {
     if ($cap_e == "on") {
-        $_SESSION['captcha'] = captcha($color, $mode, $mul, $allowed);
-    }
+        if ($mode == "reCAPTCHA") {
+            $_SESSION['captcha_mode'] = "recaptcha";
+            $_SESSION['captcha'] = $recaptcha_sitekey;
+        } else {
+            $_SESSION['captcha_mode'] = "internal";
+            $_SESSION['captcha'] = captcha($color, $mode, $mul, $allowed);
+        }
+    } else {
+        $_SESSION['captcha_mode'] = "none";
+    }        
 }
 
 // Site permissions
@@ -248,12 +258,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Check POST data status
     if (isset($_POST['title']) And isset($_POST['paste_data'])) {
         if ($cap_e == "on" && !isset($_SESSION['username'])) {
-            $scode    = strtolower(htmlentities(Trim($_POST['scode'])));
-            $cap_code = strtolower($_SESSION['captcha']['code']);
-            if ($cap_code == $scode) {
+            if ($mode == "reCAPTCHA") {
+                $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=".$recaptcha_secretkey."&response=".$_POST['g-recaptcha-response']);
+                $response = json_decode($response, true);
+                if($response["success"] === true) {
+                } else {
+                    $error = $lang['image_wrong']; // Wrong captcha.
+                    goto OutPut;
+                }
             } else {
-                $error = $lang['image_wrong']; // Wrong captcha.
-                goto OutPut;
+                $scode    = strtolower(htmlentities(Trim($_POST['scode'])));
+                $cap_code = strtolower($_SESSION['captcha']['code']);
+                if ($cap_code == $scode) {
+                } else {
+                    $error = $lang['image_wrong']; // Wrong captcha.
+                    goto OutPut;
+                }
             }
         }
 
