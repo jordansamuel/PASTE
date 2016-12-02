@@ -24,9 +24,9 @@
 		if (isset($error)) { ?>
 			<!-- Error Panel -->
 			<div class="col-md-12 col-lg-12">
-				<div class="panel panel-dark">
+				<div class="panel panel-danger">
 					<div class="panel-body">
-					<?php echo $error; ?>
+					<i class="fa fa-exclamation-circle" aria-hidden="true"></i> <?php echo $error; ?>
 					</div>
 				</div>
 			</div>
