@@ -101,7 +101,7 @@ PRIMARY KEY(id),
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	$query = "INSERT INTO `site_permissions` (id,disableguest,siteprivate) VALUES (1, 'on', 'on'), (2, 'off', 'off')";
+	$query = "INSERT INTO site_permissions (id,disableguest,siteprivate) VALUES (1, 'on', 'on'), (2, 'off', 'off')";
 
 	mysqli_query($con, $query);
 
