@@ -1,4 +1,4 @@
-/* Paste 2.0 admin style.css unminified */
+/* Paste 2.0 default style.css unminified */
 
 body {
     background: #f5f5f5;
@@ -304,6 +304,7 @@ strong {
     background: rgba(255, 255, 255, 0.95)
 }
 .guestmsg .text {
+    font-family: 'Open-Sans', sans-serif;
     font-size: 14px;
     color: #fff;
     line-height: 1.6em;
@@ -409,7 +410,8 @@ strong {
     border-color: #f2f2f2
 }
 #paste {
-	line-height:1
+	line-height:1;
+	word-wrap: break-word
 }
 #paste li {
 	padding:1px
@@ -1936,6 +1938,7 @@ select {
 }
 .panel-widget {
     overflow: hidden;
+    border: none
 }
 .panel-default {
     border-color: #ddd
@@ -2380,118 +2383,6 @@ table td {
     padding: 20px 0;
     background: #fff
 }
-.quick-menu {
-	padding: 0;
-	margin-bottom: 10px;
-	background: #fff;
-	font-family: 'Montserrat',sans-serif
-}
-
-.quick-menu .label {
-	position: absolute;
-	padding: 4px 6px;
-	top: -10px;
-	right: 10px
-}
-
-.quick-menu li {
-	display: block;
-	text-align: center;
-	padding: 0;
-	position: relative;
-	font-size: 13px
-}
-
-.quick-menu li .fa {
-	display: block;
-	font-size: 28px;
-	margin-bottom: 5px
-}
-
-.quick-menu a {
-	color: #58666e;
-	display: block;
-	padding: 18px 0;
-	text-shadow: none;
-}
-
-.quick-menu a .fa {
-	color: #399bff
-}
-
-.menu-active a {
-	background: #399bff !important;
-	color: #FFF !important;
-	margin-left:-5px;
-	border-radius: 3px
-}
-
-.menu-active, .menu-active i {
-	color: #FFF !important
-}
-
-.topstats {
-	background: #fff;
-	padding: 0;
-	color: #76747A;
-	position: relative;
-	font-size: 12px;
-	border-radius: 3px;
-	text-shadow: none;
-	padding: 12px 0
-}
-
-.topstats li {
-	display: block;
-	text-align: center;
-	margin: 10px 0
-}
-
-.topstats .title {
-	color: #37363e;
-	font-weight: 600;
-	font-size: 13px
-}
-
-.topstats .title .fa {
-	font-size: 15px;
-	color: #000;
-	margin-right: 4px;
-	opacity: 0.4
-}
-
-.topstats h3 {
-	font-size: 28px;
-	font-weight: bold;
-	font-family: 'Montserrat',sans-serif;
-	letter-spacing: -1px;
-	line-height: normal;
-	margin: 1px 0
-}
-
-.topstats h3 small {
-	color: #37363e
-}
-
-.topstats .diff b {
-	font-weight: bold
-}
-
-.topstats .diff .fa {
-	margin-right: 2px
-}
-
-.topstats .arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  top: -18px;
-  right: 5px;
-  border-style: solid;
-  border-width: 0 10px 10px 10px;
-  border-color: transparent transparent #fff transparent
-}
-
 .widget {
     overflow: hidden;
     margin-bottom: 10px;
