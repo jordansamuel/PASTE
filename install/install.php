@@ -314,7 +314,7 @@ recaptcha_secretkey text
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	$query = "INSERT INTO captcha (cap_e,mode,mul,allowed,color) VALUES ('off','Normal','off','ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789','#000000','','')";
+	$query = "INSERT INTO captcha (cap_e,mode,mul,allowed,color,recaptcha_sitekey,recaptcha_secretkey) VALUES ('off','Normal','off','ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789','#000000','','')";
 	mysqli_query($con, $query);
 ?>
 			<div class="row">
