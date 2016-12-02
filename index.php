@@ -366,12 +366,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = $lang['error']; // "Something went wrong";
     }
 	
-	// Redirect to paste on successful entry
+	// Redirect to paste on successful entry, or on successful edit redirect back to edited paste
 	if (isset($success)) {
 		if ($mod_rewrite == '1') {
-		$paste_url = "$success"; } else {
-		$paste_url = "paste.php?id=$success";
-	}
+            if ( $_POST['edit'] ) {
+                $paste_url = "$edit_paste_id";
+            } else {
+                $paste_url = "$success"; 
+            }
+        } else {
+            if ( $_POST['edit'] ) {
+                $paste_url = "paste.php?id=$edit_paste_id";
+            } else {
+                $paste_url = "paste.php?id=$success";
+            }
+        }
 		header("Location: ".$paste_url."");
 	}
 
