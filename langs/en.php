@@ -11,7 +11,7 @@ $lang['guestwelcome']	= $site_name . " allows you to submit text &amp; code.";
 $lang['pleaseregister'] = "<br /><br /> <a class=\"btn btn-default\" data-target=\"#signin\" data-toggle=\"modal\" href=\"#\">Login</a> or <a class=\"btn btn-default\" data-target=\"#signup\" data-toggle=\"modal\" href=\"#\">Register</a> to submit a new paste. It's free.";
 $lang['registertoedit'] = "<a class=\"btn btn-default\" data-target=\"#signin\" data-toggle=\"modal\" href=\"#\">Login</a> or <a class=\"btn btn-default\" data-target=\"#signup\" data-toggle=\"modal\" href=\"#\">Register</a> to edit this paste. It's free.";
 $lang['guestmsgtitle']	= $site_name . " is for source code and general debugging text.";
-$lang['guestmsgbody']	= "<a data-target=\"#signin\" data-toggle=\"modal\" href=\"#\">Login</a> or <a data-target=\"#signup\" data-toggle=\"modal\" href=\"#\">Register</a> to delete and keep track of your pastes and more.";
+$lang['guestmsgbody']	= "<a data-target=\"#signin\" data-toggle=\"modal\" href=\"#\">Login</a> or <a data-target=\"#signup\" data-toggle=\"modal\" href=\"#\">Register</a> to edit, delete and keep track of your pastes and more.";
 $lang['siteprivate']	= "This pastebin is private.";
 $lang['image_wrong']    = "Wrong captcha.";
 $lang['missing-input-response']   = "The reCAPTCHA response parameter is missing. Please verify your PASTE settings.";
