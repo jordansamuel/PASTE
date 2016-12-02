@@ -127,7 +127,7 @@ if (isset($_GET{'edit'})) {
 	<div id="top" class="clearfix">
 		<!-- Start App Logo -->
 		<div class="applogo">
-		  <a href="./" class="logo">Paste</a>
+		  <a href="../" class="logo">Paste</a>
 		</div>
 		<!-- End App Logo -->
 
@@ -201,7 +201,7 @@ if (isset($_GET{'edit'})) {
 						 <div class="panel-title">Add a Page</a></div>
 							<form action="<?php echo $_SERVER['PHP_SELF']; ?>" class="form-horizontal" method="post">
 								<div class="control-group">
-									<label for="page_name">Page name (No spaces, eg terms_of_service)</label> <input class="span6" id=
+									<label for="page_name">Page name (No spaces, e.g. terms_of_service)</label> <input class="span6" id=
 									"page_name" name="page_name" placeholder="Enter page name"
 									type="text" value="<?php echo $page_name; ?>">
 								</div>
@@ -289,7 +289,7 @@ if (isset($_GET{'edit'})) {
 									echo '<td>' . $row['page_name'] . '</td>';
 									echo '<td>' . $row['page_title'] . '</td>';
 									$myid = $row['id'];
-									echo '<td>' . "<a class='btn btn-success btn-sm' href=../pages.php?page=" . $row['page_name'] . "> View </a>" . '</td>';
+									echo '<td>' . "<a class='btn btn-success btn-sm' href=../page/" . $row['page_name'] . "> View </a>" . '</td>';
 									echo '<td>' . "<a class='btn btn-default btn-sm' href=" . $_PHP_SELF . "?edit=" . $myid . "> Edit </a>" . '</td>';
 									echo '<td>' . "<a class='btn btn-danger btn-sm' href=" . $_PHP_SELF . "?delete=" . $myid . "> Delete </a>" . '</td>';
 									$no++;

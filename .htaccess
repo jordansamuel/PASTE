@@ -4,7 +4,7 @@ RewriteEngine on
 <IfModule mod_rewrite.c>
  RewriteCond %{REQUEST_FILENAME} !-f
  RewriteCond %{REQUEST_FILENAME} !-d
- RewriteRule ^page/([a-zA-Z0-9]+)/ pages.php?page=$1 [L]
+ RewriteRule ^page/([a-zA-Z0-9]+)/? pages.php?page=$1 [L]
  RewriteRule ^archive archive.php [L] 
  RewriteRule ^profile profile.php [L] 
  RewriteRule ^mypastes mypastes.php [L] 
