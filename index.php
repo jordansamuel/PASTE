@@ -53,6 +53,7 @@ while ($row = mysqli_fetch_array($result)) {
     $face      = Trim($row['face']);
     $gplus     = Trim($row['gplus']);
     $ga        = Trim($row['ga']);
+    $additional_scripts        = Trim($row['additional_scripts']);
 }
 
 // Set theme and language
@@ -333,6 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $expires = "NULL";
                 break;
         }
+        $p_title   = mysqli_real_escape_string($con, $p_title);
         $p_content = mysqli_real_escape_string($con, $p_content);
         $p_date    = date('jS F Y h:i:s A');
         $date      = date('jS F Y');
