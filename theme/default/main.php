@@ -19,20 +19,7 @@
 	<div class="container-padding">
 		<!-- Start Row -->
 		<div class="row">
-		
-<?php if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-		if (isset($error)) { ?>
-			<!-- Error Panel -->
-			<div class="col-md-12 col-lg-12">
-				<div class="panel panel-danger">
-					<div class="panel-body">
-					<i class="fa fa-exclamation-circle" aria-hidden="true"></i> <?php echo $error; ?>
-					</div>
-				</div>
-			</div>
-	<?php } 
-	}
-?>
+
 			<!-- Guests -->
 			<?php if ( isset($noguests) && $noguests == "on" ) { // Site permissions ?>
 			<div class="col-md-9 col-lg-10">
@@ -48,6 +35,17 @@
 
 			<!-- Paste Panel -->
 			<div class="col-md-9 col-lg-10">
+			<?php if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+					if (isset($error)) { ?>
+						<!-- Error Panel -->
+							<div class="panel panel-primary">
+								<div class="panel-body">
+								<i class="fa fa-exclamation-circle"" aria-hidden="true"></i> <?php echo $error; ?>
+								</div>
+							</div>
+				<?php } 
+				}
+			?>
 				<div class="panel panel-default">
 					<div class="panel-title">
 						<?php echo $lang['newpaste']; ?>
