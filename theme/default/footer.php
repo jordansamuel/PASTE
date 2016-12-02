@@ -23,7 +23,7 @@
   Copyright &copy; <?php echo date("Y");?> <a href="" target="_blank"><?php echo $site_name;?></a>. All rights reserved.
   </div>
   <div class="col-md-6 text-right">
-    Powered by <a href="http://phpaste.sourceforge.net/" target="_blank">Paste 2</a>
+    Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste 2</a>
   </div> 
 </div>
 <?php if (isset($_SESSION['username'])) { ?>

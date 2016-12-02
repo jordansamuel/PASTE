@@ -649,7 +649,7 @@ while ($row = mysqli_fetch_array($result)) {
 		   <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues?utf8=%E2%9C%93&q=is%3Aopen">Bugs</a>
 		  </div>
 		  <div class="col-md-6 text-right">
-			Powered by <a href="https://github.com/jordansamuel/PASTE" target="_blank">Paste 2</a>
+			Powered by <a href="https://phpaste.sourceforge.net" target="_blank">Paste 2</a>
 		  </div> 
 		</div>
 		<!-- End Footer -->

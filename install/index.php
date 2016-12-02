@@ -288,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	   <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues">Bugs</a>
 	  </div>
 	  <div class="col-md-6 text-right">
-		Powered by <a href="https://github.com/jordansamuel/PASTE" target="_blank">Paste 2</a>
+		Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste 2</a>
 	  </div> 
 	</div>
 	<!-- End Footer -->
