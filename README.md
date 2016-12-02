@@ -7,7 +7,7 @@ The original source is available from the previous owner's **[GitHub repository]
 
 If you would like to contribute to developing Paste please feel free to find me on IRC.
 
-A demo of Paste is available on our homepage at **[SourceForge](http://phpaste.sourceforge.net/demo)**
+A demo of Paste is available on our homepage at **[SourceForge](https://phpaste.sourceforge.io/demo)**
 
 A public version can be found at **[PasteThis](http://pastethis.in)**
 
@@ -99,7 +99,9 @@ Credits
 ===
 Paul Dixon for developing **[the original pastebin.com](https://github.com/lordelph/pastebin)**
 
-Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support.
+**[Pat O'Brien[(https://github.com/poblabs)** for numerous contributions to the project.
+
+Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
 The Paste theme was built using Bootstrap, jQuery and various jQuery plugins for
 present and future features, but we do try to keep it bloat free.
