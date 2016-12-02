@@ -157,7 +157,7 @@ if ($last_ip == $ip) {
 			<!-- End Menu -->
 			
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				$d_lang  = Trim($_POST['lang']);
 				$d_theme = Trim($_POST['theme']);
 				

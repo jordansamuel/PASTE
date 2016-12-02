@@ -165,7 +165,7 @@ while ($row = mysqli_fetch_array($result)) {
 			<!-- End Menu -->
     
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				$priority   = htmlentities(Trim($_POST['priority']));
 				$changefreq = htmlentities(Trim($_POST['changefreq']));
 				

@@ -156,7 +156,7 @@ if ($last_ip == $ip) {
 			<!-- End Menu -->
     
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				//POST HANDLER
 				
 			}

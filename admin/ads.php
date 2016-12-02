@@ -166,7 +166,7 @@ while ($row = mysqli_fetch_array($result)) {
 			<!-- End Menu -->
 			
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				$ads_1    = Trim($_POST['ads_1']);
 				$ads_2    = Trim($_POST['ads_2']);
 				$text_ads = Trim($_POST['text_ads']);

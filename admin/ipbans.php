@@ -68,7 +68,7 @@ if ($last_ip == $ip) {
     mysqli_query($con, $query);
 }
 
-if ($_SERVER['REQUEST_METHOD'] == POST) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 	if (isset($_POST['banip'])) {
 		$ban_ip = htmlentities(Trim($_POST['ban_ip']));

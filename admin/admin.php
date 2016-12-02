@@ -169,7 +169,7 @@ while ($row = mysqli_fetch_array($result)) {
 			<!-- End Menu -->
 			
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				$adminid  = htmlentities(Trim($_POST['adminid']));
 				$password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 				

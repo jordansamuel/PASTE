@@ -230,7 +230,7 @@ if ($last_ip == $ip) {
     
 			<!-- Start Statistics -->
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				// Post Handler
 			}
 
