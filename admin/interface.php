@@ -157,7 +157,7 @@ if ($last_ip == $ip) {
 			<!-- End Menu -->
 			
 			<?php
-			if ($_SERVER['REQUEST_METHOD'] == POST) {
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 				$d_lang  = Trim($_POST['lang']);
 				$d_theme = Trim($_POST['theme']);
 				
@@ -238,10 +238,10 @@ if ($last_ip == $ip) {
 		<!-- Start Footer -->
 		<div class="row footer">
 		  <div class="col-md-6 text-left">
-		   <a href="https://bitbucket.org/j-samuel/paste/src">Updates</a> &mdash; <a href="https://bitbucket.org/j-samuel/paste/issues?status=new&status=open">Bugs</a>
+		   <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues?utf8=%E2%9C%93&q=is%3Aopen">Bugs</a>
 		  </div>
 		  <div class="col-md-6 text-right">
-			Powered by <a href="https://bitbucket.org/j-samuel/paste" target="_blank">Paste 2</a>
+			Powered by <a href="https://github.com/jordansamuel/PASTE" target="_blank">Paste 2</a>
 		  </div> 
 		</div>
 		<!-- End Footer -->

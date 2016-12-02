@@ -68,7 +68,8 @@ email VARCHAR(255),
 twit VARCHAR(4000),
 face VARCHAR(4000),
 gplus VARCHAR(4000),
-ga VARCHAR(255)
+ga VARCHAR(255),
+additional_scripts text
 )";
 	// Execute query
 	
