@@ -85,12 +85,12 @@ additional_scripts text
 	mysqli_query($con, $query);
 
 // Site Permissions
-$sql = "CREATE TABLE `site_permissions`
+$sql = "CREATE TABLE site_permissions
 (
-`id` int(11) NOT NULL AUTO_INCREMENT,
+id int(11) NOT NULL AUTO_INCREMENT,
 PRIMARY KEY(id),
-`disableguest` varchar(255) DEFAULT NULL,
-`siteprivate` varchar(255) DEFAULT NULL
+disableguest varchar(255) DEFAULT NULL,
+siteprivate varchar(255) DEFAULT NULL
 )
 ";
 	// Execute query
