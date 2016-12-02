@@ -262,9 +262,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($mode == "reCAPTCHA") {
                 $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=".$recaptcha_secretkey."&response=".$_POST['g-recaptcha-response']);
                 $response = json_decode($response, true);
-                if($response["success"] === true) {
-                } else {
-                    $error = $lang['image_wrong']; // Wrong captcha.
+                if ( $response["success"] == false ) {
+                    // reCAPTCHA Errors
+                    switch( $response["error-codes"][0] ) {
+                        case "missing-input-response":
+                            $error = $lang['missing-input-response']; 
+                            break;
+                        case "missing-input-secret":
+                            $error = $lang['missing-input-secret'];
+                            break;
+                        case "invalid-input-response":
+                            $error = $lang['missing-input-response'];
+                            break;
+                        case "invalid-input-secret":
+                            $error = $lang['invalid-input-secret'];
+                            break;
+                    }
                     goto OutPut;
                 }
             } else {

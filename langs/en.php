@@ -14,6 +14,10 @@ $lang['guestmsgtitle']	= $site_name . " is for source code and general debugging
 $lang['guestmsgbody']	= "<a data-target=\"#signin\" data-toggle=\"modal\" href=\"#\">Login</a> or <a data-target=\"#signup\" data-toggle=\"modal\" href=\"#\">Register</a> to delete and keep track of your pastes and more.";
 $lang['siteprivate']	= "This pastebin is private.";
 $lang['image_wrong']    = "Wrong captcha.";
+$lang['missing-input-response']   = "The reCAPTCHA response parameter is missing. Please verify your PASTE settings.";
+$lang['missing-input-secret']     = "The reCAPTCHA secret parameter is missing. Please add it to your PASTE settings.";
+$lang['missing-input-response']   = "The reCAPTCHA response parameter is invalid. Please try to complete the reCAPTCHA again.";
+$lang['invalid-input-secret']     = "The reCAPTCHA secret parameter is invalid or malformed. Please double check your PASTE settings.";
 $lang['empty_paste']	= "You cannot post an empty paste.";
 $lang['large_paste']	= "Your paste is too large. Max size is " . $pastelimit . "MB";
 $lang['paste_db_error'] = "Unable to post to database.";
