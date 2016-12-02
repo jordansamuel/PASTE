@@ -88,8 +88,10 @@ $result = mysqli_query($con, $query);
 while ($row = mysqli_fetch_array($result)) {
     $banned_ip = $banned_ip . "::" . $row['ip'];
 }
-if (strpos($banned_ip, $ip) !== false) {
-    die($lang['banned']); // "You have been banned from ".$site_name;
+if ( isset( $banned_ip) ) {
+    if (strpos($banned_ip, $ip) !== false) {
+        die($lang['banned']); // "You have been banned from ".$site_name;
+    }
 }
 $query  = "Select * From sitemap_options WHERE id='1'";
 $result = mysqli_query($con, $query);

@@ -34,7 +34,7 @@
 	}
 ?>
 			<!-- Guests -->
-			<?php if ($noguests == "on") { // Site permissions ?>
+			<?php if ( isset($noguests) && $noguests == "on" ) { // Site permissions ?>
 			<div class="col-md-9 col-lg-10">
 				<div class="panel panel-default" style="padding-bottom: 100px;">
 					<div class="error-pages">
