@@ -339,11 +339,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $p_date    = date('jS F Y h:i:s A');
         $date      = date('jS F Y');
         $now_time  = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
-        $query     = "INSERT INTO pastes (title,content,visible,code,expiry,password,encrypt,member,date,ip,now_time,views,s_date) VALUES 
-    ('$p_title','$p_content','$p_visible','$p_code','$expires','$p_password','$p_encrypt','$p_member','$p_date','$ip','$now_time','0','$date')";
-        $result    = mysqli_query($con, $query);
+        // Edit existing paste or create new?
+        if ($_POST['edit']) {
+            $edit_paste_id = $_POST['paste_id'];
+            $query = "UPDATE pastes SET title='$p_title',content='$p_content',visible='$p_visible',code='$p_code',expiry='$expires',password='$p_password',encrypt='$p_encrypt',member='$p_member',date='$p_date',ip='$ip' WHERE id = '$edit_paste_id'";
+        } else {
+            $query = "INSERT INTO pastes (title,content,visible,code,expiry,password,encrypt,member,date,ip,now_time,views,s_date) VALUES 
+            ('$p_title','$p_content','$p_visible','$p_code','$expires','$p_password','$p_encrypt','$p_member','$p_date','$ip','$now_time','0','$date')";
+        }
+        $result = mysqli_query($con, $query);
         if (mysqli_error($con)) {
-            $error = $lang['paste_db_error']; //"Unable to post the paste on database";
+            $error = $lang['paste_db_error']; // "Unable to post the paste on database";
         } else {
             $query  = "SELECT @last_id := MAX(id) FROM pastes";
             $result = mysqli_query($con, $query);
