@@ -414,7 +414,9 @@ strong {
 #paste li {
 	padding:1px
 }
-
+#paste img {
+	max-width: 100%
+}
 .paste-alert {
     color: #fff;
     position: relative;
