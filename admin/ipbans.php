@@ -125,7 +125,7 @@ if (isset($_GET{'delete'})) {
 	<div id="top" class="clearfix">
 		<!-- Start App Logo -->
 		<div class="applogo">
-		  <a href="./" class="logo">Paste</a>
+		  <a href="../" class="logo">Paste</a>
 		</div>
 		<!-- End App Logo -->
 
