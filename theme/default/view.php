@@ -221,7 +221,14 @@
 								<div class="control-group">
 									<div class="controls">
 										<div class="input-prepend input-group">
-											<input class="btn btn-default" type="submit" name="submit" id="submit" value="Paste"/>
+                                            <input type="hidden" name="paste_id" value="<?php echo $paste_id; ?>" />
+                                            <?php // Only the paste owner can edit their own pastes. Everyone else can fork this paste
+                                            if ($_SESSION['username'] == $p_member) {
+                                                ?>
+                                                <input class="btn btn-default" type="submit" name="edit" id="edit" value="Edit Existing Paste"/>&nbsp;
+                                                <?php
+                                            } ?>
+											<input class="btn btn-default" type="submit" name="submit" id="submit" value="Copy To New Paste"/>
 										</div>
 									</div>
 								</div>
