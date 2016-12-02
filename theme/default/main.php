@@ -24,9 +24,9 @@
 		if (isset($error)) { ?>
 			<!-- Error Panel -->
 			<div class="col-md-12 col-lg-12">
-				<div class="panel panel-dark">
+				<div class="panel panel-danger">
 					<div class="panel-body">
-					<?php echo $error; ?>
+					<i class="fa fa-exclamation-circle" aria-hidden="true"></i> <?php echo $error; ?>
 					</div>
 				</div>
 			</div>
@@ -34,7 +34,7 @@
 	}
 ?>
 			<!-- Guests -->
-			<?php if ($noguests == "on") { // Site permissions ?>
+			<?php if ( isset($noguests) && $noguests == "on" ) { // Site permissions ?>
 			<div class="col-md-9 col-lg-10">
 				<div class="panel panel-default" style="padding-bottom: 100px;">
 					<div class="error-pages">
@@ -62,7 +62,7 @@
 									  <div class="controls">
 									   <div class="input-prepend input-group">
 										 <span class="add-on input-group-addon"><i class="fa fa-font"></i></span>
-											<input type="text" class="form-control" name="title" placeholder="<?php echo $lang['pastetitle']; ?>">
+											<input type="text" class="form-control" name="title" placeholder="<?php echo $lang['pastetitle']; ?>" value="<?php echo ( isset( $_POST['title'] ) )?$_POST['title']:''; // Pre-populate if we come here on an error" ?>">
 									   </div>
 									  </div>
 									</div>
@@ -72,12 +72,14 @@
 								<div class="col-sm-4 col-md-4 col-lg-4" style="margin-top:-1px; padding-bottom:2px;">
 									<select class="selectpicker" data-live-search="true" name="format">
 										<?php // Show popular GeSHi formats
-											foreach ($geshiformats as $code=>$name)
-											{
-												if (in_array($code, $popular_formats))
-												{
-												$sel=($code=="text")?'selected="selected"':' ';
-												echo '<option ' . $sel . ' value="' . $code . '">' . $name . '</option>';
+											foreach ($geshiformats as $code=>$name) {
+												if (in_array($code, $popular_formats)) {
+                                                    if ( isset( $_POST['format'] ) ) {
+                                                        $sel = ($_POST['format'] == $code)?'selected="selected"':''; // Pre-populate if we come here on an error
+                                                    } else {
+                                                        $sel = ($code == "text")?'selected="selected"':'';
+                                                    }
+                                                    echo '<option ' . $sel . ' value="' . $code . '">' . $name . '</option>';
 												}
 											}
 
@@ -86,7 +88,11 @@
 											// Show all GeSHi formats.
                                             foreach ($geshiformats as $code=>$name) {
                                                 if ( !in_array( $code, $popular_formats ) ) {
-                                                    $sel="";
+                                                    if ( isset( $_POST['format'] ) ) {
+                                                        $sel = ($_POST['format'] == $code)?'selected="selected"':''; // Pre-populate if we come here on an error
+                                                    } else {
+                                                        $sel = ($code == "text")?'selected="selected"':'';
+                                                    }
                                                     echo '<option ' . $sel . ' value="' . $code . '">' . $name . '</option>';
                                                 }
 											}
@@ -103,7 +109,7 @@
 								<!-- Text area -->
 								<div class="form-group">
 									<div class="col-md-12">
-									  <textarea class="form-control" rows="15" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"></textarea>
+									  <textarea class="form-control" rows="15" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="hello world"><?php echo ( isset( $_POST['paste_data'] ) )?$_POST['paste_data']:''; // Pre-populate if we come here on an error" ?></textarea>
 									</div>
 								</div>
 
@@ -111,15 +117,23 @@
 								<div class="form-group">
 								  <label class="control-label form-label pull-left" style="padding-left: 20px;"><?php echo $lang['expiration']; ?></label>
 									<div class="col-sm-8">
+                                        <?php 
+                                        $post_expire = "";
+                                        if ( $_POST ) {
+                                            if ( isset( $_POST['paste_expire_date'] ) ) {
+                                                $post_expire = $_POST['paste_expire_date'];
+                                            }
+                                        }
+                                        ?>                                    
 										<select class="selectpicker" style="display: none;" name="paste_expire_date">
-											<option value="N" selected="selected">Never</option>
-											<option value="self">View Once</option>
-											<option value="10M">10 Minutes</option>
-											<option value="1H">1 Hour</option>
-											<option value="1D">1 Day</option>
-											<option value="1W">1 Week</option>
-											<option value="2W">2 Weeks</option>
-											<option value="1M">1 Month</option>
+											<option value="N" <?php echo ($post_expire == "N")?'selected="selected"':''; ?>>Never</option>
+											<option value="self" <?php echo ($post_expire == "self")?'selected="selected"':''; ?>>View Once</option>
+											<option value="10M" <?php echo ($post_expire == "10M")?'selected="selected"':''; ?>>10 Minutes</option>
+											<option value="1H" <?php echo ($post_expire == "1H")?'selected="selected"':''; ?>>1 Hour</option>
+											<option value="1D" <?php echo ($post_expire == "1D")?'selected="selected"':''; ?>>1 Day</option>
+											<option value="1W" <?php echo ($post_expire == "1W")?'selected="selected"':''; ?>>1 Week</option>
+											<option value="2W" <?php echo ($post_expire == "2W")?'selected="selected"':''; ?>>2 Weeks</option>
+											<option value="1M" <?php echo ($post_expire == "1M")?'selected="selected"':''; ?>>1 Month</option>
 										</select>
 									</div>
 								</div>
@@ -128,11 +142,19 @@
 								<div class="form-group">
 								  <label class="control-label form-label pull-left" style="padding-left: 20px;"><?php echo $lang['visibility']; ?>&nbsp;&nbsp;</label>
 									<div class="col-sm-8">
+                                        <?php 
+                                        $post_visibility = "";
+                                        if ( $_POST ) {
+                                            if ( isset( $_POST['visibility'] ) ) {
+                                                $post_visibility = $_POST['visibility'];
+                                            }
+                                        }
+                                        ?>
 										<select class="selectpicker" style="display: none;" name="visibility">
-											<option value="0" selected="selected">Public</option>
-											<option value="1">Unlisted</option>
+											<option value="0" <?php echo ($post_visibility == "0")?'selected="selected"':''; ?>>Public</option>
+											<option value="1" <?php echo ($post_visibility == "1")?'selected="selected"':''; ?>>Unlisted</option>
 											<?php if (isset($_SESSION['token'])) {?>
-											<option value="2">Private</option>
+											<option value="2" <?php echo ($post_visibility == "2")?'selected="selected"':''; ?>>Private</option>
 											<?php } else { ?>
 											<option disabled >Private (Register)</option>
 											<?php } ?>
@@ -147,7 +169,7 @@
 										  <div class="controls">
 										   <div class="input-prepend input-group">
 											 <span class="add-on input-group-addon"><i class="fa fa-lock"></i></span>
-												<input type="text" class="form-control" name="pass" id="pass" value="" placeholder="<?php echo $lang['pwopt']; ?>">
+												<input type="text" class="form-control" name="pass" id="pass" placeholder="<?php echo $lang['pwopt']; ?>" value="<?php echo ( isset($_POST['pass'] ) )?$_POST['pass']:''; // Pre-populate if we come here on an error" ?>">
 										   </div>
 										  </div>
 										</div>
@@ -157,7 +179,20 @@
 								<!-- Encrypt -->
 								<div class="col-md-6">
 									<div class="checkbox checkbox-primary">
-										<input id="encrypt" name="encrypted" type="checkbox" checked="">
+                                        <?php 
+                                        $encrypted_checked = "";
+                                        if ( $_POST ) {
+                                            // We came here from an error, carry the checkbox setting forward
+                                            if ( isset( $_POST['encrypted'] ) ) { 
+                                                $encrypted_checked = "checked";
+                                            }
+                                        } else {
+                                            // Fresh paste. Default to encrypted on
+                                            $encrypted_checked = "checked";
+                                        }
+                                        ?>
+                                            
+										<input id="encrypt" name="encrypted" type="checkbox" <?php echo $encrypted_checked; ?>>
 										<label for="encrypt">
 											<?php echo $lang['encrypt']; ?>
 										</label>

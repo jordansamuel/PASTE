@@ -73,7 +73,7 @@ if(isset($_SESSION['token'])) {
 			</div>
     <!-- End message -->	
 <?php } 
-	if ($privatesite == "on") { // Remove 'recent pastes' if site is private
+	if ( isset($privatesite) && $privatesite == "on") { // Remove 'recent pastes' if site is private
 	} else { ?>
 		<!-- Recent Public Pastes -->
 		<div class="panel panel-default">

@@ -88,8 +88,10 @@ $result = mysqli_query($con, $query);
 while ($row = mysqli_fetch_array($result)) {
     $banned_ip = $banned_ip . "::" . $row['ip'];
 }
-if (strpos($banned_ip, $ip) !== false) {
-    die($lang['banned']); // "You have been banned from ".$site_name;
+if ( isset( $banned_ip) ) {
+    if (strpos($banned_ip, $ip) !== false) {
+        die($lang['banned']); // "You have been banned from ".$site_name;
+    }
 }
 $query  = "Select * From sitemap_options WHERE id='1'";
 $result = mysqli_query($con, $query);
@@ -262,9 +264,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($mode == "reCAPTCHA") {
                 $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=".$recaptcha_secretkey."&response=".$_POST['g-recaptcha-response']);
                 $response = json_decode($response, true);
-                if($response["success"] === true) {
-                } else {
-                    $error = $lang['image_wrong']; // Wrong captcha.
+                if ( $response["success"] == false ) {
+                    // reCAPTCHA Errors
+                    switch( $response["error-codes"][0] ) {
+                        case "missing-input-response":
+                            $error = $lang['missing-input-response']; 
+                            break;
+                        case "missing-input-secret":
+                            $error = $lang['missing-input-secret'];
+                            break;
+                        case "invalid-input-response":
+                            $error = $lang['missing-input-response'];
+                            break;
+                        case "invalid-input-secret":
+                            $error = $lang['invalid-input-secret'];
+                            break;
+                    }
                     goto OutPut;
                 }
             } else {

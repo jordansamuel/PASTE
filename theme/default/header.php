@@ -63,7 +63,7 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
 		  <a href="./" class="pastebutton"><i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>
 		</li>
 	<?php
-	if ($privatesite == "on") { // Hide if site is private
+	if ( isset($privatesite) && $privatesite == "on") { // Hide if site is private
 		} else {
 			if ($mod_rewrite == '1') {
 			echo '<li><a href="archive">Archive</a></li>';
