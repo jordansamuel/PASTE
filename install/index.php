@@ -52,15 +52,13 @@ xmlhttp.onreadystatechange=function()
 $.post("configure.php", {data_host:sql_host,data_name:sql_name,data_user:sql_user,data_pass:sql_pass,data_sec:sql_sec}, function(results){
 if (results == 0) {
      $("#alertfailed").show();
-     $("#index_1").show();
-     $("#index_2").hide();
+     $("#install").show();
+     $("#configure").hide();
 }
 else
 {
-     $("#alertfailed").hide();
-     $("#alertsuccess").show();
-     $("#index_1").hide();
-     $("#index_2").show();
+     $("#install").hide();
+     $("#configure").show();
 }
 });
 }
@@ -85,13 +83,12 @@ xmlhttp.onreadystatechange=function()
     }
   }
 $("#alertfailed").hide();
-$("#alertsuccess").hide();
-$("#index_1").hide();
-$("#index_2").hide();
+$("#install").hide();
+$("#configure").hide();
 $("#pre_load").show();
 $.post("install.php", {admin_user:user,admin_pass:pass}, function(results){
-     $("#index_3").show();
-     $("#index_3").append(results);
+     $("#logpanel").show();
+     $("#log").append(results);
      $("#pre_load").hide();
 });
 }
@@ -99,16 +96,15 @@ $.post("install.php", {admin_user:user,admin_pass:pass}, function(results){
 
 <style>
  #alertfailed{ display:none; }
- #alertsuccess{ display:none; }
- #index_2{ display:none; }
- #index_3{ display:none; }
+ #configure{ display:none; }
+ #logpanel{ display:none; }
  #pre_load{ display:none; }
  </style>     
 </head>
 <body>
 
 <?php
-if ($_SERVER['REQUEST_METHOD'] == POST) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	// Post Handler
 }
 ?>
@@ -116,161 +112,188 @@ if ($_SERVER['REQUEST_METHOD'] == POST) {
 <div id="top" class="clearfix">
 	<!-- Start App Logo -->
 	<div class="applogo">
-	  <a href="#" class="logo">Paste 2.0</a>
+	  <a href="#" class="logo">Paste</a>
 	</div>
 	<!-- End App Logo -->
 </div>
 <!-- END TOP -->
 
-	<div class="content">
-		  <!-- START CONTAINER -->
-		<div class="container-widget">
-		
-			<!-- Start Install -->
-			<div class="row" id="index_1">
-				<div class="col-md-12">
-					<div class="panel panel-widget">
+<div class="content">
+	<!-- START CONTAINER -->
+	<div class="container-padding">
+		<!-- Start Row -->
+		<div class="row">
+			<!-- INSTALL PANEL -->
+			<div id="install">
+				<div class="col-md-4">
+					<div class="panel panel-default">
 						<div class="panel-body">
-							<div class="panel-title">Install Paste</a></div>
-							   <div class="paste-alert alert6 alert-dismissable" id="alertfailed">
-									<i class="fa fa-ban"></i>
-									<button aria-hidden="true" data-dismiss="alert" class="close" type="button">x</button>
-									Database connection failed.
-							   </div>
-							   <div class="paste-alert alert3 alert-dismissable" id="alertsuccess">
-									<i class="fa fa-check"></i>
-									<button aria-hidden="true" data-dismiss="alert" class="close" type="button">x</button>
-									Database connection successful.
-							   </div>
-							   
-								<table class="table table-hover">
-									<tbody><tr>
-										<th>File</th>
-										<th>Status</th>
-									</tr>
-									
-									<tr>
-										<td>config.php</td>
-									<?php
-										$filename = '../config.php';
+								<div class="panel-title">Pre-installation checks</a></div>
+									<table class="table table-hover">
+										<tbody><tr>
+											<th>File</th>
+											<th>Status</th>
+										</tr>
 										
-										if (is_writable($filename)) {
-											echo '<td><span class="label label-success">Writable</span></td>';
-										} else {
-											echo '<td><span class="label label-danger">Not Writable</span></td>';
-										}
-									?>
-									</tr>
-													
-									<tr>
-										<td>tmp/temp.tdata</td>
-									<?php
-										$filename = '../tmp/temp.tdata';
+										<tr>
+											<td>config.php</td>
+										<?php
+											$filename = '../config.php';
+											
+											if (is_writable($filename)) {
+												echo '<td><span class="label label-success">Writable</span></td>';
+											} else {
+												echo '<td><span class="label label-danger">Not Writable</span></td>';
+											}
+										?>
+										</tr>
+														
+										<tr>
+											<td>tmp/temp.tdata</td>
+										<?php
+											$filename = '../tmp/temp.tdata';
+											
+											if (is_writable($filename)) {
+												echo '<td><span class="label label-success">Writable</span></td>';
+											} else {
+												echo '<td><span class="label label-danger">Not Writable</span></td>';
+											}
+										?>
+										</tr>
 										
-										if (is_writable($filename)) {
-											echo '<td><span class="label label-success">Writable</span></td>';
-										} else {
-											echo '<td><span class="label label-danger">Not Writable</span></td>';
-										}
-									?>
-									</tr>
-									
-									<tr>
-										<td>sitemap.xml</td>
-									<?php
-										$filename = '../sitemap.xml';
-										
-										if (is_writable($filename)) {
-											echo '<td><span class="label label-success">Writable</span></td>';
-										} else {
-											echo '<td><span class="label label-danger">Not Writable</span></td>';
-										}
-									?>
-									</tr>										
-								</tbody>
-							</table>
+										<tr>
+											<td>sitemap.xml</td>
+										<?php
+											$filename = '../sitemap.xml';
+											
+											if (is_writable($filename)) {
+												echo '<td><span class="label label-success">Writable</span></td>';
+											} else {
+												echo '<td><span class="label label-danger">Not Writable</span></td>';
+											}
+										?>
+										</tr>										
+									</tbody>
+								</table>
 						</div>
 					</div>
 				</div>
 
-				<div class="col-md-12">
-					<div class="panel panel-widget">
-						<div class="panel-body">
-						 <div class="panel-title">Database Connection</a></div>
-							<div class="form-group">
-								<label for="data_host">Database Host</label>
-								<input type="text" placeholder="localhost" name="data_host" id="data_host" class="span6">
+				<!-- Database Information -->
+				<div class="col-md-8">
+					<div class="panel panel-default">
+						<div class="panel-title">Database Information</a></div>
+						<div class="form-horizontal">
+							<div class="paste-alert alert6 alert-dismissable" style="text-align: center;" id="alertfailed">
+								<button aria-hidden="true" data-dismiss="alert" class="close" type="button">x</button>
+								Database connection failed.
 							</div>
 							<div class="form-group">
-								<label for="data_name">Database Name</label>
-								<input type="text" placeholder="name" name="data_name" id="data_name" class="span6">
+								<label class="col-sm-2 control-label form-label" for="data_host">Hostname</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" placeholder="localhost" value="localhost" name="data_host" id="data_host">
+								</div>
 							</div>
-							<div class="form-group">
-								<label for="data_user">Database Username</label>
-								<input type="text" placeholder="user" name="data_user" id="data_user" class="span6">
-							</div>
-							<div class="form-group">
-								<label for="data_pass">Database Password</label>
-								<input type="password" placeholder="password" name="data_pass" id="data_pass" class="span6">
-							</div>
-							<br /><br />
-							<div class="form-group">
-								<label for="data_pass">Put this key in a safe place.</label>
-								<input style="background-color: #EEEEEE; border-color: #DDDDDD;" readonly="" type="text" value="<?php echo md5(uniqid(rand(), true)); ?>" placeholder="" name="data_sec" id="data_sec" class="span6">
-							</div>
-							<button class="btn btn btn-primary" onclick="loadXMLDoc()" >Submit</button>
-						</div>
-					</div>
-				</div>
-			</div>
-			
-			<div class="row" id="index_2">
-				<div class="col-md-12">
-					<div class="panel panel-widget">
-						<div class="panel-body">
-						 <div class="panel-title">One more step. Create your admin account.</a></div>
-							<div class="form-group">
-								<label for="admin_user">Username</label>
-								<input type="text" placeholder="Enter admin username" name="admin_user" id="admin_user" class="span6">
-							</div>
-							<div class="form-group">
-								<label for="admin_pass">Password</label>
-								<input type="password" placeholder="Enter admin password" name="admin_pass" id="admin_pass" class="span6">
-							</div>
-							   <button class="btn btn btn-primary" onclick="findoc()" >Submit</button>
-						</div>
-					</div>
-				</div>
-			</div>
-			
-			<div class="row" id="pre_load">
-				<div class="col-md-12">
-					<div class="panel panel-widget">
-						<div class="panel-body">
-						 <div class="panel-title">Final Step</a></div>
-							Installing.
-						</div>
-					</div>
-				</div>
-			</div>
-			
-			<div id="index_3"> </div>
-			
-		</div>
-		<!-- END CONTAINER -->
 
-		<!-- Start Footer -->
-		<div class="row footer">
-		  <div class="col-md-6 text-left">
-		   <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues">Bugs</a>
-		  </div>
-		  <div class="col-md-6 text-right">
-			Powered by <a href="https://github.com/jordansamuel/PASTE" target="_blank">Paste 2</a>
-		  </div> 
+							<div class="form-group">
+								<label class="col-sm-2 control-label form-label" for="data_name">Database Name</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" placeholder="Example: Paste" name="data_name" id="data_name">
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="col-sm-2 control-label form-label" for="data_user">Username</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" name="data_user" id="data_user">
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="col-sm-2 control-label form-label" for="data_pass">Password</label>
+								<div class="col-sm-10">
+									<input type="password" class="form-control" name="data_pass" id="data_pass">
+								</div>
+							</div>
+
+							<div class="form-group">
+								<label class="col-sm-2 control-label form-label" for="data_pass">Put this key in a safe place.</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" style="background-color: #EEEEEE; border-color: #DDDDDD;" readonly="" value="<?php echo md5(uniqid(rand(), true)); ?>" placeholder="" name="data_sec" id="data_sec" class="span6">
+								</div>
+							</div>
+							<br />
+							<button class="btn btn-default btn-block" onclick="loadXMLDoc()" >Install</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- END INSTALL PANEL -->
+
+			<!-- CONFIGURATION PANEL -->
+			<div id="configure">
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-title">One more step. Configure your Paste installation.</a></div>
+						<div class="form-horizontal">
+							&mdash;&gt; Admin Account
+							<div class="form-group">
+								<label class="col-sm-2 control-label form-label" for="admin_user">Username</label>
+								<div class="col-sm-10">
+									<input type="text" placeholder="Enter admin username" name="admin_user" id="admin_user">
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-2 control-label form-label" for="admin_pass">Password</label>
+								<div class="col-sm-10">
+									<input type="password" placeholder="Enter admin password" name="admin_pass" id="admin_pass">
+								</div>
+							</div>
+							   <button class="btn btn-default" onclick="findoc()" >Submit</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- END CONFIGURATION PANEL -->
+
+			<div id="pre_load">
+				<div class="col-md-12">
+					<div class="panel panel-widget">
+						<div class="panel-body">
+						 <div class="panel-title">Installing database schema for Paste. Please wait a moment.</a></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Display SQL errors/queries  -->
+			<div class="col-md-12" id="logpanel">
+				<div class="panel panel-widget">
+					<div class="panel-body">
+						<div id="log">
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--//-->
+
 		</div>
-		<!-- End Footer -->
+		<!-- END ROW -->
 	</div>
-	<!-- End content -->
+	<!-- END CONTAINER -->
+
+	<!-- Start Footer -->
+	<div class="row footer">
+	  <div class="col-md-6 text-left">
+	   <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues">Bugs</a>
+	  </div>
+	  <div class="col-md-6 text-right">
+		Powered by <a href="https://github.com/jordansamuel/PASTE" target="_blank">Paste 2</a>
+	  </div> 
+	</div>
+	<!-- End Footer -->
+</div>
+<!-- End content -->
 
 	<script type="text/javascript" src="../admin/js/jquery.min.js"></script>
 	<script type="text/javascript" src="../admin/js/bootstrap.min.js"></script>

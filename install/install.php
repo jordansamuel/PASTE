@@ -19,7 +19,7 @@
 	$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
 	
 	if (mysqli_connect_errno()) {
-		echo "Failed to connect:" . mysqli_connect_error() . "<br>";
+		echo "Failed to connect:" . mysqli_connect_error() . "<br />";
 	}
 
 // Admin
@@ -79,7 +79,7 @@ additional_scripts text
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-')";
+	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga,additional_scripts) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-','')";
 	mysqli_query($con, $query);
 
 // Site Permissions
@@ -99,7 +99,7 @@ PRIMARY KEY(id),
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	$query = "INSERT INTO `site_permissions` (`id`, `disableguest`, `siteprivate`) VALUES (1, 'on', 'on'), (2, 'off', 'off')";
+	$query = "INSERT INTO `site_permissions` (id,disableguest,siteprivate) VALUES (1, 'on', 'on'), (2, 'off', 'off')";
 	
 	mysqli_query($con, $query);
 	
@@ -317,12 +317,5 @@ recaptcha_secretkey text
 	$query = "INSERT INTO captcha (cap_e,mode,mul,allowed,color,recaptcha_sitekey,recaptcha_secretkey) VALUES ('off','Normal','off','ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789','#000000','','')";
 	mysqli_query($con, $query);
 ?>
-			<div class="row">
-				<div class="col-md-12">
-					<div class="panel panel-widget">
-						<div class="panel-body">
-							If you received no errors above, you can assume everything went OK. You can now remove the /install directory and proceed to the <a href="../" class="btn btn-default" >main site</a> or your <a href="../admin" class="btn btn-default">dashboard</a>
-						</div>
-					</div>
-				</div>
-			</div>
+
+If you received no errors above, you can assume everything went OK. You can now remove the /install directory and proceed to the <a href="../" class="btn btn-default">main site</a> or your <a href="../admin" class="btn btn-default">dashboard</a>
