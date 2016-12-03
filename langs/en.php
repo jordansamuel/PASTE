@@ -92,7 +92,7 @@ $lang['confpwd']		= "Confirm Password";
 $lang['mypastes']		= "My Pastes";
 $lang['viewpastes']		= "View all my pastes";
 $lang['recentpastes']	= "Recent Pastes";
-$lang['user_public_pastes'] = "Public Pastes";
+$lang['user_public_pastes'] = "'s Pastes";
 $lang['yourpastes']		= "Your Pastes";
 $lang['mypastestitle']	= "All of your pastes, in one place.";
 $lang['delete']			= "Delete";
@@ -102,4 +102,7 @@ $lang['download']		= "Download";
 $lang['showlineno']		= "Show/Hide line no.";
 $lang['copyto']			= "Copy text to clipboard";
 $lang['rawpaste']		= "Raw Paste";
+$lang['membersince']    = "Joined: ";
+$lang['delete_error_invalid'] = "Error: Paste not deleted because it does not exist or you do not own the paste.";
+$lang['not_logged_in']  = "Error: You must be logged in to do that.";
 ?>

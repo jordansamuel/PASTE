@@ -210,7 +210,7 @@ if ( isset($_GET['del']) ) {
         $result   = mysqli_query($con, $query);
         $num_rows = mysqli_num_rows($result);
         if ( $num_rows == 0 ) {
-            $error = "Error: Paste not deleted because it does not exist or you do not own the paste.";
+            $error = $lang['delete_error_invalid']; // Does not exist or not paste owner
         } else {
             $query    = "DELETE FROM pastes WHERE id='$paste_id' and member='$user_username'";
             $result   = mysqli_query($con, $query);
@@ -222,7 +222,7 @@ if ( isset($_GET['del']) ) {
             }
         }
     } else {
-        $error = "Error: You must be logged in to do that.";
+        $error = $lang['not_logged_in']; // Must be logged in to do that
     }
 }
 

@@ -23,8 +23,8 @@
     <div class="col-md-9 col-lg-10">
       <div class="panel panel-default">
         <div class="panel-title">
-          <h5><?php echo $profile_username ."'s ". $lang['user_public_pastes']; ?> <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<small>". $lang['mypastestitle'] . "</small>"; } ?></h5>
-          <small>Joined: <?php echo $profile_join_date; ?></small>
+          <h5><?php echo $profile_username . $lang['user_public_pastes']; ?> <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<small>". $lang['mypastestitle'] . "</small>"; } ?></h5>
+          <small><?php echo $lang['membersince'] . $profile_join_date; ?></small>
         </div>
         <div class="panel-body table-responsive">
             <?php 
