@@ -454,17 +454,17 @@ while ($row = mysqli_fetch_array($result)) {
                                                     } else {
                                                         echo '<option>reCAPTCHA</option>';
                                                     }
-                                                    if ($mode == "Easy") {
+                                                    if ( $mode == "Easy" ) {
                                                         echo '<option selected="">Easy</option>';
                                                     } else {
                                                         echo '<option>Easy</option>';
                                                     }
-                                                    if ($mode == "Normal") {
+                                                    if ( $mode == "Normal" ) {
                                                         echo '<option selected="">Normal</option>';
                                                     } else {
                                                         echo '<option>Normal</option>';
                                                     }
-                                                    if ($mode == "Tough") {
+                                                    if ( $mode == "Tough" ) {
                                                         echo '<option selected="">Tough</option>';
                                                     } else {
                                                         echo '<option>Tough</option>';
