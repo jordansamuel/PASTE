@@ -438,46 +438,47 @@ while ($row = mysqli_fetch_array($result)) {
 									
 									<div role="tabpanel" class="tab-pane" id="captcha">
 										<form class="form-horizontal" method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
-											
-                                            
-                                            
+
 											<div class="checkbox checkbox-primary">
-												<input <?php if ($cap_e == "on") echo 'checked="true"'; ?> type="checkbox" name="cap_e" id="cap_e">
+												<input <?php if ( $cap_e == "on" ) echo 'checked="true"'; ?> type="checkbox" name="cap_e" id="cap_e">
 												<label for="cap_e">Enable Captcha</label>
 											</div>
                                             <br />
-											<label class="control-label form-label">Captcha Type</label>
-                                            <select class="selectpicker" name="mode">
-												<?php
-                                                if ($mode == "reCAPTCHA") {
-													echo '<option selected="">reCAPTCHA</option>';
-												} else {
-													echo '<option>reCAPTCHA</option>';
-												}
-												if ($mode == "Easy") {
-													echo '<option selected="">Easy</option>';
-												} else {
-													echo '<option>Easy</option>';
-												}
-												if ($mode == "Normal") {
-													echo '<option selected="">Normal</option>';
-												} else {
-													echo '<option>Normal</option>';
-												}
-												if ($mode == "Tough") {
-													echo '<option selected="">Tough</option>';
-												} else {
-													echo '<option>Tough</option>';
-												}
-												?>
-                                            </select>               
-																					
+
+                                            <div class="form-group row">
+                                                <label for="mode" class="col-sm-1 col-form-label">Captcha Type</label>
+                                                <select class="selectpicker" name="mode">
+                                                    <?php
+                                                    if ( $mode == "reCAPTCHA" ) {
+                                                        echo '<option selected="">reCAPTCHA</option>';
+                                                    } else {
+                                                        echo '<option>reCAPTCHA</option>';
+                                                    }
+                                                    if ($mode == "Easy") {
+                                                        echo '<option selected="">Easy</option>';
+                                                    } else {
+                                                        echo '<option>Easy</option>';
+                                                    }
+                                                    if ($mode == "Normal") {
+                                                        echo '<option selected="">Normal</option>';
+                                                    } else {
+                                                        echo '<option>Normal</option>';
+                                                    }
+                                                    if ($mode == "Tough") {
+                                                        echo '<option selected="">Tough</option>';
+                                                    } else {
+                                                        echo '<option>Tough</option>';
+                                                    }
+                                                    ?>
+                                                </select>
+                                            </div>
+                                            
 											<hr />
-											
-                                            Internal Captcha Settings:
-                                            <br />
+											<div class="panel-title">
+                                                Internal Captcha Settings:
+                                            </div>
 											<div class="checkbox checkbox-primary">
-												<input <?php if ($mul == "on") echo 'checked="true"'; ?> type="checkbox" name="mul" id="mul">
+												<input <?php if ( $mul == "on" ) echo 'checked="true"'; ?> type="checkbox" name="mul" id="mul">
 												<label for="mul">Enable multiple backgrounds</label>
 											</div>
                                             <br />
@@ -496,9 +497,9 @@ while ($row = mysqli_fetch_array($result)) {
 											</div>
                                             
                                             <hr />
-                                            
-                                            reCAPTCHA Settings:
-                                            <br />
+                                            <div class="panel-title">
+                                                reCAPTCHA Settings:
+                                            </div>
 											<div class="form-group row">
 												<label for="recaptcha_sitekey" class="col-sm-1 col-form-label">Site Key</label>
                                                 <div class="col-sm-10">
