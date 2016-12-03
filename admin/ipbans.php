@@ -68,39 +68,13 @@ if ($last_ip == $ip) {
     mysqli_query($con, $query);
 }
 
-// Get IP from form
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Get IP from form or URL
+if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
 	if (isset($_POST['banip'])) {
 		$ban_ip = htmlentities(Trim($_POST['ban_ip']));
-        // Check if IP is already banned
-        $query  = "SELECT * FROM ban_user where ip='$ban_ip'";
-        $result = mysqli_query($con, $query);
-        $num_rows = mysqli_num_rows($result);
-        if ( $num_rows >= 1 ) {
-            $msg = '
-            <div class="paste-alert alert1" style="text-align: center;">
-            ' . $ban_ip . ' already banned
-            </div>';
-        } else {
-            $query  = "INSERT INTO ban_user (last_date,ip) VALUES ('$date','$ban_ip')";
-            mysqli_query($con, $query);
-            if (mysqli_errno($con)) {
-                $msg = '<div class="paste-alert alert6" style="text-align: center;">
-                        ' . mysqli_error($con) . '
-                        </div>';
-            } else {
-                $msg = '
-            <div class="paste-alert alert3" style="text-align: center;">
-            ' . $ban_ip . ' added to the banlist
-            </div>';
-            }
-        }
-	}
-}
-
-// Get IP from URL
-if ( isset( $_GET['banip'] ) ) {
-    $ban_ip = htmlentities(Trim($_GET['banip']));
+    } elseif ( isset( $_GET['banip'] ) ) {
+        $ban_ip = htmlentities(Trim($_GET['banip']));
+    }
     // Check if IP is already banned
     $query  = "SELECT * FROM ban_user where ip='$ban_ip'";
     $result = mysqli_query($con, $query);
@@ -123,7 +97,7 @@ if ( isset( $_GET['banip'] ) ) {
         ' . $ban_ip . ' added to the banlist
         </div>';
         }
-    }       
+    }
 }
 
 if (isset($_GET{'delete'})) {
