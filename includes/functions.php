@@ -83,20 +83,9 @@ function getTotalPastes($con, $username)
     return $count;
 }
 
-function isValidUsername($str) {
+function isValidUsername($str)
+{
     return !preg_match('/[^A-Za-z0-9.#\\-$]/', $str);
-}
-
-function existingUser( $con, $username ) {
-    $query = "SELECT * FROM users WHERE username = '$username'";
-    $result = mysqli_query( $con, $query );
-    $num_rows = mysqli_num_rows( $result );
-    if ( $num_rows == 0 ) {
-        // No records. User doesn't exist.
-        return false;
-    } else {
-        return true;
-    }
 }
 
 function updateMyView($con, $paste_id)
