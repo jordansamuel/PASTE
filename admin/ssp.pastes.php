@@ -340,7 +340,6 @@ class SSP {
              $result[$loop]['visible'] = "Private";  
          }
         $myid = $arr['id'];
-        $result[$loop]['banip'] ="";
         $result[$loop]['details'] ="<a class='btn btn-default btn-sm' href=pastes.php?details=".$myid."> Details </a>";
         $result[$loop]['view'] = "<a class='btn btn-success btn-sm' href=../paste.php?id=".$myid."> View </a>";
         $result[$loop]['delete'] ="<a class='btn btn-danger btn-sm' href=pastes.php?delete=".$myid."> Delete </a> <a class='btn btn-link btn-sm' href=ipbans.php?banip=".$arr['ip']."> Ban IP </a>";
