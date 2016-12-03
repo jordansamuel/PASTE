@@ -71,9 +71,9 @@ if ($last_ip == $ip) {
 // Get IP from form or URL
 if ( $_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
 	if ( isset( $_POST['banip'] ) ) {
-		$ban_ip = htmlentities(Trim($_POST['ban_ip']));
+		$ban_ip = htmlentities( Trim( $_POST['ban_ip'] ) );
     } elseif ( isset( $_GET['banip'] ) ) {
-        $ban_ip = htmlentities(Trim($_GET['banip']));
+        $ban_ip = htmlentities( Trim( $_GET['banip'] ) );
     }
     // Check if IP is blank or already banned.
     if ( trim($ban_ip) == '' ) {
