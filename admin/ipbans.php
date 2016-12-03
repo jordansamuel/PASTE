@@ -70,32 +70,37 @@ if ($last_ip == $ip) {
 
 // Get IP from form or URL
 if ($_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
-	if (isset($_POST['banip'])) {
+	if ( isset( $_POST['banip'] ) ) {
 		$ban_ip = htmlentities(Trim($_POST['ban_ip']));
     } elseif ( isset( $_GET['banip'] ) ) {
         $ban_ip = htmlentities(Trim($_GET['banip']));
     }
-    // Check if IP is already banned
-    $query  = "SELECT * FROM ban_user where ip='$ban_ip'";
-    $result = mysqli_query($con, $query);
-    $num_rows = mysqli_num_rows($result);
-    if ( $num_rows >= 1 ) {
-        $msg = '
-        <div class="paste-alert alert1" style="text-align: center;">
-        ' . $ban_ip . ' already banned
-        </div>';
+    // Check if IP is blank or already banned.
+    if ( trim($ban_ip) == '' ) {
+         $msg = '<div class="paste-alert alert6" style="text-align: center;">Please enter an IP to ban.</div>';
     } else {
-        $query  = "INSERT INTO ban_user (last_date,ip) VALUES ('$date','$ban_ip')";
-        mysqli_query($con, $query);
-        if (mysqli_errno($con)) {
-            $msg = '<div class="paste-alert alert6" style="text-align: center;">
-                    ' . mysqli_error($con) . '
-                    </div>';
-        } else {
+        $query  = "SELECT * FROM ban_user where ip='$ban_ip'";
+        $result = mysqli_query($con, $query);
+        $num_rows = mysqli_num_rows($result);
+        if ( $num_rows >= 1 ) {
             $msg = '
-        <div class="paste-alert alert3" style="text-align: center;">
-        ' . $ban_ip . ' added to the banlist
-        </div>';
+            <div class="paste-alert alert1" style="text-align: center;">
+            ' . $ban_ip . ' already banned
+            </div>';
+        } else {
+            // Valid IP which is not banned. Add to database
+            $query  = "INSERT INTO ban_user (last_date,ip) VALUES ('$date','$ban_ip')";
+            mysqli_query($con, $query);
+            if (mysqli_errno($con)) {
+                $msg = '<div class="paste-alert alert6" style="text-align: center;">
+                        ' . mysqli_error($con) . '
+                        </div>';
+            } else {
+                $msg = '
+            <div class="paste-alert alert3" style="text-align: center;">
+            ' . $ban_ip . ' added to the banlist
+            </div>';
+            }
         }
     }
 }
