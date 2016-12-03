@@ -23,7 +23,8 @@
     <div class="col-md-9 col-lg-10">
       <div class="panel panel-default">
         <div class="panel-title">
-          <h5><?php echo $user_username ."'s ". $lang['user_public_pastes']; ?> <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $user_username ) { echo "<small>". $lang['mypastestitle'] . "</small>"; } ?></h5>
+          <h5><?php echo $profile_username ."'s ". $lang['user_public_pastes']; ?> <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<small>". $lang['mypastestitle'] . "</small>"; } ?></h5>
+          <small>Joined: <?php echo $profile_join_date; ?></small>
         </div>
         <div class="panel-body table-responsive">
             <?php 
@@ -42,7 +43,29 @@
                         </div>'; 
                 }
             }
-            ?>        
+            ?>
+            
+            <?php 
+            if ( $_SESSION['username'] == $profile_username ) {
+            ?>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    Hey <?php echo $profile_username; ?>! This is your profile page where you can manage your pastes! If you are logged in, you can see all of your public, private and unlisted pastes. You can also delete your pastes from this page. 
+                    <br><br>
+                    Guests to this page will only see the list of your public pastes.
+                    <br><br>
+                    Some quick stats (shown only to you):<br>
+                    Total pastes: <?php echo $profile_total_pastes; ?><br>
+                    Total public pastes: <?php echo $profile_total_public; ?><br>
+                    Total unlisted pastes: <?php echo $profile_total_unlisted; ?><br>
+                    Total private pastes: <?php echo $profile_total_private; ?><br>
+                    Total views of all your pastes: <?php echo $profile_total_paste_views; ?><br>
+                </div>
+            </div>
+            <?php
+            }
+            ?>
+            
             <table id="archive" class="table display">
                 <thead>
 					<tr>
@@ -50,7 +73,7 @@
 						<td><?php echo $lang['pastetime']; ?></td>
 						<td><?php echo $lang['pasteviews']; ?></td>
 						<td><?php echo $lang['pastesyntax']; ?></td>
-                        <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $user_username ) { echo "<td>". $lang['delete'] . "</td>"; } ?>
+                        <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<td>". $lang['delete'] . "</td>"; } ?>
 					</tr>
                 </thead>
              
@@ -60,14 +83,14 @@
 						<td><?php echo $lang['pastetime']; ?></td>
 						<td><?php echo $lang['pasteviews']; ?></td>
 						<td><?php echo $lang['pastesyntax']; ?></td>
-                        <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $user_username ) { echo "<td>". $lang['delete'] . "</td>"; } ?>
+                        <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<td>". $lang['delete'] . "</td>"; } ?>
 					</tr>
                 </tfoot>
          
 				<tbody>
 				<?php
 
-				$res = getUserPastes( $con, $user_username );
+				$res = getUserPastes( $con, $profile_username );
 				while( $row = mysqli_fetch_array( $res ) ) {
 					$title =  Trim( $row['title'] );
 					$p_id =  Trim( $row['id'] );
@@ -75,12 +98,12 @@
 					$p_date = Trim( $row['date'] );
                     $p_views = Trim( $row['views'] );
                     $p_visible = Trim( $row['visible'] );
-                    $p_link = ( $mod_rewrite == '1' )?"../$p_id":"paste.php?id=$p_id";
-                    $p_delete_link = ( $mod_rewrite == '1' )?"../user.php?del&id=$p_id":"user.php?del&id=$p_id";
+                    $p_link = ( $mod_rewrite == '1' )?"$p_id":"paste.php?id=$p_id";
+                    $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$profile_username&id=$p_id":"user.php?del&user=$profile_username&id=$p_id";
 					$title = truncate( $title, 20, 50 );
                     
                     // Guests only see public pastes
-                    if ( !isset( $_SESSION['token'] ) || $_SESSION['username'] != $user_username ) {
+                    if ( !isset( $_SESSION['token'] ) || $_SESSION['username'] != $profile_username ) {
                         if ( $p_visible == 0 ) {
                             echo '<tr> 
                             <td><a href="'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    

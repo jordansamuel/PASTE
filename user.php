@@ -80,18 +80,51 @@ if ( strpos( $banned_ip, $ip ) !== false) {
     die( $lang['banned'] ); // "You have been banned from ".$site_name
 }
 
+$user_username = Trim($_SESSION['username']);
+
 // If username defined in URL, then check if it's exists in database. If invalid, redirect to main site.
-if ( isset( $_SESSION['token'] ) ) {
-    $user_username = Trim($_SESSION['username']);
-} elseif ( isset( $_GET['user'] ) ) {
-    $user_username = trim( $_GET['user'] );
-    if ( !existingUser( $con, $user_username ) ) {
+if ( isset( $_GET['user'] ) ) {
+    $profile_username = trim( $_GET['user'] );
+    if ( !existingUser( $con, $profile_username ) ) {
         // Invalid username
         header("Location: ../");
     }
+} 
+
+$p_title = $profile_username . "'s " . $lang['user_public_pastes']; // "Username's Public Pastes"
+
+// Stats for the profile page
+$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username'";
+$result = mysqli_query( $con, $query );
+while ($row = mysqli_fetch_array($result)) {
+    $profile_total_pastes = $row['count'];
+}
+$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username' and visible = 0";
+$result = mysqli_query( $con, $query );
+while ($row = mysqli_fetch_array($result)) {
+    $profile_total_public = $row['count'];
+}
+$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username' and visible = 1";
+$result = mysqli_query( $con, $query );
+while ($row = mysqli_fetch_array($result)) {
+    $profile_total_unlisted = $row['count'];
+}
+$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username' and visible = 2";
+$result = mysqli_query( $con, $query );
+while ($row = mysqli_fetch_array($result)) {
+    $profile_total_private = $row['count'];
+}
+$query  = "SELECT sum(views) as total FROM pastes where member = '$profile_username'";
+$result = mysqli_query( $con, $query );
+while ($row = mysqli_fetch_array($result)) {
+    $profile_total_paste_views = $row['total'];
+}
+$query  = "SELECT date FROM users where username = '$profile_username'";
+$result = mysqli_query( $con, $query );
+while ($row = mysqli_fetch_array($result)) {
+    $profile_join_date = $row['date'];
 }
 
-$p_title = $user_username . "'s " . $lang['user_public_pastes']; // "Username's Public Pastes"
 
 // Logout
 if (isset($_GET['logout'])) {
@@ -170,14 +203,26 @@ while ($row = mysqli_fetch_array($result)) {
 }
 
 if ( isset($_GET['del']) ) {
-    $paste_id = htmlentities(Trim($_GET['id']));
-    $query    = "DELETE FROM pastes WHERE id='$paste_id' and member='$user_username'";
-    $result   = mysqli_query($con, $query);
-    
-    if ( mysqli_errno( $con ) ) {
-        $error = $lang['error']; // "Something went wrong";
+    if ( $_SESSION['token'] ) { // Prevent unauthorized deletes
+        $paste_id = htmlentities( Trim( $_GET['id'] ) );
+        // Check if logged in user owns the paste
+        $query    = "SELECT * FROM pastes WHERE id='$paste_id' and member='$user_username'";
+        $result   = mysqli_query($con, $query);
+        $num_rows = mysqli_num_rows($result);
+        if ( $num_rows == 0 ) {
+            $error = "Error: Paste not deleted because it does not exist or you do not own the paste.";
+        } else {
+            $query    = "DELETE FROM pastes WHERE id='$paste_id' and member='$user_username'";
+            $result   = mysqli_query($con, $query);
+            
+            if ( mysqli_errno( $con ) ) {
+                $error = $lang['error']; // "Something went wrong";
+            } else {
+                $success = $lang['pastedeleted']; // "Paste deleted successfully."; 
+            }
+        }
     } else {
-        $success = $lang['pastedeleted']; // "Paste deleted successfully."; 
+        $error = "Error: You must be logged in to do that.";
     }
 }
 
