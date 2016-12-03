@@ -70,8 +70,8 @@ if ($last_ip == $ip) {
 
 // Get IP from form or URL
 if ( $_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
-	if ( isset( $_POST['banip'] ) ) {
-		$ban_ip = htmlentities( Trim( $_POST['ban_ip'] ) );
+    if ( isset( $_POST['banip'] ) ) {
+        $ban_ip = htmlentities( Trim( $_POST['ban_ip'] ) );
     } elseif ( isset( $_GET['banip'] ) ) {
         $ban_ip = htmlentities( Trim( $_GET['banip'] ) );
     }
