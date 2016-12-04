@@ -71,6 +71,7 @@
 					<tr>
 						<td><?php echo $lang['pastetitle']; ?></td>
 						<td><?php echo $lang['pastetime']; ?></td>
+                        <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<td>". $lang['visibility'] . "</td>"; } ?>
 						<td><?php echo $lang['pasteviews']; ?></td>
 						<td><?php echo $lang['pastesyntax']; ?></td>
                         <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<td>". $lang['delete'] . "</td>"; } ?>
@@ -81,6 +82,7 @@
 					<tr>
 						<td><?php echo $lang['pastetitle']; ?></td>
 						<td><?php echo $lang['pastetime']; ?></td>
+                        <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<td>". $lang['visibility'] . "</td>"; } ?>
 						<td><?php echo $lang['pasteviews']; ?></td>
 						<td><?php echo $lang['pastesyntax']; ?></td>
                         <?php if ( isset( $_SESSION ) && $_SESSION['username'] == $profile_username ) { echo "<td>". $lang['delete'] . "</td>"; } ?>
@@ -98,6 +100,17 @@
 					$p_date = Trim( $row['date'] );
                     $p_views = Trim( $row['views'] );
                     $p_visible = Trim( $row['visible'] );
+                    switch( $p_visible ) {
+                        case 0:
+                            $p_visible = $lang['public'];
+                            break;
+                        case 1:
+                            $p_visible = $lang['unlisted'];
+                            break;
+                        case 2:
+                            $p_visible = $lang['private'];
+                            break;
+                    }
                     $p_link = ( $mod_rewrite == '1' )?"$p_id":"paste.php?id=$p_id";
                     $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$profile_username&id=$p_id":"user.php?del&user=$profile_username&id=$p_id";
 					$title = truncate( $title, 20, 50 );
@@ -116,6 +129,7 @@
                         echo '<tr> 
                         <td><a href="'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    
 						<td>'.$p_date.'</td>
+						<td>'.$p_visible.'</td>
                         <td>'.$p_views.'</td>
 						<td>'.strtoupper($p_code).'</td>
 						<td><a href="'.$p_delete_link.'" title="'.$title.'"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a></td>    

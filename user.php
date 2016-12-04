@@ -41,7 +41,7 @@ while ($row = mysqli_fetch_array($result)) {
     $face      = Trim($row['face']);
     $gplus     = Trim($row['gplus']);
     $ga        = Trim($row['ga']);
-    $additional_scripts = Trim($row['additional_scripts']);
+    $additional_scripts = $row['additional_scripts'];
 }
 
 // Set theme and language
