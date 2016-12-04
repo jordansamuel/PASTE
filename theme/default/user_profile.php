@@ -117,7 +117,7 @@
                     
                     // Guests only see public pastes
                     if ( !isset( $_SESSION['token'] ) || $_SESSION['username'] != $profile_username ) {
-                        if ( $p_visible == $lang['public'] ) {
+                        if ( $row['visible'] == 0 ) {
                             echo '<tr> 
                             <td><a href="'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    
                             <td>'.$p_date.'</td>
