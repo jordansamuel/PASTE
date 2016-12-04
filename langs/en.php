@@ -105,4 +105,7 @@ $lang['rawpaste']		= "Raw Paste";
 $lang['membersince']    = "Joined: ";
 $lang['delete_error_invalid'] = "Error: Paste not deleted because it does not exist or you do not own the paste.";
 $lang['not_logged_in']  = "Error: You must be logged in to do that.";
+$lang['public']         = "Public";
+$lang['unlisted']       = "Unlisted";
+$lang['private']        = "Private";
 ?>
