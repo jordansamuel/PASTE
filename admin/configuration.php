@@ -75,6 +75,7 @@ $result = mysqli_query($con, $query);
 while ($row = mysqli_fetch_array($result)) {
     $title				= Trim($row['title']);
     $des				= Trim($row['des']);
+    $baseurl		    = Trim($row['baseurl']);
     $keyword			= Trim($row['keyword']);
     $site_name			= Trim($row['site_name']);
     $email				= Trim($row['email']);
@@ -216,6 +217,7 @@ while ($row = mysqli_fetch_array($result)) {
 							if (isset($_POST['manage'])) {
 								$site_name = mysqli_real_escape_string( $con, Trim($_POST['site_name']) );
 								$title     = mysqli_real_escape_string( $con, Trim($_POST['title']) );
+								$baseurl     = mysqli_real_escape_string( $con, Trim($_POST['baseurl']) );
 								$des       = EMPTY(mysqli_real_escape_string( $con, Trim($_POST['des']) ) );
 								$keyword   = htmlentities(Trim($_POST['keyword']));
 								$email     = mysqli_real_escape_string( $con, Trim($_POST['email']) );
@@ -225,7 +227,7 @@ while ($row = mysqli_fetch_array($result)) {
 								$ga        = htmlentities(Trim($_POST['ga']));
 								$additional_scripts        = mysqli_real_escape_string( $con, $_POST['additional_scripts'] );
                                 
-								$query = "UPDATE site_info SET title='$title', des='$des', keyword='$keyword', site_name='$site_name', email='$email', twit='$twit', face='$face', gplus='$gplus', ga='$ga', additional_scripts='$additional_scripts' WHERE id='1'";
+								$query = "UPDATE site_info SET title='$title', des='$des', baseurl='$baseurl', keyword='$keyword', site_name='$site_name', email='$email', twit='$twit', face='$face', gplus='$gplus', ga='$ga', additional_scripts='$additional_scripts' WHERE id='1'";
 								mysqli_query($con, $query);
 								
 								if (mysqli_errno($con)) {
@@ -334,6 +336,13 @@ while ($row = mysqli_fetch_array($result)) {
 											  <label class="col-sm-2 control-label form-label">Site Title</label>
 											  <div class="col-sm-10">
 												<input type="text" class="form-control" name="title" placeholder="Site title tag" value="<?php echo (isset($_POST['title']))?$_POST['title']:$title; // Prevent special characters on $_POST ?>">
+											  </div>
+											</div>
+
+											<div class="form-group">
+											  <label class="col-sm-2 control-label form-label">Site Address (URL)</label>
+											  <div class="col-sm-10">
+												<input type="text" class="form-control" name="baseurl" placeholder="Full http:// address with no trailing slash" value="<?php echo (isset($_POST['baseurl']))?$_POST['baseurl']:$baseurl; // Prevent special characters on $_POST ?>">
 											  </div>
 											</div>
 

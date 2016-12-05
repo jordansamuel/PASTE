@@ -12,6 +12,7 @@ RewriteEngine on
  RewriteRule ^contact contact.php [L]
  RewriteRule ^download/(.*)$  paste.php?download&id=$1 [L]
  RewriteRule ^raw/(.*)$  paste.php?raw&id=$1 [L]
+ RewriteRule ^embed/(.*)$  paste.php?embed&id=$1 [L]
 </IfModule>
 
 <IfModule mod_rewrite.c>

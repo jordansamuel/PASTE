@@ -249,6 +249,75 @@ function rawView($paste_id, $p_title, $p_content, $p_code)
     return $stats;
 }
 
+function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style ) {
+    $stats = false;
+    if ( $p_content ) {
+        // Build the output
+        $output = "<div class='paste_embed_container'>";
+            $output .= "<style>"; // Add our own styles
+            $output .= "
+            .paste_embed_container {
+                font-size: 12px;
+                color: #333;
+                text-align: left;
+                margin-bottom: 1em;
+                border: 1px solid #ddd;
+                background-color: #f7f7f7;
+                border-radius: 3px;
+            }
+            .paste_embed_container a {
+                font-weight: bold;
+                color: #666;
+                text-decoration: none;
+                border: 0;
+            }
+            .paste_embed_container ol {
+                color: white;
+                background-color: #f7f7f7;
+                border-right: 1px solid #ccc;
+                margin: 0;
+            }
+            .paste_embed_footer {
+                font-size:14px;
+                padding: 10px;
+                overflow: hidden;
+                color: #767676;
+                background-color: #f7f7f7;
+                border-radius: 0 0 2px 2px;
+                border-top: 1px solid #ccc;
+            }
+            .de1, .de2 {
+                -moz-user-select: text;
+                -khtml-user-select: text;
+                -webkit-user-select: text;
+                -ms-user-select: text;
+                user-select: text;
+                padding: 0 8px;
+                color: #000;
+                border-left: 1px solid #ddd;
+                background: #ffffff;
+                line-height:20px;
+            }";
+            $output .= "</style>";
+            $output .= "$ges_style"; // Dynamic GeSHI Style
+            $output .= $p_content; // Paste content
+            $output .= "<div class='paste_embed_footer'>";
+                $output .= "<a href='$baseurl/$paste_id'>$p_title</a> hosted by <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>view raw</a>";
+            $output .= "</div>";
+        $output .= "</div>";
+        
+        // Display embed content using json_encode since that escapes 
+        // characters well enough to satisfy javascript. http://stackoverflow.com/a/169035
+        header( 'Content-type: text/javascript; charset=utf-8;' );
+        echo 'document.write(' . json_encode( $output ) . ')';
+        $stats = true;
+    } else {
+        // 404
+        header( 'HTTP/1.1 404 Not Found' );
+    }
+    return $stats;
+}
+
 function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
 {
     $c_date    = date('Y-m-d');
