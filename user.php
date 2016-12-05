@@ -92,7 +92,7 @@ if ( isset( $_GET['user'] ) ) {
     }
 } 
 
-$p_title = $profile_username . "'s " . $lang['user_public_pastes']; // "Username's Public Pastes"
+$p_title = $profile_username . $lang['user_public_pastes']; // "Username's Public Pastes"
 
 // Stats for the profile page
 $query  = "SELECT count(*) as count FROM pastes where member = '$profile_username'";

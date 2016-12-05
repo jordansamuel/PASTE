@@ -66,9 +66,9 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
 	if ( isset($privatesite) && $privatesite == "on") { // Hide if site is private
 		} else {
 			if ($mod_rewrite == '1') {
-			echo '<li><a href="archive">Archive</a></li>';
+			echo '<li><a href="' . dirname($_SERVER['PHP_SELF']) . '/archive">Archive</a></li>';
 			} else {
-			echo '<li><a href="archive.php">Archive</a></li>';
+			echo '<li><a href="' . dirname($_SERVER['PHP_SELF']) . '/archive.php">Archive</a></li>';
 			}
 		}
 	?>
