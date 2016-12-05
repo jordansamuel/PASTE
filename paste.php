@@ -330,12 +330,12 @@ if (mysqli_num_rows($result) > 0) {
     // Embed view after GeSHI is applied so that $p_code is syntax highlighted as it should be. 
     if (isset($_GET['embed'])) {
         if ( $p_password == "NONE" ) {
-            embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style );
+            embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang );
             exit();
         } else {
             if ( isset( $_GET['password'] ) ) {
                 if ( password_verify( $_GET['password'], $p_password ) ) {
-                    embedView( $paste_id, $p_title, $p_content, $p_code, $title, $p_baseurl, $ges_style );
+                    embedView( $paste_id, $p_title, $p_content, $p_code, $title, $p_baseurl, $ges_style, $lang );
                     exit();
                 } else {
                     $error = $lang['wrongpassword']; // 'Wrong password';

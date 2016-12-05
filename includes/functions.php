@@ -249,7 +249,7 @@ function rawView($paste_id, $p_title, $p_content, $p_code)
     return $stats;
 }
 
-function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style ) {
+function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang ) {
     $stats = false;
     if ( $p_content ) {
         // Build the output
@@ -302,7 +302,7 @@ function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, 
             $output .= "$ges_style"; // Dynamic GeSHI Style
             $output .= $p_content; // Paste content
             $output .= "<div class='paste_embed_footer'>";
-                $output .= "<a href='$baseurl/$paste_id'>$p_title</a> hosted by <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>view raw</a>";
+                $output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower( $lang['view-raw'] ) . "</a>";
             $output .= "</div>";
         $output .= "</div>";
         
