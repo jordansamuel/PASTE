@@ -58,7 +58,15 @@ if(isset($_SESSION['token'])) {
 						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
 						 <i class="fa fa-clock-o fa-lg" aria-hidden="true"></i>
 						</button>
-					<?php } ?>
+					<?php }
+					// Display a message if the pastebin is empty
+					$query  = "SELECT count(*) as count FROM pastes";
+					$result = mysqli_query( $con, $query );
+					while ($row = mysqli_fetch_array($result)) {
+						$totalpastes = $row['count'];
+					}
+					
+					if ($totalpastes == '0') { echo $lang['emptypastebin']; } ?>
 					</p>
 				</div>
 			</div>
@@ -92,15 +100,25 @@ if(isset($_SESSION['token'])) {
 							$p_time = conTime($nowtime-$oldtime);
 							$title = truncate($title, 6, 15);
 					?>
+
 					<p class="no-margin">
-					<?php if ($mod_rewrite == '1') {
+					<?php
+					if ($mod_rewrite == '1') {
 						echo '<a href="' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; } else {
 						echo '<a href="paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; }
 					?>
 						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
 						 <i class="fa fa-clock-o fa-lg" aria-hidden="true"></i>
 						</button>
-					<?php } ?>
+					<?php }
+					// Display a message if the pastebin is empty
+					$query  = "SELECT count(*) as count FROM pastes";
+					$result = mysqli_query( $con, $query );
+					while ($row = mysqli_fetch_array($result)) {
+						$totalpastes = $row['count'];
+					}
+					
+					if ($totalpastes == '0') { echo $lang['emptypastebin']; } ?>
 					</p>
 				</div>
 			</div>

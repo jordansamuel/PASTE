@@ -190,7 +190,7 @@ if ($last_ip == $ip) {
 								$p_content  = $row['content'];
 								$p_visible  = $row['visible'];
 								$p_code     = $row['code'];
-								$p_expiry   = Trim($row['expiry']);
+								$p_expiry   = $row['expiry'];
 								$p_password = $row['password'];
 								$p_member   = $row['member'];
 								$p_date     = $row['date'];

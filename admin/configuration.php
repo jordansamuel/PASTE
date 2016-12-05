@@ -73,28 +73,28 @@ $query  = "SELECT * FROM site_info";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
-    $title     = Trim($row['title']);
-    $des       = Trim($row['des']);
-    $keyword   = Trim($row['keyword']);
-    $site_name = Trim($row['site_name']);
-    $email     = Trim($row['email']);
-    $twit      = Trim($row['twit']);
-    $face      = Trim($row['face']);
-    $gplus     = Trim($row['gplus']);
-    $ga        = Trim($row['ga']);
+    $title				= Trim($row['title']);
+    $des				= Trim($row['des']);
+    $keyword			= Trim($row['keyword']);
+    $site_name			= Trim($row['site_name']);
+    $email				= Trim($row['email']);
+    $twit				= Trim($row['twit']);
+    $face				= Trim($row['face']);
+    $gplus				= Trim($row['gplus']);
+    $ga					= Trim($row['ga']);
     $additional_scripts = Trim($row['additional_scripts']);
 }
 $query  = "SELECT * FROM captcha WHERE id='1'";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
-    $cap_e   = Trim($row['cap_e']);
-    $mode    = Trim($row['mode']);
-    $mul     = Trim($row['mul']);
-    $allowed = Trim($row['allowed']);
-    $color   = Trim($row['color']);    
-    $recaptcha_sitekey = Trim($row['recaptcha_sitekey']);
-    $recaptcha_secretkey   = Trim($row['recaptcha_secretkey']);
+    $cap_e					= $row['cap_e'];
+    $mode					= $row['mode'];
+    $mul					= $row['mul'];
+    $allowed				= $row['allowed'];
+    $color					= $row['color'];    
+    $recaptcha_sitekey		= $row['recaptcha_sitekey'];
+    $recaptcha_secretkey	= $row['recaptcha_secretkey'];
 }
 
 $query  = "SELECT * FROM site_permissions WHERE id='1'";
@@ -216,7 +216,7 @@ while ($row = mysqli_fetch_array($result)) {
 							if (isset($_POST['manage'])) {
 								$site_name = mysqli_real_escape_string( $con, Trim($_POST['site_name']) );
 								$title     = mysqli_real_escape_string( $con, Trim($_POST['title']) );
-								$des       = mysqli_real_escape_string( $con, Trim($_POST['des']) );
+								$des       = EMPTY(mysqli_real_escape_string( $con, Trim($_POST['des']) ) );
 								$keyword   = htmlentities(Trim($_POST['keyword']));
 								$email     = mysqli_real_escape_string( $con, Trim($_POST['email']) );
 								$twit      = htmlentities(Trim($_POST['twit']));
@@ -326,21 +326,21 @@ while ($row = mysqli_fetch_array($result)) {
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">Site Name</label>
 											  <div class="col-sm-10">
-												<input type="text" class="form-control" name="site_name" placeholder="The name of your site" value="<?php echo ($_POST['site_name'])?$_POST['site_name']:$site_name; // Prevent special characters on $_POST ?>">
+												<input type="text" class="form-control" name="site_name" placeholder="The name of your site" value="<?php echo (isset($_POST['site_name']))?$_POST['site_name']:$site_name; // Prevent special characters on $_POST ?>">
 											  </div>
 											</div>
 
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">Site Title</label>
 											  <div class="col-sm-10">
-												<input type="text" class="form-control" name="title" placeholder="Site title tag" value="<?php echo ($_POST['title'])?$_POST['title']:$title; // Prevent special characters on $_POST ?>">
+												<input type="text" class="form-control" name="title" placeholder="Site title tag" value="<?php echo (isset($_POST['title']))?$_POST['title']:$title; // Prevent special characters on $_POST ?>">
 											  </div>
 											</div>
 
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">Site Description</label>
 											  <div class="col-sm-10">
-												<input type="text" class="form-control" name="des" placeholder="Site description" value="<?php echo ($_POST['des'])?$_POST['des']:$des; // Prevent special characters on $_POST ?>">
+												<input type="text" class="form-control" name="des" placeholder="Site description" value="<?php echo (isset($_POST['des']))?$_POST['des']:$des; // Prevent special characters on $_POST ?>">
 											  </div>
 											</div>
 
@@ -361,7 +361,7 @@ while ($row = mysqli_fetch_array($result)) {
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">Admin Email</label>
 											  <div class="col-sm-10">
-												<input type="text" class="form-control" name="email" placeholder="Email" value="<?php echo ($_POST['email'])?$_POST['email']:$email; // Prevent special characters on $_POST ?>">
+												<input type="text" class="form-control" name="email" placeholder="Email" value="<?php echo (isset($_POST['email']))?$_POST['email']:$email; // Prevent special characters on $_POST ?>">
 											  </div>
 											</div>
 											
@@ -389,7 +389,7 @@ while ($row = mysqli_fetch_array($result)) {
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">Additional Site Scripts</label>
 											  <div class="col-sm-10">
-												<textarea class="form-control" id="additional_scripts" name="additional_scripts" rows="8"><?php echo ($_POST['additional_scripts'])?$_POST['additional_scripts']:$additional_scripts; // Prevent special characters on $_POST ?></textarea>
+												<textarea class="form-control" id="additional_scripts" name="additional_scripts" rows="8"><?php echo (isset($_POST['additional_scripts']))?$_POST['additional_scripts']:$additional_scripts; // Prevent special characters on $_POST ?></textarea>
 											  </div>
 											</div>
 											

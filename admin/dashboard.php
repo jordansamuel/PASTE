@@ -76,8 +76,8 @@ $query  = "SELECT * FROM page_view";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
-    $total_page  = $total_page + Trim($row['tpage']);
-    $total_visit = $total_visit + Trim($row['tvisit']);
+    $total_page  = isset($total_page) + Trim($row['tpage']);
+    $total_visit = isset($total_visit) + Trim($row['tvisit']);
 }
 
 $query = "SELECT @last_id := MAX(id) FROM page_view";

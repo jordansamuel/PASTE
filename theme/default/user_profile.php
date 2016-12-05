@@ -48,18 +48,15 @@
             <?php 
             if ( $_SESSION['username'] == $profile_username ) {
             ?>
-            <div class="panel panel-default">
+            <div class="panel panel-primary">
                 <div class="panel-body">
-                    Hey <?php echo $profile_username; ?>! This is your profile page where you can manage your pastes! If you are logged in, you can see all of your public, private and unlisted pastes. You can also delete your pastes from this page. 
-                    <br><br>
-                    Guests to this page will only see the list of your public pastes.
-                    <br><br>
-                    Some quick stats (shown only to you):<br>
-                    Total pastes: <?php echo $profile_total_pastes; ?><br>
-                    Total public pastes: <?php echo $profile_total_public; ?><br>
-                    Total unlisted pastes: <?php echo $profile_total_unlisted; ?><br>
-                    Total private pastes: <?php echo $profile_total_private; ?><br>
-                    Total views of all your pastes: <?php echo $profile_total_paste_views; ?><br>
+					<?php echo $lang['hello'] . ', ' . $profile_username . '.<br />' . $lang['profile-message']; ?><br />
+					<?php echo $lang['profile-stats'];?><br />
+                    <?php echo $lang['totalpastes'] . ' ' . $profile_total_pastes; ?> &mdash;
+                    <?php echo $lang['profile-total-pub'] . ' ' . $profile_total_public; ?> &mdash;
+                    <?php echo $lang['profile-total-unl'] . ' ' . $profile_total_unlisted; ?> &mdash;
+                    <?php echo $lang['profile-total-pri'] . ' ' . $profile_total_private; ?> &mdash;
+                    <?php echo $lang['profile-total-views'] . ' ' . $profile_total_paste_views; ?>
                 </div>
             </div>
             <?php

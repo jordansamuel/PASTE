@@ -85,8 +85,6 @@ if ($last_ip == $ip) {
  */
 session_start();
 
-error_reporting(1);
-
 if (isset($_SESSION['login'])) {
 // Do nothing	
 } else {
@@ -238,8 +236,8 @@ if ($last_ip == $ip) {
 			$result = mysqli_query($con, $query);
 
 			while ($row = mysqli_fetch_array($result)) {
-				$total_page = $total_page + Trim($row['tpage']);
-				$total_un   = $total_un + Trim($row['tvisit']);
+				$total_page = isset($total_page) + Trim($row['tpage']);
+				$total_un   = isset($total_un) + Trim($row['tvisit']);
 			}
 
 

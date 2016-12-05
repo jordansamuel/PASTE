@@ -27,7 +27,6 @@
 					  <span class="badge"><i class="fa fa-eye fa-lg" aria-hidden="true"></i> <?php echo $p_views; ?></span>
 					  <h6 style="text-align: center;"><?php echo ucfirst($p_title); ?> <small><?php echo 'By ' . $p_member . ' on ' . $p_date ;?></small></h6>
 					  <ul class="panel-tools">
-						<li><a class="icon" href="."><i class="fa fa-plus-square fa-lg" title="New Paste"></i></a></li>
 						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg" title="View Raw"></i></a></li>
 						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg" title="Download Paste"></i></a></li>
 						<?php if ( $p_code != "markdown" ) {

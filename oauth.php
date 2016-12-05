@@ -30,16 +30,18 @@ if (mysqli_connect_errno()) {
 // Get site info
 $query  = "SELECT * FROM site_info";
 $result = mysqli_query($con, $query);
+
 while ($row = mysqli_fetch_array($result)) {
-    $title     = Trim($row['title']);
-    $des       = Trim($row['des']);
-    $keyword   = Trim($row['keyword']);
-    $site_name = Trim($row['site_name']);
-    $email     = Trim($row['email']);
-    $twit      = Trim($row['twit']);
-    $face      = Trim($row['face']);
-    $gplus     = Trim($row['gplus']);
-    $ga        = Trim($row['ga']);
+    $title				= Trim($row['title']);
+    $des				= Trim($row['des']);
+    $keyword			= Trim($row['keyword']);
+    $site_name			= Trim($row['site_name']);
+    $email				= Trim($row['email']);
+    $twit				= Trim($row['twit']);
+    $face				= Trim($row['face']);
+    $gplus				= Trim($row['gplus']);
+    $ga					= Trim($row['ga']);
+    $additional_scripts	= Trim($row['additional_scripts']);
 }
 
 // Set theme and language

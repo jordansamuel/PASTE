@@ -38,11 +38,13 @@ function decrypt($value)
     $iv      = mcrypt_create_iv($iv_size, MCRYPT_RAND);
     return mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
 }
+
 function deleteMyPaste($con, $paste_id)
 {
     $query  = "DELETE FROM pastes where id='$paste_id'";
     $result = mysqli_query($con, $query);
 }
+
 function getRecent($con, $count = 5)
 {
     $limit  = $count ? "limit $count" : "";

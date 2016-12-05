@@ -44,16 +44,16 @@ $query  = "SELECT * FROM site_info";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
-    $title     = Trim($row['title']);
-    $des       = Trim($row['des']);
-    $keyword   = Trim($row['keyword']);
-    $site_name = Trim($row['site_name']);
-    $email     = Trim($row['email']);
-    $twit      = Trim($row['twit']);
-    $face      = Trim($row['face']);
-    $gplus     = Trim($row['gplus']);
-    $ga        = Trim($row['ga']);
-    $additional_scripts        = Trim($row['additional_scripts']);
+    $title				= Trim($row['title']);
+    $des				= Trim($row['des']);
+    $keyword			= Trim($row['keyword']);
+    $site_name			= Trim($row['site_name']);
+    $email				= Trim($row['email']);
+    $twit				= Trim($row['twit']);
+    $face				= Trim($row['face']);
+    $gplus				= Trim($row['gplus']);
+    $ga					= Trim($row['ga']);
+    $additional_scripts	= Trim($row['additional_scripts']);
 }
 
 // Set theme and language
@@ -81,18 +81,7 @@ while ($row = mysqli_fetch_array($result)) {
     $ads_2    = Trim($row['ads_2']);
 }
 
-// Check if IP is banned
-$query  = "SELECT * FROM ban_user";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $banned_ip = $banned_ip . "::" . $row['ip'];
-}
-if ( isset( $banned_ip) ) {
-    if (strpos($banned_ip, $ip) !== false) {
-        die($lang['banned']); // "You have been banned from ".$site_name;
-    }
-}
+// Sitemap
 $query  = "Select * From sitemap_options WHERE id='1'";
 $result = mysqli_query($con, $query);
 
@@ -127,6 +116,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $_SESSION['captcha_mode'] = "none";
     }        
+}
+
+// Check if IP is banned
+$query  = "SELECT * FROM ban_user";
+$result = mysqli_query($con, $query);
+
+while ($row = mysqli_fetch_array($result)) {
+    $banned_ip = isset($banned_ip) . "::" . $row['ip'];
+}
+if ( isset( $banned_ip) ) {
+    if (strpos($banned_ip, $ip) !== false) {
+        die($lang['banned']); // "You have been banned from ".$site_name;
+    }
 }
 
 // Site permissions

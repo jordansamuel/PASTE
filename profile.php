@@ -36,15 +36,16 @@ $query  = "SELECT * FROM site_info";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
-    $title     = Trim($row['title']);
-    $des       = Trim($row['des']);
-    $keyword   = Trim($row['keyword']);
-    $site_name = Trim($row['site_name']);
-    $email     = Trim($row['email']);
-    $twit      = Trim($row['twit']);
-    $face      = Trim($row['face']);
-    $gplus     = Trim($row['gplus']);
-    $ga        = Trim($row['ga']);
+    $title				= Trim($row['title']);
+    $des				= Trim($row['des']);
+    $keyword			= Trim($row['keyword']);
+    $site_name			= Trim($row['site_name']);
+    $email				= Trim($row['email']);
+    $twit				= Trim($row['twit']);
+    $face				= Trim($row['face']);
+    $gplus				= Trim($row['gplus']);
+    $ga					= Trim($row['ga']);
+    $additional_scripts	= Trim($row['additional_scripts']);
 }
 
 // Set theme and language
@@ -58,6 +59,19 @@ while ($row = mysqli_fetch_array($result)) {
 require_once("langs/$default_lang");
 
 $p_title = $lang['myprofile']; //"My Profile";
+
+// Check if IP is banned
+$query  = "SELECT * FROM ban_user";
+$result = mysqli_query($con, $query);
+
+while ($row = mysqli_fetch_array($result)) {
+    $banned_ip = isset($banned_ip) . "::" . $row['ip'];
+}
+if ( isset( $banned_ip) ) {
+    if (strpos($banned_ip, $ip) !== false) {
+        die($lang['banned']); // "You have been banned from ".$site_name;
+    }
+}
 
 // Site permissions
 $query  = "SELECT * FROM site_permissions where id='1'";
@@ -74,16 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Bans
-$query  = "SELECT * FROM ban_user";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $banned_ip = $banned_ip . "::" . $row['ip'];
-}
-if (strpos($banned_ip, $ip) !== false) {
-    die("You have been banned from " . $site_name);
-}
 // Check if already logged in
 if (isset($_SESSION['token'])) {
 } else {

@@ -32,16 +32,16 @@ $query  = "SELECT * FROM site_info";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
-    $title     = Trim($row['title']);
-    $des       = Trim($row['des']);
-    $keyword   = Trim($row['keyword']);
-    $site_name = Trim($row['site_name']);
-    $email     = Trim($row['email']);
-    $twit      = Trim($row['twit']);
-    $face      = Trim($row['face']);
-    $gplus     = Trim($row['gplus']);
-    $ga        = Trim($row['ga']);
-    $additional_scripts = $row['additional_scripts'];
+    $title				= Trim($row['title']);
+    $des				= Trim($row['des']);
+    $keyword			= Trim($row['keyword']);
+    $site_name			= Trim($row['site_name']);
+    $email				= Trim($row['email']);
+    $twit				= Trim($row['twit']);
+    $face				= Trim($row['face']);
+    $gplus				= Trim($row['gplus']);
+    $ga					= Trim($row['ga']);
+    $additional_scripts	= Trim($row['additional_scripts']);
 }
 
 // Set theme and language
@@ -53,6 +53,19 @@ while ($row = mysqli_fetch_array($result)) {
     $default_theme = Trim($row['theme']);
 }
 require_once("langs/$default_lang");
+
+// Check if IP is banned
+$query  = "SELECT * FROM ban_user";
+$result = mysqli_query($con, $query);
+
+while ($row = mysqli_fetch_array($result)) {
+    $banned_ip = isset($banned_ip) . "::" . $row['ip'];
+}
+if ( isset( $banned_ip) ) {
+    if (strpos($banned_ip, $ip) !== false) {
+        die($lang['banned']); // "You have been banned from ".$site_name;
+    }
+}
 
 // Site permissions
 $query  = "SELECT * FROM site_permissions where id='1'";
@@ -69,20 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Bans
-$query  = "SELECT * FROM ban_user";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $banned_ip = $banned_ip . "::" . $row['ip'];
-}
-if ( strpos( $banned_ip, $ip ) !== false) {
-    die( $lang['banned'] ); // "You have been banned from ".$site_name
-}
-
-$user_username = Trim($_SESSION['username']);
-
 // If username defined in URL, then check if it's exists in database. If invalid, redirect to main site.
+$user_username = Trim($_SESSION['username']);
 if ( isset( $_GET['user'] ) ) {
     $profile_username = trim( $_GET['user'] );
     if ( !existingUser( $con, $profile_username ) ) {

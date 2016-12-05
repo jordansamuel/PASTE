@@ -46,7 +46,7 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
   <div id="top" class="clearfix">
     <!-- Start App Logo -->
     <div class="applogo">
-      <a href="./" class="logo"><?php echo $site_name;?></a>
+      <a href="<?php echo dirname($_SERVER['PHP_SELF']);?>" class="logo"><?php echo $site_name;?></a>
     </div>
     <!-- End App Logo -->
 
@@ -60,7 +60,7 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
     <!-- Start Top Menu -->
     <ul class="topmenu">
 		<li class="link pastenew">
-		  <a href="./" class="pastebutton"><i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>
+		  <a href="<?php echo dirname($_SERVER['PHP_SELF']);?>" class="pastebutton"><i class="fa fa-clipboard fa-2x" aria-hidden="true"></i></a>
 		</li>
 	<?php
 	if ( isset($privatesite) && $privatesite == "on") { // Hide if site is private
