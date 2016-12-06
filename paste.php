@@ -351,7 +351,7 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 require_once('theme/' . $default_theme . '/header.php');
-if ($p_password == "NONE") {
+if (isset($p_password) == "NONE") {
     
     // No password & diplay the paste
     
@@ -383,8 +383,8 @@ if ($p_password == "NONE") {
         deleteMyPaste($con, $paste_id);
     }
 } else {
-    $p_download = "paste.php?download&id=$paste_id&password=" . password_hash($_POST['mypass'], PASSWORD_DEFAULT);
-    $p_raw = "paste.php?raw&id=$paste_id&password=" . password_hash($_POST['mypass'], PASSWORD_DEFAULT);
+    $p_download = "paste.php?download&id=$paste_id&password=" . password_hash(isset($_POST['mypass']), PASSWORD_DEFAULT);
+    $p_raw = "paste.php?raw&id=$paste_id&password=" . password_hash(isset($_POST['mypass']), PASSWORD_DEFAULT);
     // Check password
     if (isset($_POST['mypass'])) {
         if (password_verify($_POST['mypass'], $p_password)) {
@@ -406,7 +406,7 @@ if ($p_password == "NONE") {
 
 Not_Valid_Paste:
 // Private paste not valid
-if ($p_private_error == '1') {
+if (isset($p_private_error) == '1') {
     // Display errors
     require_once('theme/' . $default_theme . '/header.php');
     require_once('theme/' . $default_theme . '/errors.php');
