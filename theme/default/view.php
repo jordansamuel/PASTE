@@ -28,6 +28,7 @@
 					  <h6 style="text-align: center;"><?php echo ucfirst($p_title); ?> <small><?php echo 'By ' . $p_member . ' on ' . $p_date ;?></small></h6>
 					  <ul class="panel-tools">
 						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg" title="View Raw"></i></a></li>
+						<li><a class="icon embed-tool"><i class="fa fa-files-o fa-lg" title="Embed This Paste"></i></a></li>
 						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg" title="Download Paste"></i></a></li>
 						<?php if ( $p_code != "markdown" ) {
 							?>
@@ -41,21 +42,25 @@
 					  </ul>
 					</div>
 
+					<div class="panel-embed col-xs-3" style="display:none; float:right;">
+						<input type="text" class="form-control" value='<?php echo '<script src="'.$baseurl.'/embed/'.$paste_id.'"></script>'; ?>' readonly>
+					</div>
+                    <div class="clear" style="clear:both;"></div>
+                    
 					<div class="panel-search" style="display: none;">
 					  <form>
 						<input type="text" class="form-control" placeholder="Search this paste">
 						<i class="fa fa-search icon"></i>
 					  </form>
 					</div>
-
+                    
 					<div class="panel-body" style="display: block;">
-					<?php if (isset($error)) {
-					echo '<div class="paste-alert alert6">' . $error . '</div>'; 
-					} else {
-					echo '<div id="paste">' . $p_content . '</div>';
-					?>
+                        <?php if (isset($error)) {
+                            echo '<div class="paste-alert alert6">' . $error . '</div>'; 
+                        } else {
+                            echo '<div id="paste">' . $p_content . '</div>';
+                        } ?>
 					</div>
-					<?php } ?>
 				</div>
 			</div>
 			<!-- End Panel -->
