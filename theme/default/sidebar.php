@@ -49,13 +49,16 @@ if(isset($_SESSION['token'])) {
 							$oldtime = $p_time;
 							$p_time = conTime($nowtime-$oldtime);
 							$title = truncate($title, 6, 15);
+                            $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$profile_username&id=$p_id":"user.php?del&user=$profile_username&id=$p_id";
 					?>
 					<p class="no-margin">
-					<?php if ($mod_rewrite == '1') {
-						echo '<a href="'.$p_id.'" title="' . $title . '">' . ucfirst($title) . '</a>
-							  <a class="icon" href="mypastes.php?del&id=' . $p_id . '" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; } else {
-						echo '<a href="paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>
-							  <a class="icon" href="mypastes.php?del&id=' . $p_id . '" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; }
+					<?php 
+                    if ($mod_rewrite == '1') {
+                        echo '<a href="' . $protocol . $baseurl . '/'.$p_id.'" title="' . $title . '">' . ucfirst($title) . '</a>
+							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; 
+                      } else {
+						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>
+							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; }
 					?>
 						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
 						 <i class="fa fa-clock-o fa-lg" aria-hidden="true"></i>
@@ -106,8 +109,10 @@ if(isset($_SESSION['token'])) {
 					<p class="no-margin">
 					<?php
 					if ($mod_rewrite == '1') {
-						echo '<a href="' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; } else {
-						echo '<a href="paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; }
+						echo '<a href="' . $protocol . $baseurl . '/' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; 
+                    } else {
+						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; 
+                    }
 					?>
 						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
 						 <i class="fa fa-clock-o fa-lg" aria-hidden="true"></i>
