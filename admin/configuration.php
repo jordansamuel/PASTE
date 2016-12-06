@@ -340,9 +340,9 @@ while ($row = mysqli_fetch_array($result)) {
 											</div>
 
 											<div class="form-group">
-											  <label class="col-sm-2 control-label form-label">Site Address (URL)</label>
+											  <label class="col-sm-2 control-label form-label">Domain name</label>
 											  <div class="col-sm-10">
-												<input type="text" class="form-control" name="baseurl" placeholder="Full http:// address with no trailing slash" value="<?php echo (isset($_POST['baseurl']))?$_POST['baseurl']:$baseurl; // Prevent special characters on $_POST ?>">
+												<input type="text" class="form-control" name="baseurl" placeholder="eg: pastethis.in (no trailing slash)" value="<?php echo (isset($_POST['baseurl']))?$_POST['baseurl']:$baseurl; // Prevent special characters on $_POST ?>">
 											  </div>
 											</div>
 
