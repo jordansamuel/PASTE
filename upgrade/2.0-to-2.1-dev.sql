@@ -1,5 +1,5 @@
 ALTER TABLE site_info ADD additional_scripts TEXT AFTER ga;
-ALTER TABLE site_info ADD basename TEXT after additional_scripts;
+ALTER TABLE site_info ADD baseurl TEXT after additional_scripts;
 ALTER TABLE captcha ADD recaptcha_sitekey TEXT after color;
 ALTER TABLE captcha ADD recaptcha_secretkey TEXT after recaptcha_sitekey;
 
