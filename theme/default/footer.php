@@ -62,7 +62,10 @@
 
 <script>
 $(document).ready(function() {
-	 $('#archive').DataTable();
+	 //$('#archive').DataTable();
+     $('#archive').DataTable( {
+        "order": [[ 1, "desc" ]] // Paste Time
+    } );
 } );
 </script>
 
