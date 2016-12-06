@@ -357,7 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $date      = date('jS F Y');
         $now_time  = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
         // Edit existing paste or create new?
-        if ($_POST['edit']) {
+        if ( isset($_POST['edit'] ) ) {
             $edit_paste_id = $_POST['paste_id'];
             $query = "UPDATE pastes SET title='$p_title',content='$p_content',visible='$p_visible',code='$p_code',expiry='$expires',password='$p_password',encrypt='$p_encrypt',member='$p_member',date='$p_date',ip='$ip' WHERE id = '$edit_paste_id'";
         } else {
@@ -384,9 +384,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 	
 	// Redirect to paste on successful entry, or on successful edit redirect back to edited paste
-	if (isset($success)) {
-		if ($mod_rewrite == '1') {
-            if ( $_POST['edit'] ) {
+	if ( isset( $success ) ) {
+		if ( $mod_rewrite == '1' ) {
+            if ( isset( $_POST['edit'] ) ) {
                 $paste_url = "$edit_paste_id";
             } else {
                 $paste_url = "$success"; 
