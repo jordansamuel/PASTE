@@ -52,6 +52,7 @@ $result = mysqli_query($con, $query);
 while ($row = mysqli_fetch_array($result)) {
     $title				= Trim($row['title']);
     $des				= Trim($row['des']);
+    $baseurl			= Trim($row['baseurl']);
     $keyword			= Trim($row['keyword']);
     $site_name			= Trim($row['site_name']);
     $email				= Trim($row['email']);
@@ -284,7 +285,7 @@ if (mysqli_num_rows($result) > 0) {
                 $error = $lang['pwdprotected']; // 'Password protected paste';
             }
         }
-    }
+    } 
     
     // Preprocess
     $highlight   = array();
@@ -325,6 +326,25 @@ if (mysqli_num_rows($result) > 0) {
         $style     = $geshi->get_stylesheet();
         $ges_style = '<style>' . $style . '</style>';
     }
+    
+    // Embed view after GeSHI is applied so that $p_code is syntax highlighted as it should be. 
+    if (isset($_GET['embed'])) {
+        if ( $p_password == "NONE" ) {
+            embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang );
+            exit();
+        } else {
+            if ( isset( $_GET['password'] ) ) {
+                if ( password_verify( $_GET['password'], $p_password ) ) {
+                    embedView( $paste_id, $p_title, $p_content, $p_code, $title, $p_baseurl, $ges_style, $lang );
+                    exit();
+                } else {
+                    $error = $lang['wrongpassword']; // 'Wrong password';
+                }
+            } else {
+                $error = $lang['pwdprotected']; // 'Password protected paste';
+            }
+        }
+    } 
 } else {
 	header("HTTP/1.1 404 Not Found");
     $notfound = $lang['notfound']; // "Not found";
@@ -347,6 +367,13 @@ if ($p_password == "NONE") {
 		$p_raw = "raw/$paste_id";
 	} else {
 		$p_raw = "paste.php?raw&id=$paste_id";
+	}
+
+	// Set embed URL
+	if ( $mod_rewrite == '1' ) {
+		$p_embed = "embed/$paste_id";
+	} else {
+		$p_embed = "paste.php?embed&id=$paste_id";
 	}
     
     // Theme

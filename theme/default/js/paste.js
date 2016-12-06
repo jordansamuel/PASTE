@@ -10,21 +10,29 @@ $(document).ready(function(){
 
 $(document).ready(function(){
   $(".panel-tools .closed-tool").click(function(event){
-  $(this).parents(".panel").fadeToggle(400);
+      $(this).parents(".panel").fadeToggle(400);
 
-  return false;
+      return false;
+    }); 
 }); 
 
- }); 
-
+// Search
 $(document).ready(function(){
   $(".panel-tools .search-tool").click(function(event){
-  $(this).parents(".panel").find(".panel-search").toggle(100);
+        $(this).parents(".panel").find(".panel-search").toggle(100);
+        
+        return false;
+    }); 
+});
 
-  return false;
-}); 
-
- }); 
+// Embed
+$(document).ready(function(){
+  $(".panel-tools .embed-tool").click(function(event){
+        $(this).parents(".panel").find(".panel-embed").toggle(100);
+        
+        return false;
+    }); 
+});
 
 $(document).ready(function(){
 

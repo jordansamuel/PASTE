@@ -115,5 +115,7 @@ $lang['profile-total-pastes'] = "Total Pastes:";
 $lang['profile-total-pub']	= "Total public pastes:";
 $lang['profile-total-unl']	= "Total unlisted pastes:";
 $lang['profile-total-pri']	= "Total private pastes:";
-$lang['profile-total-views'] = "Total views of all your pastes:"
+$lang['profile-total-views'] = "Total views of all your pastes:";
+$lang['embed-hosted-by'] = "hosted by";
+$lang['view-raw']		= "View Raw";
 ?>
