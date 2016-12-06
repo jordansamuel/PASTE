@@ -27,9 +27,9 @@ if(isset($_SESSION['token'])) {
 				<h6>Hello <?php echo ($_SESSION['username']);?>
 					<small>
 						<?php if ( $mod_rewrite == '1' ) {
-							echo '<a href="' . $protocol . $baseurl . '/user/' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>';
+							echo '<a href="' . $baseurl . '/user/' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>';
 							} else {
-							echo '<a href="' . $protocol . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>'; }
+							echo '<a href="' . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>'; }
 						?>
 					</small>
 				</h6>

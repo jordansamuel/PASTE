@@ -28,8 +28,8 @@
     <title><?php if(isset($p_title)) { echo $p_title.' - ';}echo $title; ?></title>
     <meta name="description" content="<?php echo $des; ?>" />
     <meta name="keywords" content="<?php echo $keyword; ?>" />
-	<link rel="shortcut icon" href="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/img/favicon.ico">
-    <link href="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/css/paste.css" rel="stylesheet" type="text/css" />
+	<link rel="shortcut icon" href="<?php echo $baseurl . '/theme/' . $default_theme; ?>/img/favicon.ico">
+    <link href="<?php echo $baseurl . '/theme/' . $default_theme; ?>/css/paste.css" rel="stylesheet" type="text/css" />
 <?php
 if (isset($ges_style))
 {
