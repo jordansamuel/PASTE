@@ -26,6 +26,7 @@ $result = mysqli_query($con, $query);
 while ($row = mysqli_fetch_array($result)) {
     $title				= Trim($row['title']);
     $des				= Trim($row['des']);
+    $baseurl			= Trim($row['baseurl']);
     $keyword			= Trim($row['keyword']);
     $site_name			= Trim($row['site_name']);
     $email				= Trim($row['email']);

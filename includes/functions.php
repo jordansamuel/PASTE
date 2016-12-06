@@ -114,8 +114,8 @@ function updateMyView($con, $paste_id)
     $result = mysqli_query($con, $query);
 }
 
-function conTime($secs)
-{
+function conTime($secs) {
+    $ret = [];
     $bit = array(
         ' year' => $secs / 31556926 % 12,
         ' week' => $secs / 604800 % 52,
