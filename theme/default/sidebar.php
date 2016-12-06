@@ -24,10 +24,10 @@ if(isset($_SESSION['token'])) {
 			<div class="panel-title">
 				<h6>Hello <?php echo ($_SESSION['username']);?>
 					<small>
-						<?php if ($mod_rewrite == '1') {
-							echo '<a href="user/'.$_SESSION['username'].'" target="_self">' . $lang['mypastes'] . '</a>';
+						<?php if ( $mod_rewrite == '1' ) {
+							echo '<a href="'.$baseurl.'/user/'.$_SESSION['username'].'" target="_self">' . $lang['mypastes'] . '</a>';
 							} else {
-							echo '<a href="user.php?user='.$_SESSION['username'].'" target="_self">' . $lang['mypastes'] . '</a>'; }
+							echo '<a href="'.$baseurl.'/user.php?user='.$_SESSION['username'].'" target="_self">' . $lang['mypastes'] . '</a>'; }
 						?>
 					</small>
 				</h6>
