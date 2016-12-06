@@ -45,7 +45,7 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 					</div>
 
 					<div class="panel-embed col-xs-3" style="display:none; float:right;">
-						<input type="text" class="form-control" value='<?php echo '<script src="' . $protocol . $baseurl . '/embed/'.$paste_id.'"></script>'; ?>' readonly>
+						<input type="text" class="form-control" value='<?php echo '<script src="' . $baseurl . '/embed/'.$paste_id.'"></script>'; ?>' readonly>
 					</div>
                     <div class="clear" style="clear:both;"></div>
                     
