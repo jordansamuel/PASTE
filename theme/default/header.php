@@ -29,7 +29,7 @@
     <meta name="description" content="<?php echo $des; ?>" />
     <meta name="keywords" content="<?php echo $keyword; ?>" />
 	<link rel="shortcut icon" href="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/img/favicon.ico">
-    <link href="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/css/paste.css" rel="stylesheet" type="text/css" />
+    <link href="<?php echo '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/theme/' . $default_theme; ?>/css/paste.css" rel="stylesheet" type="text/css" />
 <?php
 if (isset($ges_style))
 {
@@ -46,7 +46,7 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
   <div id="top" class="clearfix">
     <!-- Start App Logo -->
     <div class="applogo">
-      <a href="<?php echo dirname($_SERVER['PHP_SELF']);?>" class="logo"><?php echo $site_name;?></a>
+      <a href="<?php echo '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\');?>" class="logo"><?php echo $site_name;?></a>
     </div>
     <!-- End App Logo -->
 
@@ -66,9 +66,9 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
 	if ( isset($privatesite) && $privatesite == "on") { // Hide if site is private
 		} else {
 			if ($mod_rewrite == '1') {
-			echo '<li><a href="' . dirname($_SERVER['PHP_SELF']) . '/archive">Archive</a></li>';
+			echo '<li><a href="' . '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/archive">Archive</a></li>';
 			} else {
-			echo '<li><a href="' . dirname($_SERVER['PHP_SELF']) . '/archive.php">Archive</a></li>';
+			echo '<li><a href="' . '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/archive.php">Archive</a></li>';
 			}
 		}
 	?>

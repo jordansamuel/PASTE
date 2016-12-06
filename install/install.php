@@ -17,6 +17,8 @@
 	$admin_pass = password_hash($_POST['admin_pass'], PASSWORD_DEFAULT);
 	$date = date("j F Y");
 	$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+	// level up, dirty but meh
+	$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }
 
 	if (mysqli_connect_errno()) {
 		echo "Failed to connect:" . mysqli_connect_error() . "<br />";
@@ -82,7 +84,7 @@ baseurl text
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga,additional_scripts) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-','')";
+	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga,additional_scripts) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-','','" . '//' . $_SERVER['SERVER_NAME'] . $levelup . "')";
 	mysqli_query($con, $query);
 
 // Site Permissions
