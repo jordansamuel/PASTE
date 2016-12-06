@@ -188,10 +188,10 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 								  <label class="control-label form-label pull-left" style="padding-left: 20px;"><?php echo $lang['visibility']; ?>&nbsp;&nbsp;</label>
 									<div class="col-sm-8">
 										<select class="selectpicker" style="display: none;" name="visibility">
-											<option value="0" selected="selected">Public</option>
-											<option value="1">Unlisted</option>
+											<option value="0" <?php echo ($p_visible == "0")?'selected="selected"':''; ?>>Public</option>
+											<option value="1" <?php echo ($p_visible == "1")?'selected="selected"':''; ?>>Unlisted</option>
 											<?php if (isset($_SESSION['token'])) {?>
-											<option value="2">Private</option>
+											<option value="2" <?php echo ($p_visible == "2")?'selected="selected"':''; ?>>Private</option>
 											<?php } else { ?>
 											<option disabled >Private (Register)</option>
 											<?php } ?>
@@ -216,7 +216,7 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 								<!-- Encrypt -->
 								<div class="col-md-6">
 									<div class="checkbox checkbox-primary">
-										<input id="encrypt" name="encrypted" type="checkbox" checked="">
+										<input id="encrypt" name="encrypted" type="checkbox" <?php echo ($p_encrypt == 1)?"checked":""; ?> >
 										<label for="encrypt">
 											<?php echo $lang['encrypt']; ?>
 										</label>
