@@ -12,6 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in LIC.txt for more details.
  */
+ // which protocol are we on
+$protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 ?>
 
     <div class="col-md-3 col-lg-2">
@@ -25,9 +27,9 @@ if(isset($_SESSION['token'])) {
 				<h6>Hello <?php echo ($_SESSION['username']);?>
 					<small>
 						<?php if ( $mod_rewrite == '1' ) {
-							echo '<a href="' . $baseurl . '/user/' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>';
+							echo '<a href="' . $protocol . $baseurl . '/user/' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>';
 							} else {
-							echo '<a href="' . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>'; }
+							echo '<a href="' . $protocol . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>'; }
 						?>
 					</small>
 				</h6>
