@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in LIC.txt for more details.
  */
+$protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 ?>
 
 <div class="content">
@@ -116,7 +117,7 @@
                     if ( !isset( $_SESSION['token'] ) || $_SESSION['username'] != $profile_username ) {
                         if ( $row['visible'] == 0 ) {
                             echo '<tr> 
-                            <td><a href="'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    
+                            <td><a href="' . $protocol . $baseurl . '/'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    
                             <td>'.$p_date.'</td>
                             <td>'.$p_views.'</td>
                             <td>'.strtoupper($p_code).'</td>
@@ -124,12 +125,12 @@
                         }
                     } else {
                         echo '<tr> 
-                        <td><a href="'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    
+                        <td><a href="' . $protocol . $baseurl . '/'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    
 						<td>'.$p_date.'</td>
 						<td>'.$p_visible.'</td>
                         <td>'.$p_views.'</td>
 						<td>'.strtoupper($p_code).'</td>
-						<td><a href="'.$p_delete_link.'" title="'.$title.'"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a></td>    
+						<td><a href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="'.$title.'"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a></td>    
 						</tr>';                   
                     }
 				}
