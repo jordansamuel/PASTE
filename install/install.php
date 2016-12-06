@@ -71,7 +71,8 @@ twit VARCHAR(4000),
 face VARCHAR(4000),
 gplus VARCHAR(4000),
 ga VARCHAR(255),
-additional_scripts text
+additional_scripts text, 
+baseurl text
 )";
 	// Execute query
 

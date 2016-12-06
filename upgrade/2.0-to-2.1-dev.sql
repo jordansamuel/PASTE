@@ -16,7 +16,8 @@ CREATE TABLE site_info(
   face VARCHAR(4000),
   gplus VARCHAR(4000),
   ga VARCHAR(255),
-  additional_scripts TEXT
+  additional_scripts TEXT,
+  baseurl TEXT
 );
 INSERT
 INTO
@@ -30,7 +31,8 @@ INTO
     face,
     gplus,
     ga,
-    additional_scripts
+    additional_scripts,
+    baseurl
   )
 VALUES(
   'Paste',
@@ -42,6 +44,7 @@ VALUES(
   'https://www.facebook.com/',
   'https://plus.google.com/',
   'UA-',
+  '',
   ''
 );
 CREATE TABLE site_permissions(
