@@ -49,7 +49,7 @@ if(isset($_SESSION['token'])) {
 							$oldtime = $p_time;
 							$p_time = conTime($nowtime-$oldtime);
 							$title = truncate($title, 6, 15);
-                            $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$profile_username&id=$p_id":"user.php?del&user=$profile_username&id=$p_id";
+                            $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$user_username&id=$p_id":"user.php?del&user=$user_username&id=$p_id";
 					?>
 					<p class="no-margin">
 					<?php 
