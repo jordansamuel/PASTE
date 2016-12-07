@@ -1,4 +1,4 @@
-# Paste 2.0
+# Paste 2.0 (2.1 in development)
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 [![Download PASTE](https://img.shields.io/sourceforge/dt/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
@@ -31,6 +31,7 @@ Install
 Upgrade from 1.9 to 2.0
 ===
 Run /upgrade/1.9-to.2.0.php
+
 Remove /upgrade directory
 
 ---
