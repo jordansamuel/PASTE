@@ -89,11 +89,11 @@ if ( $_SESSION['captcha_mode'] == "recaptcha" ) {
 		<?php if(isset($_SESSION['token'])) {
 				echo '<li role="presentation" class="dropdown-header">My Account</li>';
 				  if ($mod_rewrite == '1') {
-					echo '<li><a href="mypastes"><i class="fa falist fa-clipboard"></i> Pastes</a></li>';
-					echo '<li><a href="profile"><i class="fa falist fa-user"></i> Settings</a></li>';
+					echo '<li><a href="' . '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/mypastes"><i class="fa falist fa-clipboard"></i> Pastes</a></li>';
+					echo '<li><a href="' . '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/profile"><i class="fa falist fa-user"></i> Settings</a></li>';
 					} else {
-						echo '<li><a href="mypastes.php"><i class="fa falist fa-clipboard"></i> Pastes</a></li>';
-						echo '<li><a href="profile.php"><i class="fa falist fa-user"></i> Settings</a></li>';
+						echo '<li><a href="' . '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/mypastes.php"><i class="fa falist fa-clipboard"></i> Pastes</a></li>';
+						echo '<li><a href="' . '//' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . '/profile.php"><i class="fa falist fa-user"></i> Settings</a></li>';
 					}
 		?>
           <li class="divider"></li>
