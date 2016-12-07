@@ -7,7 +7,6 @@ RewriteEngine on
  RewriteRule ^page/([a-zA-Z0-9]+)/? pages.php?page=$1 [L]
  RewriteRule ^archive archive.php [L] 
  RewriteRule ^profile profile.php [L] 
- RewriteRule ^mypastes mypastes.php [L] 
  RewriteRule ^user/([^/]+)/?$ user.php?user=$1 [L]
  RewriteRule ^contact contact.php [L]
  RewriteRule ^download/(.*)$  paste.php?download&id=$1 [L]
