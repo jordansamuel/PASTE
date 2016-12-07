@@ -351,7 +351,7 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 require_once('theme/' . $default_theme . '/header.php');
-if (!isset($p_password) || $p_password == "NONE") {
+if ($p_password == "NONE") {
     
     // No password & diplay the paste
     
@@ -379,7 +379,7 @@ if (!isset($p_password) || $p_password == "NONE") {
     // Theme
     require_once('theme/' . $default_theme . '/view.php');
     updateMyView($con, $paste_id);
-    if (isset($p_expiry) || $p_expiry == "SELF") {
+    if ($p_expiry == "SELF") {
         deleteMyPaste($con, $paste_id);
     }
 } else {
@@ -406,7 +406,7 @@ if (!isset($p_password) || $p_password == "NONE") {
 
 Not_Valid_Paste:
 // Private paste not valid
-if (isset($p_private_error) || $p_private_error == '1') {
+if ($p_private_error == '1') {
     // Display errors
     require_once('theme/' . $default_theme . '/header.php');
     require_once('theme/' . $default_theme . '/errors.php');
