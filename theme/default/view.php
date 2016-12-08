@@ -27,25 +27,38 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 					<div class="panel-title">
 					  <span class="badge"><i class="fa fa-code fa-lg" aria-hidden="true"></i> <?php echo strtoupper($p_code); ?></span>
 					  <span class="badge"><i class="fa fa-eye fa-lg" aria-hidden="true"></i> <?php echo $p_views; ?></span>
-					  <h6 style="text-align: center;"><?php echo ucfirst($p_title); ?> <small><?php echo 'By ' . $p_member . ' on ' . $p_date ;?></small></h6>
+						<h6 style="text-align: center;"><?php echo ucfirst($p_title); ?>
+							<small>
+							<?php if ($p_member == 'Guest') {
+							  echo 'Guest';
+							  } else {
+								if ($mod_rewrite == '1') { echo 'By <a href="' . $protocol . $baseurl . '/user/' . $p_member . '">' . $p_member . '</a>'; }
+									else {
+										echo 'By <a href="' . $protocol . $baseurl . '/user.php?user=' . $p_member . '">' . $p_member . '</a>';
+									}
+							  }
+							?>
+							on <?php echo $p_date ;?>
+							</small>
+						</h6>
 					  <ul class="panel-tools">
 						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg" title="View Raw"></i></a></li>
 						<li><a class="icon embed-tool"><i class="fa fa-files-o fa-lg" title="Embed This Paste"></i></a></li>
 						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg" title="Download Paste"></i></a></li>
-						<?php if ( $p_code != "markdown" ) {
+						<?php if ($p_code != "markdown") {
 							?>
 						    <li><a class="icon" href="javascript:togglev();"><i class="fa fa-list-ol fa-lg" title="Toggle Line Numbers"></i></a></li>
 							<?php
 							}
 						?>
 						<li><a class="icon" href="#" onmouseover="selectText('paste');"><i class="fa fa-clipboard fa-lg" title="Select Text"></i></a></li>
-						<!-- <li><a class="icon search-tool"><i class="fa fa-search fa-lg" title="Search"></i></a></li> -->
+						<li><a class="icon search-tool"><i class="fa fa-search fa-lg" title="Search"></i></a></li>
 						<li><a class="icon expand-tool"><i class="fa fa-expand fa-lg" title="Full Screen"></i></a></li>
 					  </ul>
 					</div>
 
 					<div class="panel-embed col-xs-3" style="display:none; float:right;">
-						<input type="text" class="form-control" value='<?php echo '<script src="' . $protocol . $baseurl . '/embed/'.$paste_id.'"></script>'; ?>' readonly>
+						<input type="text" class="form-control" value='<?php echo '<script src="' . $protocol . $baseurl . '/'; if ($mod_rewrite == '1') { echo 'embed/'; } else { echo 'paste.php?embed&id='; } echo $paste_id . '"></script>'; ?>' readonly>
 					</div>
                     <div class="clear" style="clear:both;"></div>
                     

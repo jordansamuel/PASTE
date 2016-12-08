@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		$privatesite = "on";
     }
 }
-
+	
 // If username defined in URL, then check if it's exists in database. If invalid, redirect to main site.
 $user_username = Trim($_SESSION['username']);
 if ( isset( $_GET['user'] ) ) {
@@ -91,7 +91,10 @@ if ( isset( $_GET['user'] ) ) {
         // Invalid username
         header("Location: ../");
     }
-} 
+} else { 
+		// No access to user.php
+        header("Location: ../");
+}
 
 $p_title = $profile_username . $lang['user_public_pastes']; // "Username's Public Pastes"
 
