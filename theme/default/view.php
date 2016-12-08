@@ -42,9 +42,6 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 							</small>
 						</h6>
 					  <ul class="panel-tools">
-						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg" title="View Raw"></i></a></li>
-						<li><a class="icon embed-tool"><i class="fa fa-files-o fa-lg" title="Embed This Paste"></i></a></li>
-						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg" title="Download Paste"></i></a></li>
 						<?php if ($p_code != "markdown") {
 							?>
 						    <li><a class="icon" href="javascript:togglev();"><i class="fa fa-list-ol fa-lg" title="Toggle Line Numbers"></i></a></li>
@@ -52,7 +49,10 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 							}
 						?>
 						<li><a class="icon" href="#" onmouseover="selectText('paste');"><i class="fa fa-clipboard fa-lg" title="Select Text"></i></a></li>
-						<li><a class="icon search-tool"><i class="fa fa-search fa-lg" title="Search"></i></a></li>
+						<li><a class="icon" href="<?php echo $p_raw; ?>"><i class="fa fa-file-text-o fa-lg" title="View Raw"></i></a></li>
+						<li><a class="icon" href="<?php echo $p_download; ?>"><i class="fa fa-download fa-lg" title="Download Paste"></i></a></li>
+						<li><a class="icon embed-tool"><i class="fa fa-file-code-o fa-lg" title="Embed This Paste"></i></a></li>
+						<!-- <li><a class="icon search-tool"><i class="fa fa-search fa-lg" title="Search"></i></a></li> -->
 						<li><a class="icon expand-tool"><i class="fa fa-expand fa-lg" title="Full Screen"></i></a></li>
 					  </ul>
 					</div>
@@ -62,13 +62,15 @@ $protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
 					</div>
                     <div class="clear" style="clear:both;"></div>
                     
+					<!--
 					<div class="panel-search" style="display: none;">
 					  <form>
 						<input type="text" class="form-control" placeholder="Search this paste">
 						<i class="fa fa-search icon"></i>
 					  </form>
 					</div>
-                    
+                    -->
+					
 					<div class="panel-body" style="display: block;">
                         <?php if (isset($error)) {
                             echo '<div class="paste-alert alert6">' . $error . '</div>'; 
