@@ -22,8 +22,8 @@
       <!-- Start Panel -->
 		<div class="col-md-9 col-lg-10">
 		  <div class="panel panel-default">
-			<div class="panel-title" style="text-align:center;">
-				<?php echo $lang['totalpastes']; ?> <?php echo $total_pastes; ?> <a class="btn btn-light"  href="mypastes.php" title="View all pastes">View Pastes</a>
+			<div class="panel-title">
+				<?php echo $lang['totalpastes'] . ' ' . $total_pastes . ' <a class="btn btn-light pull-right" href="' . $protocol . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>' ;?>
 			</div>
 			
 				<div class="login-form" style="padding-top: 0px;">
@@ -40,6 +40,9 @@
 					}
 				}
 				?>
+			<div class="panel-title" style="text-align:center;">
+				<?php echo $lang['myprofile']; ?>
+			</div>
 			  <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post">
 					<div class="form-area">
 					  <div class="group">
