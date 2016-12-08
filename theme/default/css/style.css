@@ -305,18 +305,18 @@ strong {
 }
 .guestmsg .text {
     font-family: 'Open-Sans', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     color: #fff;
     line-height: 1.6em;
     font-weight: 300;
+	text-shadow: none
 }
 .guestmsg .text-body {
 	font-size: 12px;
     color: #fff;
-	opacity: 0.8;
 }
 .guestmsg .text-body a {
-	color: #fff;
+	color: #fff
 }
 .content {
     padding-left: 30px;
@@ -411,7 +411,8 @@ strong {
 }
 #paste {
 	line-height:1;
-	word-wrap: break-word
+	word-wrap: break-word;
+	text-shadow: none
 }
 #paste li {
 	padding:1px
@@ -1540,7 +1541,7 @@ select {
     background: #fff;
     border: 1px solid #BDC4C9;
     display: block;
-    box-shadow: inset 0px 1px 0px #F1F0F1
+	max-width: 100%;
 }
 .form-control:focus {
     background: #f7f7f7;
