@@ -62,7 +62,9 @@ Lots of changes, a much needed update.
 Upgrade from 1.9 to 2.0
 ===
 Run /upgrade/1.9-to-2.0.php
+
 and then remove the /upgrade directory.
+
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
 
