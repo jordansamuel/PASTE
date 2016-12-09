@@ -59,13 +59,6 @@ Lots of changes, a much needed update.
 [![Backend](http://i.imgur.com/aP3FxGq.png)](http://pastethis.in/)
 
 ---
-Upgrade from 1.9 to 2.0
-===
-Run /upgrade/1.9-to-2.0.php
-
-and then remove the /upgrade directory.
-
----
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
 
 However, this relies on the value of post_max_size in your PHP configuration file.

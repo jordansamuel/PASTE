@@ -215,16 +215,16 @@ while ($row = mysqli_fetch_array($result)) {
 						<?php
 						if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 							if (isset($_POST['manage'])) {
-								$site_name = mysqli_real_escape_string( $con, Trim($_POST['site_name']) );
-								$title     = mysqli_real_escape_string( $con, Trim($_POST['title']) );
-								$baseurl     = mysqli_real_escape_string( $con, Trim($_POST['baseurl']) );
-								$des       = EMPTY(mysqli_real_escape_string( $con, Trim($_POST['des']) ) );
-								$keyword   = htmlentities(Trim($_POST['keyword']));
-								$email     = mysqli_real_escape_string( $con, Trim($_POST['email']) );
-								$twit      = htmlentities(Trim($_POST['twit']));
-								$face      = htmlentities(Trim($_POST['face']));
-								$gplus     = htmlentities(Trim($_POST['gplus']));
-								$ga        = htmlentities(Trim($_POST['ga']));
+								$site_name	= mysqli_real_escape_string( $con, Trim($_POST['site_name']) );
+								$title		= mysqli_real_escape_string( $con, Trim($_POST['title']) );
+								$baseurl	= mysqli_real_escape_string( $con, Trim($_POST['baseurl']) );
+								$des		= mysqli_real_escape_string( $con, Trim($_POST['des']) );
+								$keyword	= htmlentities(Trim($_POST['keyword']));
+								$email		= mysqli_real_escape_string( $con, Trim($_POST['email']) );
+								$twit		= htmlentities(Trim($_POST['twit']));
+								$face		= htmlentities(Trim($_POST['face']));
+								$gplus		= htmlentities(Trim($_POST['gplus']));
+								$ga			= htmlentities(Trim($_POST['ga']));
 								$additional_scripts        = mysqli_real_escape_string( $con, $_POST['additional_scripts'] );
                                 
 								$query = "UPDATE site_info SET title='$title', des='$des', baseurl='$baseurl', keyword='$keyword', site_name='$site_name', email='$email', twit='$twit', face='$face', gplus='$gplus', ga='$ga', additional_scripts='$additional_scripts' WHERE id='1'";
