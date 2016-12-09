@@ -42,7 +42,11 @@ https://github.com/jordansamuel/PASTE/issues/new
 You can find support on IRC by connecting to irc.collectiveirc.net in channel #PASTE
 
 ---
+Clean URLs (mod_rewrite)
+===
+Set mod_rewrite in config.php to 1
 
+---
 Changelog for 2.0
 ===
 * Installer

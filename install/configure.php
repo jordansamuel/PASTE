@@ -80,7 +80,7 @@ $sec_key' . " = '$data_sec';
 define('SECRET',md5(" . '$sec_key));
 
 // mod_rewrite
-$mod_rewrite = "1";
+$mod_rewrite = "0";
 
 // Available GeSHi formats
 $geshiformats =array(' . "
