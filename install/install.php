@@ -84,7 +84,7 @@ baseurl text
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga,additional_scripts) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-','','" . '//' . $_SERVER['SERVER_NAME'] . $levelup . "')";
+	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga,additional_scripts,baseurl) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-','','" . '//' . $_SERVER['SERVER_NAME'] . $levelup . "')";
 	mysqli_query($con, $query);
 
 // Site Permissions
