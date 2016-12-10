@@ -1,6 +1,7 @@
 --
 -- Database schema for the manual installation of Paste 2.1
 -- Default admin username/password - admin / admin - change once logged in
+-- Also configure the Domain in admin/configure.php otherwise things won't display correctly.
 --
 
 -- Admin
