@@ -209,15 +209,15 @@ if ($last_ip == $ip) {
 											<h6>Theme</h6>
 												<select class="selectpicker" name="theme">
 												<?php
-                                                // Find the current theme if not set from $_POST
-                                                if ( !$d_theme ) {
-                                                    $query = "SELECT theme FROM interface WHERE id='1'";
-                                                    $result = mysqli_query( $con, $query );
-                                                    while ( $row = mysqli_fetch_array( $result ) ) {
-                                                        $d_theme = $row['theme'];
-                                                    }
-                                                }
-                                                
+												// Find the current theme if not set from $_POST
+												if ( !$d_theme ) {
+													$query = "SELECT theme FROM interface WHERE id='1'";
+													$result = mysqli_query( $con, $query );
+													while ( $row = mysqli_fetch_array( $result ) ) {
+														$d_theme = $row['theme'];
+													}
+												}
+												
 												$dir    = '../theme';
 												$files1 = scandir($dir);
 
@@ -228,7 +228,7 @@ if ($last_ip == $ip) {
 													$ffname = $files1[$loop];
 													echo $dir . $ffname;
 													if (is_dir($dir . '/' . $ffname)) {
-                                                        $sel=( $d_theme == $fname )?'selected="selected"':'';
+														$sel=( $d_theme == $fname )?'selected="selected"':'';
 														echo '<option value="' . $ffname . '" '.$sel.'>' . $fname . '</option>';
 													}
 												}
