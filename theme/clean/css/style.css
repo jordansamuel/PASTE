@@ -1,4 +1,4 @@
-/* Paste default style.css unminified */
+/* Paste clean style.css unminified */
 
 body {
     background: #f5f5f5;
@@ -11,13 +11,13 @@ body {
     text-Shadow: 0 0 1px rgba(0, 0, 0, 0.2)
 }
 ::-moz-selection {
-    background: #D5EAFF
+    background: #eee
 }
 ::selection {
-    background: #D5EAFF
+    background: #eee
 }
 a {
-    color: #399bff;
+    color: #58666e;
     text-decoration: none
 }
 a:hover,
@@ -162,8 +162,9 @@ strong {
 }
 #top {
     height: 50px;
-    background: #399bff;
+    background: #f5f5f5;
     color: #fff;
+	border-bottom: 1px solid #e5e5e5;
     width: 100%;
     position: fixed;
     z-index: 900;
@@ -173,7 +174,7 @@ strong {
     width: auto;
     max-width: 250px;
     height: 50px;
-    color: #fff;
+    color: #1E2933;
     position: relative;
     padding: 13px 0 0 0px;
     margin-left: 50px;
@@ -181,7 +182,7 @@ strong {
     text-align: left
 }
 .applogo .logo {
-    color: #eee;
+    color: #1E2933;
     font-size: 35px;
     font-family: 'Open-Sans', sans-serif
 }
@@ -223,26 +224,13 @@ strong {
     padding-left: 0;
     font-weight: 600;
 }
-.topmenu .link {
-    display: inline-block;
-    padding-left: 8px;
-    height: 25px
-}
-.topmenu .link a {
-    display: block
-}
-.topmenu .pastebutton {
-    color: #FFFFFF;
-}
-.topmenu .pastebutton:hover {
-    color: #404B5F;
-}
 .topmenu a {
-    color: rgba(255, 255, 255, 0.9);
-    padding: 7px
+    color: #314353;
+    padding: 15px;
+	display: block
 }
 .topmenu a:hover {
-    color: #fff
+    color: #565656
 }
 .topmenu li {
     display: inline
@@ -348,7 +336,7 @@ strong {
     padding: 0;
     margin: 0;
     font-family: 'Open-Sans', sans-serif;
-    font-size: 20px;
+	font-size: 20px;
     line-height: normal;
     font-weight: normal;
     color: #37363e;
@@ -546,7 +534,7 @@ strong {
     margin: -20px
 }
 .alert1 {
-    background: #399bff
+    background: #1E2933
 }
 .alert2 {
     background: #33577b
@@ -714,7 +702,7 @@ strong {
     color: #37363E;
     font-size: 30px;
     font-family: 'Open-Sans', sans-serif;
-    font-weight: bold;
+	font-weight: bold;
     margin-top: -14px
 }
 .login-form form .top h4 {
@@ -768,7 +756,7 @@ strong {
 .error-pages h1 {
     color: #37363e;
     font-family: 'Open-Sans', sans-serif;
-    font-size: 28px
+	font-size: 28px
 }
 .error-pages h4 {
     color: #767279;
@@ -799,8 +787,8 @@ strong {
     margin: 0px 6px
 }
 .checkbox-primary input[type="checkbox"]:checked+label::before {
-    background-color: #399bff;
-    border-color: #399bff
+    background-color: #1E2933;
+    border-color: #1E2933
 }
 .checkbox-primary input[type="checkbox"]:checked+label::after {
     color: #fff
@@ -834,13 +822,13 @@ strong {
     color: #fff
 }
 .radio-primary input[type="radio"]+label::after {
-    background-color: #399bff
+    background-color: #1E2933
 }
 .radio-primary input[type="radio"]:checked+label::before {
-    border-color: #399bff
+    border-color: #1E2933
 }
 .radio-primary input[type="radio"]:checked+label::after {
-    background-color: #399bff
+    background-color: #1E2933
 }
 .radio-danger input[type="radio"]+label::after {
     background-color: #ef4836
@@ -1011,7 +999,7 @@ dd {
 }
 .font-title-tab {
     font-family: 'Open-Sans', sans-serif;
-    text-transform: uppercase;
+	text-transform: uppercase;
     font-weight: bold;
     font-size: 12px
 }
@@ -1082,7 +1070,7 @@ fieldset[disabled] .btn {
     margin-bottom: 10px
 }
 .btn-default {
-    background-color: #399bff;
+    background-color: #1E2933;
     color: #fff
 }
 .btn-default:hover,
@@ -1091,18 +1079,18 @@ fieldset[disabled] .btn {
 .btn-default:active,
 .btn-default.active,
 .open>.dropdown-toggle.btn-default {
-    background-color: #4da5ff;
+    background-color: #273643;
     color: #fff
 }
 .btn-default:active,
 .btn-default.active,
 .open>.dropdown-toggle.btn-default {
-    background: #208eff;
+    background: #273643;
     box-shadow: none;
     color: #fff
 }
 .btn-default .badge {
-    color: #399bff;
+    color: #1E2933;
     background-color: #fff
 }
 .btn-primary {
@@ -1422,7 +1410,7 @@ fieldset[disabled] .btn {
     border-radius: 4px
 }
 .label-default {
-    background: #399bff
+    background: #1E2933
 }
 .label-primary {
     background: #33577b
@@ -1645,7 +1633,7 @@ select {
     font-size: 10px;
     padding-left: 15px;
     font-family: 'Open-Sans', sans-serif;
-    padding-top: 5px
+	padding-top: 5px
 }
 .dropdown-menu li {
     position: relative
@@ -1727,7 +1715,7 @@ select {
 .nav-pills>li.active>a:hover,
 .nav-pills>li.active>a:focus {
     color: #fff;
-    background-color: #399bff
+    background-color: #1E2933
 }
 .nav-stacked li {
     width: 100%;
@@ -1778,7 +1766,7 @@ select {
     color: inherit;
     cursor: default;
     background-color: transparent;
-    border-bottom: 3px solid #399bff
+    border-bottom: 3px solid #1E2933
 }
 .nav-icon .fa {
     font-size: 16px;
@@ -1817,7 +1805,7 @@ select {
     color: #fff
 }
 .tabcolor5-bg {
-    background: #399bff
+    background: #1E2933
 }
 .tabcolor6-bg {
     background: #33577b
@@ -1862,7 +1850,7 @@ select {
 }
 .panel-title {
     font-family: 'Open-Sans', sans-serif;
-    color: #58666e;
+	color: #58666e;
     font-size: 13px;
     font-weight: bold;
     text-transform: uppercase;
@@ -1887,7 +1875,7 @@ select {
 }
 .panel .badge {
     font-size: 11px;
-    font-family: 'Open-Sans', sans-serif;
+	font-family: 'Open-Sans', sans-serif;
     text-transform: none;
     padding: 4px 10px;
     margin-left: 5px;
@@ -1968,8 +1956,8 @@ select {
     border-bottom: 0
 }
 .panel-primary {
-    border-color: #399bff;
-    background: #399bff;
+    border-color: #1E2933;
+    background: #1E2933;
     color: #fff
 }
 .panel-primary>.panel-heading {
@@ -1978,11 +1966,11 @@ select {
     border-bottom: transparent
 }
 .panel-primary>.panel-heading+.panel-collapse>.panel-body {
-    border-top-color: #399bff
+    border-top-color: #1E2933
 }
 .panel-primary .panel-title {
     color: #fff;
-    background: #399bff;
+    background: #1E2933;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1)
 }
 .panel-primary .panel-footer {
@@ -1990,7 +1978,7 @@ select {
     background: rgba(255, 255, 255, 0.04)
 }
 .panel-primary>.panel-footer+.panel-collapse>.panel-body {
-    border-bottom-color: #399bff
+    border-bottom-color: #1E2933
 }
 .panel-success {
     border-color: #26a65b;
@@ -2118,7 +2106,7 @@ select {
     border-bottom-color: #3d464d
 }
 .panel-tools {
-    font-family: 'Open-Sans', sans-serif;
+	font-family: 'Open-Sans', sans-serif;
     position: absolute;
     right: 16px;
     top: 13px;
@@ -2208,7 +2196,7 @@ select {
     display: none
 }
 .widget-tools {
-    font-family: 'Open-Sans', sans-serif;
+	font-family: 'Open-Sans', sans-serif;
     position: absolute;
     right: 15px;
     top: 13px;
@@ -2289,7 +2277,7 @@ select {
 }
 .modal-title {
     font-family: 'Open-Sans', sans-serif;
-    font-size: 16px
+	font-size: 16px
 }
 .modalicon {
     background: #fff;
@@ -2314,7 +2302,7 @@ select {
     box-shadow: none
 }
 .progress-bar {
-    background: #399bff;
+    background: #1E2933;
     font-size: 12px;
     font-weight: 600;
     line-height: normal
@@ -2353,7 +2341,7 @@ select {
 thead {
     font-weight: 600;
     font-family: 'Open-Sans', sans-serif;
-    text-transform: uppercase;
+	text-transform: uppercase;
     font-size: 12px;
     color: #37363e
 }
@@ -2413,7 +2401,7 @@ table td {
 }
 .widget .widget-title h2 {
     font-family: 'Open-Sans', sans-serif;
-    font-size: 12px;
+	font-size: 12px;
     margin: 0;
     font-weight: bold;
     text-transform: uppercase
@@ -2434,7 +2422,7 @@ table td {
     display: block;
     color: inherit;
     font-family: 'Open-Sans', sans-serif;
-    font-weight: 600
+	font-weight: 600
 }
 .widget-inline-list .chart {
     display: block;
@@ -2471,7 +2459,7 @@ table td {
     color: #f5f5f5
 }
 .color5 {
-    color: #399bff
+    color: #1E2933
 }
 .color6 {
     color: #33577b
@@ -2519,7 +2507,7 @@ table td {
     background: #f5f5f5
 }
 .color5-bg {
-    background: #399bff
+    background: #1E2933
 }
 .color6-bg {
     background: #33577b
@@ -2558,5 +2546,5 @@ table td {
     color: #ef4836
 }
 .color-fix {
-    color: #399bff
+    color: #1E2933
 }

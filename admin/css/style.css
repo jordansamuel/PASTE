@@ -6,7 +6,7 @@ body {
     margin: 0;
     line-height: 1.7em;
     font-size: 13px;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     outline: 0;
     text-Shadow: 0 0 1px rgba(0, 0, 0, 0.2)
 }
@@ -346,7 +346,7 @@ strong {
 .page-header .title {
     padding: 0;
     margin: 0;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     font-size: 20px;
     line-height: normal;
     font-weight: normal;
@@ -644,7 +644,7 @@ strong {
 }
 .changelogs .version {
     font-size: 13px;
-    font-family: 'Montserrat', sans-serif
+    font-family: 'Open-Sans', sans-serif
 }
 .changelogs .date {
     font-size: 12px;
@@ -708,7 +708,7 @@ strong {
 .login-form form .top h1 {
     color: #37363E;
     font-size: 30px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     font-weight: bold;
     margin-top: -14px
 }
@@ -762,7 +762,7 @@ strong {
 }
 .error-pages h1 {
     color: #37363e;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     font-size: 28px
 }
 .error-pages h4 {
@@ -987,7 +987,7 @@ dd {
     line-height: inherit
 }
 .font-title {
-    font-family: 'Montserrat', sans-serif
+    font-family: 'Open-Sans', sans-serif
 }
 .font-w-300 {
     font-weight: 300
@@ -1005,7 +1005,7 @@ dd {
     font-weight: 800
 }
 .font-title-tab {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     text-transform: uppercase;
     font-weight: bold;
     font-size: 12px
@@ -1639,7 +1639,7 @@ select {
     text-transform: uppercase;
     font-size: 10px;
     padding-left: 15px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     padding-top: 5px
 }
 .dropdown-menu li {
@@ -1856,7 +1856,7 @@ select {
     color: #3D464D
 }
 .panel-title {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     color: #58666e;
     font-size: 13px;
     font-weight: bold;
@@ -1882,7 +1882,7 @@ select {
 }
 .panel .badge {
     font-size: 11px;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     text-transform: none;
     padding: 4px 10px;
     margin-left: 5px;
@@ -2112,7 +2112,7 @@ select {
     border-bottom-color: #3d464d
 }
 .panel-tools {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     position: absolute;
     right: 16px;
     top: 13px;
@@ -2202,7 +2202,7 @@ select {
     display: none
 }
 .widget-tools {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     position: absolute;
     right: 15px;
     top: 13px;
@@ -2282,7 +2282,7 @@ select {
     opacity: 0.6
 }
 .modal-title {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     font-size: 16px
 }
 .modalicon {
@@ -2346,7 +2346,7 @@ select {
 }
 thead {
     font-weight: 600;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     text-transform: uppercase;
     font-size: 12px;
     color: #37363e
@@ -2518,7 +2518,7 @@ table td {
     color: #58666e
 }
 .widget .widget-title h2 {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     font-size: 12px;
     margin: 0;
     font-weight: bold;
@@ -2539,7 +2539,7 @@ table td {
     font-size: 18px;
     display: block;
     color: inherit;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open-Sans', sans-serif;
     font-weight: 600
 }
 .widget-inline-list .chart {

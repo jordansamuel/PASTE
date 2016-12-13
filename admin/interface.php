@@ -197,7 +197,10 @@ if ($last_ip == $ip) {
 													$fname  = explode('.php', $files1[$loop]);
 													$fname  = $fname[0];
 													$ffname = $files1[$loop];
-													echo '<option value="' . $ffname . '">' . $fname . '</option>';
+												if ($ffname == "index.php") {/* we don't want index.php showing */}
+													else {
+														echo '<option value="' . $ffname . '">' . $fname . '</option>';
+													}
 												}
 												?>
 												</select>

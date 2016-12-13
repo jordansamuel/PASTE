@@ -1,0 +1,22 @@
+@media screen and (min-width: 1024px) {
+	.searchform{display: none;}
+	.sidebar{display: block !important;}
+	.captcha input {min-width:100px;}
+
+}
+
+@media screen and (max-width: 760px) {
+	.page-header .right{display: none;}
+	.sidebar{display: none; width: 100%;}
+	.container-default, .container-widget{margin-left:-20px; margin-right: -20px;}
+	.container-padding, .container-no-padding{margin-left:-40px; margin-right: -40px;}
+	.profile-left .btn{display: none;}
+	.captcha input {min-width:100px;}
+
+}
+
+@media screen and (max-width: 428px) {
+	.topmenu {display: none;}
+	.login-form {width:90%;}
+	.captcha input {min-width:20%;}
+}
