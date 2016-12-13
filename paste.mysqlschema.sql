@@ -35,6 +35,8 @@ CREATE TABLE `ads` (
 
 INSERT INTO ads (text_ads,ads_1,ads_2) VALUES ('','','');
 
+-- Bans
+
 CREATE TABLE `ban_user` (
   `id` INT NOT NULL AUTO_INCREMENT,
 	PRIMARY KEY(id),
@@ -83,6 +85,8 @@ CREATE TABLE `mail` (
   `auth` text,
   `socket` text
 );
+
+INSERT INTO mail (verification,smtp_host,smtp_username,smtp_password,smtp_port,protocol,auth,socket) VALUES ('enabled','','','','','1','true','ssl');
 
 -- Pages
 
