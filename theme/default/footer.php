@@ -1,6 +1,6 @@
 <?php
 /*
- * $ID Project: Paste 2.0 - J.Samuel
+ * Paste <https://github.com/jordansamuel/PASTE> - Default theme
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
   Copyright &copy; <?php echo date("Y");?> <a href="" target="_blank"><?php echo $site_name;?></a>. All rights reserved.
   </div>
   <div class="col-md-6 text-right">
-    Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste 2</a>
+    Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste</a>
   </div> 
 </div>
 <?php if (isset($_SESSION['username'])) { ?>

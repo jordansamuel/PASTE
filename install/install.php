@@ -1,17 +1,17 @@
 <?php
 /*
-* $ID Project: Paste 2.0 - J.Samuel
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 3
-* of the License, or (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License in LIC.txt for more details.
-*/
+ * Paste <https://github.com/jordansamuel/PASTE>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License in GPL.txt for more details.
+ */
 	require_once("../config.php");
 	$admin_user = htmlentities(Trim($_POST['admin_user']));
 	$admin_pass = password_hash($_POST['admin_pass'], PASSWORD_DEFAULT);

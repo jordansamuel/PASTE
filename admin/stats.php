@@ -1,6 +1,6 @@
 <?php
 /*
- * $ID Project: Paste 2.0 - J.Samuel
+ * Paste <https://github.com/jordansamuel/PASTE>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -71,7 +71,7 @@ if ($last_ip == $ip) {
 
 <?php
 /*
- * $ID Project: Paste 2.0 - J.Samuel
+ * Paste <https://github.com/jordansamuel/PASTE>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -448,10 +448,10 @@ if ($last_ip == $ip) {
 		<!-- Start Footer -->
 		<div class="row footer">
 		  <div class="col-md-6 text-left">
-		   <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues">Bugs</a>
+		   <a href="https://github.com/jordansamuel/PASTE" target="_blank">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues" target="_blank">Bugs</a>
 		  </div>
 		  <div class="col-md-6 text-right">
-			Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste 2</a>
+			Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
 		  </div> 
 		</div>
 		<!-- End Footer -->

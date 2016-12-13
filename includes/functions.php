@@ -1,6 +1,6 @@
 <?php
 /*
- * $ID Project: Paste 2.0 - J.Samuel
+ * Paste <https://github.com/jordansamuel/PASTE>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -115,7 +115,6 @@ function updateMyView($con, $paste_id)
 }
 
 function conTime($secs) {
-    $ret = [];
     $bit = array(
         ' year' => $secs / 31556926 % 12,
         ' week' => $secs / 604800 % 52,
@@ -144,6 +143,7 @@ function conTime($secs) {
     }
     return $val;
 }
+
 function truncate($input, $maxWords, $maxChars)
 {
     $words = preg_split('/\s+/', $input);
@@ -275,7 +275,7 @@ function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, 
                 color: white;
                 background-color: #f7f7f7;
                 border-right: 1px solid #ccc;
-                margin: 0;
+				margin: 0;
             }
             .paste_embed_footer {
                 font-size:14px;
@@ -302,9 +302,9 @@ function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, 
             $output .= "$ges_style"; // Dynamic GeSHI Style
             $output .= $p_content; // Paste content
             $output .= "<div class='paste_embed_footer'>";
-                $output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower( $lang['view-raw'] ) . "</a>";
-            $output .= "</div>";
-        $output .= "</div>";
+			$output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower( $lang['view-raw'] ) . "</a>";
+			$output .= "</div>";
+			$output .= "</div>";
         
         // Display embed content using json_encode since that escapes 
         // characters well enough to satisfy javascript. http://stackoverflow.com/a/169035

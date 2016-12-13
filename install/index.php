@@ -1,6 +1,6 @@
 <?php
 /*
- * $ID Project: Paste 2.0 - J.Samuel
+ * Paste <https://github.com/jordansamuel/PASTE>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in LIC.txt for more details.
+ * GNU General Public License in GPL.txt for more details.
  */
 	$date = date('jS F Y');
 	$ip   = $_SERVER['REMOTE_ADDR'];
