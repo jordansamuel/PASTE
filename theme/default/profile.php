@@ -23,7 +23,7 @@
 		<div class="col-md-9 col-lg-10">
 		  <div class="panel panel-default">
 			<div class="panel-title">
-				<?php echo $lang['totalpastes'] . ' ' . $total_pastes . ' <a class="btn btn-light pull-right" href="' . $protocol . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>' ;?>
+				<?php echo $lang['totalpastes'] . ' ' . $total_pastes . ' <a class="btn btn-light pull-right" href="/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>' ;?>
 			</div>
 			
 				<div class="login-form" style="padding-top: 0px;">
