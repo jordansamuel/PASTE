@@ -210,7 +210,7 @@ if ($last_ip == $ip) {
 												<select class="selectpicker" name="theme">
 												<?php
 												// Find the current theme if not set from $_POST
-												if ( !$d_theme ) {
+												if ( !isset( $d_theme ) ) {
 													$query = "SELECT theme FROM interface WHERE id='1'";
 													$result = mysqli_query( $con, $query );
 													while ( $row = mysqli_fetch_array( $result ) ) {
