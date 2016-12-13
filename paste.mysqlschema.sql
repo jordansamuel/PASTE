@@ -6,7 +6,8 @@
 
 -- Admin
 CREATE TABLE `admin` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `user` varchar(250) DEFAULT NULL,
   `pass` varchar(250) DEFAULT NULL
 );
@@ -17,14 +18,16 @@ INSERT INTO `admin` (`id`, `user`, `pass`) VALUES
 -- Admin history
 
 CREATE TABLE `admin_history` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `last_date` varchar(255) DEFAULT NULL,
   `ip` varchar(255) DEFAULT NULL
 );
 
 -- Ads
 CREATE TABLE `ads` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `text_ads` text,
   `ads_1` text,
   `ads_2` text
@@ -33,7 +36,8 @@ CREATE TABLE `ads` (
 INSERT INTO ads (text_ads,ads_1,ads_2) VALUES ('','','');
 
 CREATE TABLE `ban_user` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `ip` varchar(255) DEFAULT NULL,
   `last_date` varchar(255) DEFAULT NULL
 );
@@ -41,7 +45,8 @@ CREATE TABLE `ban_user` (
 -- Captcha
 
 CREATE TABLE `captcha` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `cap_e` varchar(255) DEFAULT NULL,
   `mode` varchar(255) DEFAULT NULL,
   `mul` varchar(255) DEFAULT NULL,
@@ -56,7 +61,8 @@ INSERT INTO captcha (cap_e,mode,mul,allowed,color,recaptcha_sitekey,recaptcha_se
 -- Interface
 
 CREATE TABLE `interface` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `theme` text,
   `lang` text
 );
@@ -66,7 +72,8 @@ INSERT INTO interface (theme,lang) VALUES ('default','en.php');
 -- Mail
 
 CREATE TABLE `mail` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `verification` text,
   `smtp_host` text,
   `smtp_username` text,
@@ -80,7 +87,8 @@ CREATE TABLE `mail` (
 -- Pages
 
 CREATE TABLE `pages` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `last_date` varchar(255) DEFAULT NULL,
   `page_name` varchar(255) DEFAULT NULL,
   `page_title` mediumtext,
@@ -90,7 +98,8 @@ CREATE TABLE `pages` (
 -- Page views
 
 CREATE TABLE `page_view` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `date` varchar(255) DEFAULT NULL,
   `tpage` varchar(255) DEFAULT NULL,
   `tvisit` varchar(255) DEFAULT NULL
@@ -99,7 +108,8 @@ CREATE TABLE `page_view` (
 -- Pastes
 
 CREATE TABLE `pastes` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `title` text,
   `content` longtext,
   `encrypt` text,
@@ -118,7 +128,8 @@ CREATE TABLE `pastes` (
 -- Sitemap
 
 CREATE TABLE `sitemap_options` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `priority` varchar(255) DEFAULT NULL,
   `changefreq` varchar(255) DEFAULT NULL
 );
@@ -129,7 +140,8 @@ INSERT INTO `sitemap_options` (`id`, `priority`, `changefreq`) VALUES
 -- Site info
 
 CREATE TABLE `site_info` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `title` varchar(255) DEFAULT NULL,
   `des` mediumtext,
   `keyword` mediumtext,
@@ -149,7 +161,8 @@ INSERT INTO `site_info` (`id`, `title`, `des`, `keyword`, `site_name`, `email`, 
 -- Site permissions
 
 CREATE TABLE `site_permissions` (
-  `id` int(11) NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `disableguest` varchar(255) DEFAULT NULL,
   `siteprivate` varchar(255) DEFAULT NULL
 );
@@ -161,7 +174,8 @@ INSERT INTO `site_permissions` (`id`, `disableguest`, `siteprivate`) VALUES
 -- Users
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(id),
   `oauth_uid` text,
   `username` text,
   `email_id` text,
