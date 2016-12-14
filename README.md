@@ -1,4 +1,4 @@
-# Paste 2.0 (2.1 in development)
+# Paste 2.1
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 [![Download PASTE](https://img.shields.io/sourceforge/dt/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
@@ -28,17 +28,20 @@ Install
 * Point your browser to http://yourpas.te/installation/install
 * Input some settings, DELETE the install folder and you're ready to go.
 
-Upgrade from 2.0 to 2.1
+---
+
+Upgrading
 ===
-Insert the schema changes to your database using the cli command line: mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.php
+
+* 2.0 to 2.1
+Insert the schema changes to your database using the cli command line:
+
+mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.php
 
 or upload /upgrade/2.0-to-2.1.php using phpMyAdmin
---- 
-Upgrade from 1.9 to 2.0
-===
-Run /upgrade/1.9-to.2.0.php
 
-Remove /upgrade directory
+* 1.9 to 2.0
+Run /upgrade/1.9-to.2.0.php
 
 ---
 
