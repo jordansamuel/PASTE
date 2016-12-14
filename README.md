@@ -28,6 +28,12 @@ Install
 * Point your browser to http://yourpas.te/installation/install
 * Input some settings, DELETE the install folder and you're ready to go.
 
+Upgrade from 2.0 to 2.1
+===
+Insert the schema changes to your database using the cli command line: mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.php
+
+or upload /upgrade/2.0-to-2.1.php using phpMyAdmin
+--- 
 Upgrade from 1.9 to 2.0
 ===
 Run /upgrade/1.9-to.2.0.php

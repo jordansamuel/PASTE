@@ -1,5 +1,5 @@
 # Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 14/12/2016)
-New version --- 2.1
+New version - 2.1
 -
 Frontend changes
 * User pages has been added and 'My Pastes' have been streamlined into this
@@ -25,17 +25,19 @@ Backend changes
 Other changes
 * Code cleanup and elimination of errors
 
-Previous version --- 2.0
+Previous version - 2.0
 -
 
 * New theme
 * An installer
 * User accounts added
+
   Ability to login and register with email verification
+  
   'My Pastes' page with options to view and delete pastes
-* Archives added
-* Captcha added
+
 * Admin panel added
+
   Dashboard (front page) with a header to display some statistics of the day: overall views, unique views, pastes & users and lists to display recent pastes, users and admin logins
   
   Configuration page to apply Site name, title, description and keywords metatags, with sublinks to other configuration options such as Captcha settings (set the captcha type: easy, normal & tough and colour) and Mail settings for email verification (set Mail Protocol to either PHP Mail or SMTP and SMTP options)
@@ -59,6 +61,9 @@ Previous version --- 2.0
   'Sitemap' page to control the frequency that the new sitemap system is updated
   
   'Tasks' page for some database optimization and common tasks, delete all expired pastes, clear admin history, delete unverified accounts 
+
+* Archives added
+* Captcha added
 
 Other changes
 * Overall code overhaul
