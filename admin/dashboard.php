@@ -423,7 +423,14 @@ for ($loop = 0; $loop <= 6; $loop++) {
 				  <div class="panel panel-widget">
 					<div class="panel-title">
 					</div>
-					<p style="height: auto;">Send us a feature request.</p>
+					<p style="height: auto;">
+					<?php
+					$latestversion = file_get_contents('https://raw.githubusercontent.com/jordansamuel/PASTE/releases/version');
+					echo "Latest version: " . $latestversion . "&mdash; Installed version: " . $currentversion;
+					if ($currentversion == $latestversion) { echo '<br />You have the latest version'; } else { echo '<br />Your Paste installation is outdated. Get the latest version from <a href="https://sourceforge.net/projects/phpaste/files/latest/download">SourceForge</a>'; }
+					?>
+					
+					</p>
 				  </div>
 				</div>
 			</div>
