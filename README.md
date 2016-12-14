@@ -47,16 +47,9 @@ Clean URLs (mod_rewrite)
 Set mod_rewrite in config.php to 1
 
 ---
-Changelog for 2.0
+Changelog
 ===
-* Installer
-* Admin dashboard
-* Reworked archives
-* User accounts (incl. Social Integration)
-
-Lots of changes, a much needed update.
-
-[![Backend](http://i.imgur.com/aP3FxGq.png)](http://pastethis.in/)
+See **[CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/master/CHANGELOG.md)**
 
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
