@@ -11,7 +11,9 @@ A demo of Paste is available on our homepage at **[SourceForge](https://phpaste.
 
 A public version can be found at **[PasteThis](http://pastethis.in)**
 
-[![Frontend](http://i.imgur.com/z6MVaES.png)](http://pastethis.in/)
+[![Frontend](http://i.imgur.com/UxZVxqo.png)](http://pastethis.in/)
+[![Frontend](http://i.imgur.com/peFanYH.png)](http://pastethis.in/)
+
 
 Requirements
 ===
@@ -34,6 +36,7 @@ Upgrading
 ===
 
 * 2.0 to 2.1
+
 Insert the schema changes to your database using the cli command line:
 
 mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.php
@@ -41,6 +44,7 @@ mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.php
 or upload /upgrade/2.0-to-2.1.php using phpMyAdmin
 
 * 1.9 to 2.0
+
 Run /upgrade/1.9-to.2.0.php
 
 ---
