@@ -14,8 +14,8 @@
  */
  
 require_once("../config.php");
-// PHP <5.5 compatibility
 
+// PHP <5.5 compatibility
 require_once('../includes/password.php');
 
 $admin_user = htmlentities(Trim($_POST['admin_user']));
