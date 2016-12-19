@@ -12,17 +12,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in GPL.txt for more details.
  */
-	require_once("../config.php");
-	$admin_user = htmlentities(Trim($_POST['admin_user']));
-	$admin_pass = password_hash($_POST['admin_pass'], PASSWORD_DEFAULT);
-	$date = date("j F Y");
-	$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-	// level up, dirty but meh
-	$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }
+ 
+require_once("../config.php");
+// PHP <5.5 compatibility
 
-	if (mysqli_connect_errno()) {
-		echo "Failed to connect:" . mysqli_connect_error() . "<br />";
-	}
+require_once('../includes/password.php');
+
+$admin_user = htmlentities(Trim($_POST['admin_user']));
+$admin_pass = password_hash($_POST['admin_pass'], PASSWORD_DEFAULT);
+$date = date("j F Y");
+$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+// level up, dirty but meh
+$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }
+
+if (mysqli_connect_errno()) {
+	echo "Failed to connect:" . mysqli_connect_error() . "<br />";
+}
 
 // Admin
 $sql = "CREATE TABLE admin
