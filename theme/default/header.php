@@ -18,12 +18,6 @@
 <html lang="<?php echo basename($default_lang, ".php");?>">
   <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<?php
-		header( 'Content-Type: text/html; charset=UTF-8' );
-		if (isset($_SERVER['HTTP_USER_AGENT']) && 
-			(strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
-				header('X-UA-Compatible: IE=edge,chrome=1');
-	?>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php if(isset($p_title)) { echo $p_title.' - ';}echo $title; ?></title>
     <meta name="description" content="<?php echo $des; ?>" />
