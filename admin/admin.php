@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in GPL.txt for more details.
  */
- 
+
 // PHP <5.5 compatibility
 require_once('../includes/password.php'); 
 
@@ -86,12 +86,6 @@ while ($row = mysqli_fetch_array($result)) {
 <html lang="en">
   <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<?php
-		header( 'Content-Type: text/html; charset=UTF-8' );
-		if (isset($_SERVER['HTTP_USER_AGENT']) && 
-			(strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
-				header('X-UA-Compatible: IE=edge,chrome=1');
-	?>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Paste - Admin Settings</title>
 	<link rel="shortcut icon" href="favicon.ico">

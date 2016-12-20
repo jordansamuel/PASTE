@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in GPL.txt for more details.
  */
+
 session_start();
 
 if (isset($_SESSION['login'])) {
@@ -146,12 +147,6 @@ for ($loop = 0; $loop <= 6; $loop++) {
 <html lang="en">
   <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<?php
-		header( 'Content-Type: text/html; charset=UTF-8' );
-		if (isset($_SERVER['HTTP_USER_AGENT']) && 
-			(strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
-				header('X-UA-Compatible: IE=edge,chrome=1');
-	?>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Paste - Dashboard</title>
 	<link rel="shortcut icon" href="favicon.ico">
@@ -388,10 +383,6 @@ for ($loop = 0; $loop <= 6; $loop++) {
 						<?php
 						$query = "SELECT @last_id := MAX(id) admin_history";
 						$result = mysqli_query($con, $query);
-
-						while ($row = mysqli_fetch_array($result)) {
-							$last_id = $row['@last_id := MAX(id)'];
-						}
 
 						for ($cloop = 0; $cloop <= 6; $cloop++) {
 							$c_my_id = $last_id - $cloop;

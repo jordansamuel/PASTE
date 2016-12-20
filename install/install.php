@@ -200,7 +200,7 @@ last_date VARCHAR(255)
 		echo "Error creating table: " . mysqli_error($con) . "<br />";
 	}
 
-	mysqli_query($con);
+	mysqli_query($con, $query);
 
 // Mail
 $sql = "CREATE TABLE mail
