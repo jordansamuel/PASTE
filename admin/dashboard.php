@@ -383,6 +383,10 @@ for ($loop = 0; $loop <= 6; $loop++) {
 						<?php
 						$query = "SELECT @last_id := MAX(id) admin_history";
 						$result = mysqli_query($con, $query);
+						
+						while ($row = mysqli_fetch_array($result)) {		
+							$last_id = $row['@last_id := MAX(id)'];		
+						}
 
 						for ($cloop = 0; $cloop <= 6; $cloop++) {
 							$c_my_id = $last_id - $cloop;
