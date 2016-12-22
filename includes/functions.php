@@ -25,16 +25,16 @@ function str_contains($haystack, $needle, $ignoreCase = false)
 
 function encrypt($value)
 {
-    $iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-    $iv      = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-    $val     = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
+    $iv_size = @mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
+    $iv      = @mcrypt_create_iv($iv_size, MCRYPT_RAND);
+    $val     = @mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
     return base64_encode($val);
 }
 
 function decrypt($value)
 {
     $value   = base64_decode($value);
-    $iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
+    $iv_size = @mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
     $iv      = @mcrypt_create_iv($iv_size, MCRYPT_RAND);
     return @mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
 }
