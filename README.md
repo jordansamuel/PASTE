@@ -17,7 +17,7 @@ A public version can be found at **[PasteThis](http://pastethis.in)**
 
 Requirements
 ===
-* Apache 2.X
+* Apache 2.X / Nginx
 * PHP 5.3.7 (or later) with php-mcrypt & GD enabled [PHP5.5+ recommended]
 * MySQL 5.x+
 
@@ -55,9 +55,26 @@ https://github.com/jordansamuel/PASTE/issues/new
 You can find support on IRC by connecting to irc.collectiveirc.net in channel #PASTE
 
 ---
-Clean URLs (mod_rewrite)
+Clean URLs
 ===
 Set mod_rewrite in config.php to 1
+
+For Apache, you don't need to do anything. Just use .htaccess
+
+For Nginx, here is a sample config:
+```
+rewrite ^/page/([a-zA-Z0-9]+)/? /pages.php?page=$1 last;
+rewrite ^/archive /archive.php last;
+rewrite ^/profile /profile.php last;
+rewrite ^/user/([^/]+)/?$ /user.php?user=$1 last;
+rewrite ^/contact /contact.php last;
+rewrite ^/download/(.*)$ /paste.php?download&id=$1 last;
+rewrite ^/raw/(.*)$ /paste.php?raw&id=$1 last;
+rewrite ^/embed/(.*)$ /paste.php?embed&id=$1 last;
+location /{
+    rewrite ^/([0-9]+)/?$ /paste.php?id=$1;
+}
+```
 
 ---
 Changelog
