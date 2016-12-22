@@ -55,13 +55,11 @@ https://github.com/jordansamuel/PASTE/issues/new
 You can find support on IRC by connecting to irc.collectiveirc.net in channel #PASTE
 
 ---
-Clean URLs
+Clean URLs (mod_rewrite)
 ===
 Set mod_rewrite in config.php to 1
 
-For Apache, you don't need to do anything. Just use .htaccess
-
-For Nginx, here is a sample config:
+Sample Nginx config
 ```
 rewrite ^/page/([a-zA-Z0-9]+)/? /pages.php?page=$1 last;
 rewrite ^/archive /archive.php last;
