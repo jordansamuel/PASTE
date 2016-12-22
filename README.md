@@ -5,11 +5,14 @@
 Paste is forked from the original source pastebin.com used before it was bought.
 The original source is available from the previous owner's **[GitHub repository](https://github.com/lordelph/pastebin)**
 
-If you would like to contribute to developing Paste please feel free to find me on IRC.
-
 A demo of Paste is available on our homepage at **[SourceForge](https://phpaste.sourceforge.io/demo)**
 
 A public version can be found at **[PasteThis](http://pastethis.in)**
+
+IRC: If you would like support or want to contribute to Paste connect to irc.collectiveirc.net in channel #PASTE
+
+Any bugs can be reported at:
+https://github.com/jordansamuel/PASTE/issues/new
 
 [![Frontend](http://i.imgur.com/UxZVxqo.png)](http://pastethis.in/)
 [![Frontend](http://i.imgur.com/peFanYH.png)](http://pastethis.in/)
@@ -46,13 +49,6 @@ or upload & import /upgrade/2.0-to-2.1.sql using phpMyAdmin
 * 1.9 to 2.0
 
 Run /upgrade/1.9-to.2.0.php
-
----
-
-Any bugs can be reported at:
-https://github.com/jordansamuel/PASTE/issues/new
-
-You can find support on IRC by connecting to irc.collectiveirc.net in channel #PASTE
 
 ---
 Clean URLs
