@@ -35,8 +35,8 @@ function decrypt($value)
 {
     $value   = base64_decode($value);
     $iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-    $iv      = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-    return mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
+    $iv      = @mcrypt_create_iv($iv_size, MCRYPT_RAND);
+    return @mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
 }
 
 function deleteMyPaste($con, $paste_id)
