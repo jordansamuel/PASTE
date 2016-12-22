@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in LIC.txt for more details.
+ * GNU General Public License in GPL.txt for more details.
  */
 ?>
 
@@ -51,14 +51,13 @@
 <!-- Additional Scripts -->
 <?php echo $additional_scripts; ?>
 
-
 <!-- Scripts -->
-<script type="text/javascript" src="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/js/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/js/paste.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/js/bootstrap-select.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/js/jquery-ui.min.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/theme/' . $default_theme; ?>/js/datatables.min.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/paste.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/bootstrap-select.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/datatables.min.js"></script>
 
 <script>
 $(document).ready(function() {
