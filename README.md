@@ -49,9 +49,9 @@ Upgrading
 * 2.0 to 2.1
 
 Insert the schema changes to your database using the CLI:
-
+```
 mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.sql
-
+```
 or upload & import upgrade/2.0-to-2.1.sql using phpMyAdmin
 
 * 1.9 to 2.0
