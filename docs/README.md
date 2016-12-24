@@ -30,8 +30,16 @@ Install
 ===
 * Create a database for PASTE.
 * Upload all files to a webfolder
-* Point your browser to http://yourpas.te/installation/install
+* Point your browser to http(s)://example.com/install
 * Input some settings, DELETE the install folder and you're ready to go.
+
+Manual install
+===
+Do the first two steps above and import the database schema using the CLI (or import via phpMyAdmin)
+```
+mysql -uuser -ppassword databasename < docs/paste.mysqlschema.sql
+```
+Move docs/config.example.php to config.php and edit
 
 ---
 
@@ -44,38 +52,25 @@ Insert the schema changes to your database using the CLI:
 
 mysql -uuser -ppassword databasename < upgrade/2.0-to-2.1.sql
 
-or upload & import /upgrade/2.0-to-2.1.sql using phpMyAdmin
+or upload & import upgrade/2.0-to-2.1.sql using phpMyAdmin
 
 * 1.9 to 2.0
 
-Run /upgrade/1.9-to.2.0.php
+Run upgrade/1.9-to.2.0.php
 
 ---
 Clean URLs
 ===
 Set mod_rewrite in config.php to 1
 
-For Apache, you don't need to do anything. Just use .htaccess
+For Apache, just use .htaccess
 
-For Nginx, here is a sample config:
-```
-rewrite ^/page/([a-zA-Z0-9]+)/? /pages.php?page=$1 last;
-rewrite ^/archive /archive.php last;
-rewrite ^/profile /profile.php last;
-rewrite ^/user/([^/]+)/?$ /user.php?user=$1 last;
-rewrite ^/contact /contact.php last;
-rewrite ^/download/(.*)$ /paste.php?download&id=$1 last;
-rewrite ^/raw/(.*)$ /paste.php?raw&id=$1 last;
-rewrite ^/embed/(.*)$ /paste.php?embed&id=$1 last;
-location /{
-    rewrite ^/([0-9]+)/?$ /paste.php?id=$1;
-}
-```
+For Nginx, use the example config in **[docs/nginx.example.php](https://github.com/jordansamuel/PASTE/blob/master/docs/nginx.example.php)**
 
 ---
 Changelog
 ===
-See **[CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/master/CHANGELOG.md)**
+See **[docs/CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/master/docs/CHANGELOG.md)**
 
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
