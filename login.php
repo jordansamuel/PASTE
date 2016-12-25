@@ -206,33 +206,33 @@ if (isset($_GET['resend'])) {
                 $db_id        = $row['id'];
             }
             if ($db_verified == '0') {
-				$protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
+                $protocol = paste_protocol();
                 $verify_url = $protocol . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/verify.php?username=$username&code=" . Md5('4et4$55765' . $db_email_id . 'd94ereg');
                 $sent_mail  = $email;
                 $subject    = $lang['mail_acc_con']; // "$site_name Account Confirmation";
                 $body       = "
           Hello $db_full_name, Please verify your account by clicking the link below.<br /><br />
-              
+
           <a href='$verify_url' target='_self'>$verify_url</a>  <br /> <br />
-          
+
           After confirming your account you can log in using your username: <b>$username</b> and the password you used when signing up.
           ";
-                
+
                 if ($mail_type == '1') {
                     default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
                 } else {
                     smtp_mail($smtp_host, $smtp_port, $smtp_auth, $smtp_user, $smtp_pass, $smtp_sec, $admin_mail, $admin_name, $sent_mail, $subject, $body);
                 }
-                $success = $lang['mail_suc']; // "Verification code successfully sent to your email.";    
-                
+                $success = $lang['mail_suc']; // "Verification code successfully sent to your email.";
+
             } else {
-                $error = $lang['email_ver']; //"Email already verified.";    
+                $error = $lang['email_ver']; //"Email already verified.";
             }
-            
+
         } else {
             $error = $lang['email_not']; // "Email not found.";
         }
-        
+
     }
 }
 
@@ -379,15 +379,15 @@ if ($_SERVER['REQUEST_METHOD'] == POST) {
 									$success    = $lang['registered']; // "Your account was successfully registered.";
 								} else {
 									$success    = $lang['registered']; // "Your account was successfully registered.";
-									$protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
+									$protocol   = paste_protocol();
 									$verify_url = $protocol . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/verify.php?username=$username&code=" . Md5('4et4$55765' . $email . 'd94ereg');
 									$sent_mail  = $email;
 									$subject    = $lang['mail_acc_con']; // "$site_name Account Confirmation";
 									$body       = "
 			  Hello $full_name, Your $site_name account has been created. Please verify your account by clicking the link below.<br /><br />
-				  
+
 			  <a href='$verify_url' target='_self'>$verify_url</a>  <br /> <br />
-			  
+
 			  After confirming your account you can log in using your username: <b>$username</b> and the password you used when signing up.
 			  ";
 									if ($mail_type == '1') {
@@ -398,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] == POST) {
 								}
                             }
                         }
-                        
+
                     }
                 } else {
                     $error = $lang['usrinvalid']; // "Username not valid. Usernames can't contain special characters.";

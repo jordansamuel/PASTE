@@ -6,13 +6,13 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in GPL.txt for more details.
  */
- 
+
 function str_contains($haystack, $needle, $ignoreCase = false)
 {
     if ($ignoreCase) {
@@ -105,7 +105,7 @@ function updateMyView($con, $paste_id)
 {
     $query  = "SELECT * FROM pastes WHERE id=" . Trim($paste_id);
     $result = mysqli_query($con, $query);
-    
+
     while ($row = mysqli_fetch_array($result)) {
         $p_view = Trim($row['views']);
     }
@@ -123,7 +123,7 @@ function conTime($secs) {
         ' min' => $secs / 60 % 60,
         ' sec' => $secs % 60
     );
-    
+
     foreach ($bit as $k => $v) {
         if ($v > 1)
             $ret[] = $v . $k . 's';
@@ -132,7 +132,7 @@ function conTime($secs) {
     }
     array_splice($ret, count($ret) - 1, 0, 'and');
     $ret[] = 'ago';
-    
+
     $val = join(' ', $ret);
     if (str_contains($val, "week")) {
     } else {
@@ -149,22 +149,22 @@ function truncate($input, $maxWords, $maxChars)
     $words = preg_split('/\s+/', $input);
     $words = array_slice($words, 0, $maxWords);
     $words = array_reverse($words);
-    
+
     $chars     = 0;
     $truncated = array();
-    
+
     while (count($words) > 0) {
         $fragment = trim(array_pop($words));
         $chars += strlen($fragment);
-        
+
         if ($chars > $maxChars)
             break;
-        
+
         $truncated[] = $fragment;
     }
-    
+
     $result = implode($truncated, ' ');
-    
+
     return $result . ($input == $result ? '' : '[...]');
 }
 
@@ -221,7 +221,7 @@ function doDownload($paste_id, $p_title, $p_content, $p_code)
                 $ext = 'txt';
                 break;
         }
-        
+
         // Download
         header('Content-type: text/plain');
         header('Content-Disposition: attachment; filename="' . $p_title . '.' . $ext . '"');
@@ -305,8 +305,8 @@ function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, 
 			$output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower( $lang['view-raw'] ) . "</a>";
 			$output .= "</div>";
 			$output .= "</div>";
-        
-        // Display embed content using json_encode since that escapes 
+
+        // Display embed content using json_encode since that escapes
         // characters well enough to satisfy javascript. http://stackoverflow.com/a/169035
         header( 'Content-type: text/javascript; charset=utf-8;' );
         echo 'document.write(' . json_encode( $output ) . ')';
@@ -324,15 +324,15 @@ function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
     $site_data = file_get_contents("sitemap.xml");
     $site_data = str_replace("</urlset>", "", $site_data);
 	// which protocol are we on
-	$protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
+	$protocol = paste_protocol();
 
     if ($mod_rewrite == "1") {
         $server_name = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/" . $paste_id;
     } else {
         $server_name = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/paste.php?id=" . $paste_id;
     }
-    
-	$c_sitemap = 
+
+	$c_sitemap =
 '	<url>
 		<loc>' . $server_name . '</loc>
 		<priority>' . $priority . '</priority>
@@ -344,4 +344,9 @@ function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
     $full_map  = $site_data . $c_sitemap;
     file_put_contents("sitemap.xml", $full_map);
 }
-?>
+function paste_protocol() {
+
+  $protocol = ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] == "on" ) ? 'https://' : 'http://';
+
+  return $protocol;
+}

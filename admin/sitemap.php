@@ -195,7 +195,7 @@ while ($row = mysqli_fetch_array($result)) {
 										<label for="priority">Priority Level</label>
 										<input type="text" placeholder="Enter priority..." id="priority" name="priority" value="<?php echo $priority; ?>" class="form-control">
 									</div>
-				  
+
 										 <button class="btn btn-default" type="submit">Submit</button>
 							</form>
 							<br />
@@ -203,7 +203,7 @@ while ($row = mysqli_fetch_array($result)) {
 							if (isset($_GET['re'])) {
 								unlink('../sitemap.xml');
 								// which protocol are we on
-								$protocol = ($_SERVER['HTTPS'] == "on")?'https://':'http://';
+								$protocol = paste_protocol();
 								// level up, dirty but meh
 								$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }
 								$c_date = date('Y-m-d');
@@ -217,18 +217,18 @@ while ($row = mysqli_fetch_array($result)) {
 							</url>
 							</urlset>';
 								file_put_contents("../sitemap.xml", $data);
-								
+
 								$rec_limit = 10;
 								$query     = "SELECT count(id) FROM pastes";
 								$retval    = mysqli_query($con, $query);
-								
+
 								$row       = mysqli_fetch_array($retval);
 								$rec_count = Trim($row[0]);
 								$offset    = 0;
 								// Set the specific query to display in the table
 								$sql       = "SELECT * FROM `pastes` WHERE visible='0' LIMIT $offset, $rec_count ";
 								$result    = mysqli_query($con, $sql);
-								
+
 								// Loop through each record
 								while ($row = mysqli_fetch_array($result)) {
 									$paste_id  = Trim($row['id']);
