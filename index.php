@@ -80,12 +80,11 @@ $ads_2    = $result->ads_2;
 
 // Sitemap
 $query  = "Select * From sitemap_options WHERE id='1'";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row($query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $priority   = $row['priority'];
-    $changefreq = $row['changefreq'];
-}
+$priority   = $result->priority;
+$changefreq = $result->changefreq;
+
 
 // Captcha
 $query  = "SELECT * FROM captcha where id='1'";
