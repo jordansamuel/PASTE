@@ -34,9 +34,6 @@ require_once('includes/password.php');
 // UTF-8
 header('Content-Type: text/html; charset=utf-8');
 
-// TODO remove
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-
 global $pastedb;
 
 // Get site info
