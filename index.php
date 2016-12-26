@@ -336,8 +336,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $expires = "NULL";
                 break;
         }
-        $p_title   = mysqli_real_escape_string($con, $p_title);
-        $p_content = mysqli_real_escape_string($con, $p_content);
+        $p_title   = $pastedb->escape($p_title);
+        $p_content = $pastedb->escape($p_content);
         $p_date    = date('jS F Y h:i:s A');
         $date      = date('jS F Y');
         $now_time  = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
