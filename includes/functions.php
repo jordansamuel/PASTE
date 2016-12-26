@@ -13,6 +13,8 @@
  * GNU General Public License in GPL.txt for more details.
  */
 
+include_once( 'db.php' );
+
 function str_contains($haystack, $needle, $ignoreCase = false)
 {
     if ($ignoreCase) {
@@ -45,25 +47,24 @@ function deleteMyPaste($con, $paste_id)
     $result = mysqli_query($con, $query);
 }
 
-function getRecent($con, $count = 5)
+function getRecent($count = 5)
 {
-    $limit  = $count ? "limit $count" : "";
+    global $pastedb;
     $query  = "SELECT *
 FROM pastes where visible='0'
-ORDER BY id DESC
-LIMIT 0 , $count";
-    $result = mysqli_query($con, $query);
+ORDER BY id DESC LIMIT $count";
+    $result = $pastedb->query($query);
     return $result;
 }
 
-function getUserRecent($con, $count = 5, $username)
+function getUserRecent($count = 5, $username)
 {
-    $limit  = $count ? "limit $count" : "";
+    global $pastedb;
     $query  = "SELECT *
 FROM pastes where member='$username'
 ORDER BY id DESC
-LIMIT 0 , $count";
-    $result = mysqli_query($con, $query);
+LIMIT $count";
+    $result = $pastedb->query($query);
     return $result;
 }
 
