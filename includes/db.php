@@ -63,9 +63,15 @@ class PasteDB {
      echo "message: " . $e->message;   // not in live code obviously...
      exit;
    }
-  // mysqli_free_result( $result );
+   //mysqli_free_result( $result );
    return $result;
  }
+
+ function escape( $string ) {
+   return mysqli_real_escape_string( $this->db, $string );
+ }
+
+
 }
 
 $GLOBALS['pastedb'] = new PasteDB( $dbhost, $dbname, $dbuser, $dbpassword );
