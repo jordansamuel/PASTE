@@ -139,6 +139,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	if ($siteprivate =="on") {
 		$privatesite = "on";
     }
+    else {
+      $privatesite = "off";
+    }
 	if (isset($_SESSION['username'])) {
 		$noguests = "off";
 	}
