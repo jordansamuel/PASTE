@@ -6,7 +6,7 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -28,24 +28,24 @@
 					if (isset($success)) {
 							echo '<div class="paste-alert alert3" style="text-align: center;">
 									' . $success . '
-								</div>'; 
-						
+								</div>';
+
 						// Verification email sent
 						if (isset($_GET['register']) && $verification == 'enabled')  {
 							echo '<div class="paste-alert alert5" style="text-align: center;">
 									' . $lang['versent'] . '
-								</div>'; 
+								</div>';
 						}
-						
+
 					}
-					
+
 					// Errors
 					elseif (isset($error)) {
 						echo '<div class="paste-alert alert5" style="text-align: center;">
 								' . $error . '
-							</div>'; 
+							</div>';
 					}
-						
+
 					// Login page
 					if (isset($_GET['login'])) {
 					?>
@@ -54,7 +54,7 @@
 								<div class="panel-title" style="text-align:center;">
 									Login
 								</div>
-								
+
 								<div class="group">
 									<input type="text" class="form-control" name="username" placeholder="Username">
 									<i class="fa fa-user"></i>
@@ -64,14 +64,14 @@
 									<input type="password" class="form-control" name="password" placeholder="Password">
 									<i class="fa fa-key"></i>
 								</div>
-								
+
 								<div class="checkbox checkbox-primary">
 									<input id="rememberme" name="rememberme" type="checkbox" checked="">
 									<label for="rememberme">
 										<?php echo $lang['rememberme']; ?>
 									</label>
 								</div>
-								
+
 								<input type="hidden" name="signin" value="<?php echo md5($date.$ip); ?>">
 								<button type="submit" name="submit" class="btn btn-default btn-block">Sign in</button>
 							</div>
@@ -81,7 +81,7 @@
 						<a href="oauth/facebook.php?login" class="btn btn-primary btn-block">
 							<i class="fa fa-facebook"></i>Sign in with Facebook
 						</a>
-					<?php } 
+					<?php }
 						if ($enablegoog == "no") { } else { ?>
 						<a href="oauth/google.php?login" class="btn btn-danger btn-block">
 							<i class="fa fa-google"></i>Sign in with Google
@@ -97,12 +97,12 @@
 								<div class="panel-title" style="text-align:center;">
 									Register
 								</div>
-								
+
 								<div class="group">
 									<input type="text" class="form-control" name="username" placeholder="Username">
 									<i class="fa fa-user"></i>
 								</div>
-								
+
 								<div class="group">
 									<input type="text" class="form-control" name="full" placeholder="Your Name">
 									<i class="fa fa-user-plus"></i>
@@ -134,7 +134,7 @@
 						</a>
 					<?php } ?>
 						<!-- // -->
-					
+
 					<?php // Forgot password
 					} elseif (isset($_GET['forgot']))  {
 					?>
@@ -143,7 +143,7 @@
 								<div class="panel-title" style="text-align:center;">
 									Forgot Password
 								</div>
-								
+
 								<div class="group">
 									<input type="text" class="form-control" name="email" placeholder="Enter your email address">
 									<i class="fa fa-envelope"></i>
@@ -153,7 +153,7 @@
 								<button type="submit" name="submit" class="btn btn-default btn-block">Submit</button>
 							</div>
 						</form>
-					
+
 					<?php // Resend verification email
 					} elseif (isset($_GET['resend']))  {
 					?>
@@ -162,7 +162,7 @@
 								<div class="panel-title" style="text-align:center;">
 									Resend verification email
 								</div>
-								
+
 								<div class="group">
 									<input type="text" class="form-control" name="email" placeholder="Enter your email address">
 									<i class="fa fa-envelope"></i>
@@ -172,13 +172,13 @@
 								<button type="submit" name="submit" class="btn btn-default btn-block">Submit</button>
 							</div>
 						</form>
-					
+
 					<?php } else  {?>
 						<div class="panel-title" style="text-align:center;">
 							Where to?
 						</div>
 						<a href="login.php?login">Login</a><br />
-						<a href="login.php?register">Register</a> <br />     
+						<a href="login.php?register">Register</a> <br />
 						<a href="login.php?forgot">Forgot Password</a><br />
 						<a href="login.php?resend">Resend verification email</a><br />
 					<?php  } ?>

@@ -6,7 +6,7 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -43,14 +43,14 @@
 								<i class="fa fa-exclamation-circle"" aria-hidden="true"></i> <?php echo $error; ?>
 								</div>
 							</div>
-				<?php } 
+				<?php }
 				}
 			?>
 				<div class="panel panel-default">
 					<div class="panel-title">
 						<?php echo $lang['newpaste']; ?>
 					</div>
-					
+
 					<div class="panel-body">
 						<form class="form-horizontal" name="mainForm" action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
 							<div class="form-group">
@@ -65,7 +65,7 @@
 									  </div>
 									</div>
 								</div>
-								  
+
 								<!-- Format -->
 								<div class="col-sm-4 col-md-4 col-lg-4" style="margin-top:-1px; padding-bottom:2px;">
 									<select class="selectpicker" data-live-search="true" name="format">
@@ -97,7 +97,7 @@
 										?>
 									</select>
 								</div>
-									
+
 								<!-- Buttons -->
 								<div class="col-sm-2 col-md-2 col-lg-2 pull-right" style="margin-top:1px; margin-right:20px">
 									<a class="btn btn-default" onclick="highlight(document.getElementById('code')); return false;"><i class="fa fa-indent"></i>Highlight</a>
@@ -115,14 +115,14 @@
 								<div class="form-group">
 								  <label class="control-label form-label pull-left" style="padding-left: 20px;"><?php echo $lang['expiration']; ?></label>
 									<div class="col-sm-8">
-                                        <?php 
+                                        <?php
                                         $post_expire = "";
                                         if ( $_POST ) {
                                             if ( isset( $_POST['paste_expire_date'] ) ) {
                                                 $post_expire = $_POST['paste_expire_date'];
                                             }
                                         }
-                                        ?>                                    
+                                        ?>
 										<select class="selectpicker" style="display: none;" name="paste_expire_date">
 											<option value="N" <?php echo ($post_expire == "N")?'selected="selected"':''; ?>>Never</option>
 											<option value="self" <?php echo ($post_expire == "self")?'selected="selected"':''; ?>>View Once</option>
@@ -135,12 +135,12 @@
 										</select>
 									</div>
 								</div>
-						
+
 								<!-- Visibility -->
 								<div class="form-group">
 								  <label class="control-label form-label pull-left" style="padding-left: 20px;"><?php echo $lang['visibility']; ?>&nbsp;&nbsp;</label>
 									<div class="col-sm-8">
-                                        <?php 
+                                        <?php
                                         $post_visibility = "";
                                         if ( $_POST ) {
                                             if ( isset( $_POST['visibility'] ) ) {
@@ -159,7 +159,7 @@
 										</select>
 									</div>
 								</div>
-						  
+
 								<!-- Password -->
 								<div class="form-group">
 									<div class="col-md-12 col-lg-3">
@@ -173,15 +173,15 @@
 										</div>
 									</div>
 								</div>
-					
+
 								<!-- Encrypt -->
 								<div class="col-md-6">
 									<div class="checkbox checkbox-primary">
-                                        <?php 
+                                        <?php
                                         $encrypted_checked = "";
                                         if ( $_POST ) {
                                             // We came here from an error, carry the checkbox setting forward
-                                            if ( isset( $_POST['encrypted'] ) ) { 
+                                            if ( isset( $_POST['encrypted'] ) ) {
                                                 $encrypted_checked = "checked";
                                             }
                                         } else {
@@ -189,7 +189,7 @@
                                             $encrypted_checked = "checked";
                                         }
                                         ?>
-                                            
+
 										<input id="encrypt" name="encrypted" type="checkbox" <?php echo $encrypted_checked; ?>>
 										<label for="encrypt">
 											<?php echo $lang['encrypt']; ?>
@@ -197,7 +197,7 @@
 									</div>
 								</div><br /><br />
 
-						  <?php if ($cap_e == "on" && !isset($_SESSION['username'])) { 
+						  <?php if ($cap_e == "on" && !isset($_SESSION['username'])) {
                             if ($_SESSION['captcha_mode'] == "recaptcha") {
                                 ?>
                                 <div class="g-recaptcha" data-sitekey="<?php echo $_SESSION['captcha']; ?>"></div>
@@ -220,7 +220,6 @@
 								</div>
 						  <?php }
                           } ?>
-					  
 							<div class="col-md-12 col-lg-3">
 								<div class="control-group">
 									<div class="controls">
@@ -230,12 +229,12 @@
 									</div>
 								</div>
 							</div>
-						</form>   
+						</form>
 					</div>
 				</div>
 			</div>
 			<!-- End Panel -->
 <?php } ?>
-	
+
 <?php require_once('theme/'.$default_theme.'/sidebar.php'); ?>
 </div>

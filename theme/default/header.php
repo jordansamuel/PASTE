@@ -131,7 +131,8 @@ if (isset($_SESSION['captcha_mode']) == "recaptcha") {
 						</label>
 					</div>
 				  <button type="submit" class="btn btn-default btn-block">Login</button>
-					 <input type="hidden" name="signin" value="<?php echo md5($date.$ip); ?>" />
+				  <a class="btn btn-light btn-block" href="login.php?forgot">Forgot Password?</a>
+				  <input type="hidden" name="signin" value="<?php echo md5($date.$ip); ?>" />
 			</form>
 			<br />
 			<!-- Oauth -->
