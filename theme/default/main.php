@@ -75,7 +75,7 @@
                                                     if ( isset( $_POST['format'] ) ) {
                                                         $sel = ($_POST['format'] == $code)?'selected="selected"':''; // Pre-populate if we come here on an error
                                                     } else {
-                                                        $sel = ($code == "text")?'selected="selected"':'';
+                                                        $sel = ($code == "markdown")?'selected="selected"':'';
                                                     }
                                                     echo '<option ' . $sel . ' value="' . $code . '">' . $name . '</option>';
 												}
