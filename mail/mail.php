@@ -21,7 +21,7 @@ function default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body)
     
     $mail = new PHPMailer();
     
-    $body = eregi_replace("[\]", '', $body);
+    $body = stripslashes ($body);
     
     $mail->AddReplyTo($admin_mail, $admin_name);
     
