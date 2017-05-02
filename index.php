@@ -6,13 +6,13 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in GPL.txt for more details.
  */
- 
+
 session_start();
 
 $directory = 'install';
@@ -24,6 +24,7 @@ if (file_exists($directory)) {
 
 // Required functions
 require_once('config.php');
+include_once( 'includes/db.php' );
 require_once('includes/captcha.php');
 require_once('includes/functions.php');
 
@@ -33,38 +34,31 @@ require_once('includes/password.php');
 // UTF-8
 header('Content-Type: text/html; charset=utf-8');
 
-// Database Connection
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
+global $pastedb;
 
 // Get site info
 $query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row( $query );
 
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl    		= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
+$title       = $result->title;
+$des         = $result->des;
+$baseurl     = $result->baseurl;
+$keyword     = $result->keyword;
+$site_name   = $result->site_name;
+$email       = $result->email;
+$twit        = $result->twit;
+$face        = $result->face;
+$gplus       = $result->gplus;
+$ga          = $result->ga;
+$additional_scripts  = $result->additional_scripts;
 
 // Set theme and language
 $query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row( $query );
 
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
+$default_lang  = $result->lang;
+$default_theme = $result->theme;
+
 require_once("langs/$default_lang");
 
 // Current date & user IP
@@ -74,36 +68,33 @@ $data_ip = file_get_contents('tmp/temp.tdata');
 
 // Ads
 $query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row( $query );
 
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-}
+$text_ads = $result->text_ads;
+$ads_1    = $result->ads_1;
+$ads_2    = $result->ads_2;
+
 
 // Sitemap
 $query  = "Select * From sitemap_options WHERE id='1'";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row($query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $priority   = $row['priority'];
-    $changefreq = $row['changefreq'];
-}
+$priority   = $result->priority;
+$changefreq = $result->changefreq;
+
 
 // Captcha
 $query  = "SELECT * FROM captcha where id='1'";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row($query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $color   = Trim($row['color']);
-    $mode    = Trim($row['mode']);
-    $mul     = Trim($row['mul']);
-    $allowed = Trim($row['allowed']);
-    $cap_e   = Trim($row['cap_e']);
-    $recaptcha_sitekey   = Trim($row['recaptcha_sitekey']);
-    $recaptcha_secretkey   = Trim($row['recaptcha_secretkey']);
-}
+$color   = $result->color;
+$mode    = $result->mode;
+$mul     = $result->mul;
+$allowed = $result->allowed;
+$cap_e   = $result->cap_e;
+$recaptcha_sitekey   = $result->recaptcha_sitekey;
+$recaptcha_secretkey   = $result->recaptcha_secretkey;
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 } else {
     if ($cap_e == "on") {
@@ -116,30 +107,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } else {
         $_SESSION['captcha_mode'] = "none";
-    }        
-}
-
-// Check if IP is banned
-$query  = "SELECT * FROM ban_user";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $banned_ip = isset($banned_ip) . "::" . $row['ip'];
-}
-if ( isset( $banned_ip) ) {
-    if (strpos($banned_ip, $ip) !== false) {
-        die($lang['banned']); // "You have been banned from ".$site_name;
     }
 }
 
+// Check if IP is banned
+$query  = "SELECT * FROM ban_user WHERE ip='$ip' LIMIT 1";
+$result = $pastedb->get_row($query);
+
+if ( isset( $result->ip ) ) {
+  die( $lang['banned'] ); // "You have been banned from ".$site_name;
+}
+
+
 // Site permissions
 $query  = "SELECT * FROM site_permissions where id='1'";
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row( $query );
 
-while ($row = mysqli_fetch_array($result)) {
-    $disableguest   = Trim($row['disableguest']);
-	$siteprivate	= Trim($row['siteprivate']);
-}
+$disableguest = $result->disableguest;
+$siteprivate  = $result->siteprivate;
+
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 } else {
@@ -148,6 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	}
 	if ($siteprivate =="on") {
 		$privatesite = "on";
+    }
+    else {
+      $privatesite = "off";
     }
 	if (isset($_SESSION['username'])) {
 		$noguests = "off";
@@ -180,62 +169,56 @@ if (isset($_GET['logout'])) {
 }
 
 // Page views
-$query = "SELECT @last_id := MAX(id) FROM page_view";
+$query = "SELECT @last_id := MAX(id) as last_id FROM page_view";
 
-$result = mysqli_query($con, $query);
+$result = $pastedb->get_row($query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
+$last_id = $result->last_id;
 
-$query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['date'];
-}
+$query  = sprintf( "SELECT * FROM page_view WHERE id=%s", $last_id );
+$result = $pastedb->get_row( $query );
+
+$last_date = $result->date;
 
 if ($last_date == $date) {
     if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
-        }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP already exists, Update view count
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
+
+      $last_tpage = $result->tpage;
+      $last_tpage++;
+
+      // IP already exists, Update view count
+      $query = sprintf( "UPDATE page_view SET tpage=%s WHERE id=%s", $last_tpage, $last_id );
+      $pastedb->query( $query );
+
     } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
+
+          $last_tpage  = $result->tpage;
+          $last_tvisit = $result->tvisit;
+          $last_tpage++;
+          $last_tvisit++;
+
+          // Update both tpage and tvisit.
+          $query = sprintf( "UPDATE page_view SET tpage=%a,tvisit=%s WHERE id=%s",
+                    $last_tpage,
+                    $last_tvisit,
+                    $last_id
+                  );
+          $pastedb->query($query);
+          file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
         }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    }
 } else {
     // Delete the file and clear data_ip
     unlink("tmp/temp.tdata");
     $data_ip = "";
-    
+
     // New date is created
     $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
+    $pastedb->query($query);
+
     // Update the IP
     file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
+
 }
 
 // POST Handler
@@ -246,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		goto OutPut;
 		exit;
 	}
-	
+
 	// Check if fields are only white space
 	if (trim($_POST["paste_data"]) == '') {
 		$error = $lang['empty_paste'];
@@ -260,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		goto OutPut;
 		exit;
 	}
-			
+
     // Check POST data status
     if (isset($_POST['title']) And isset($_POST['paste_data'])) {
         if ($cap_e == "on" && !isset($_SESSION['username'])) {
@@ -271,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     // reCAPTCHA Errors
                     switch( $response["error-codes"][0] ) {
                         case "missing-input-response":
-                            $error = $lang['missing-input-response']; 
+                            $error = $lang['missing-input-response'];
                             break;
                         case "missing-input-secret":
                             $error = $lang['missing-input-secret'];
@@ -309,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $p_password = password_hash($p_password, PASSWORD_DEFAULT);
         }
         $p_encrypt = Trim(htmlspecialchars($_POST['encrypted']));
-        
+
         if ($p_encrypt == "" || $p_encrypt == null) {
             $p_encrypt = "0";
         } else {
@@ -317,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $p_encrypt = "1";
             $p_content = encrypt($p_content);
         }
-        
+
         if (isset($_SESSION['token'])) {
             $p_member = Trim($_SESSION['username']);
         } else {
@@ -352,8 +335,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $expires = "NULL";
                 break;
         }
-        $p_title   = mysqli_real_escape_string($con, $p_title);
-        $p_content = mysqli_real_escape_string($con, $p_content);
+        $p_title   = $pastedb->escape($p_title);
+        $p_content = $pastedb->escape($p_content);
         $p_date    = date('jS F Y h:i:s A');
         $date      = date('jS F Y');
         $now_time  = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
@@ -362,38 +345,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $edit_paste_id = $_POST['paste_id'];
             $query = "UPDATE pastes SET title='$p_title',content='$p_content',visible='$p_visible',code='$p_code',expiry='$expires',password='$p_password',encrypt='$p_encrypt',member='$p_member',date='$p_date',ip='$ip' WHERE id = '$edit_paste_id'";
         } else {
-            $query = "INSERT INTO pastes (title,content,visible,code,expiry,password,encrypt,member,date,ip,now_time,views,s_date) VALUES 
+            $query = "INSERT INTO pastes (title,content,visible,code,expiry,password,encrypt,member,date,ip,now_time,views,s_date) VALUES
             ('$p_title','$p_content','$p_visible','$p_code','$expires','$p_password','$p_encrypt','$p_member','$p_date','$ip','$now_time','0','$date')";
         }
-        $result = mysqli_query($con, $query);
-        if (mysqli_error($con)) {
-            $error = $lang['paste_db_error']; // "Unable to post the paste on database";
-        } else {
-            $query  = "SELECT @last_id := MAX(id) FROM pastes";
-            $result = mysqli_query($con, $query);
-            while ($row = mysqli_fetch_array($result)) {
-                $paste_id = $row['@last_id := MAX(id)'];
-            }
+        $result = $pastedb->query($query);
+
+            $query  = "SELECT @last_id := MAX(id) as last FROM pastes LIMIT 1";
+            $result = $pastedb->get_row($query);
+            $paste_id = $result->last;
             $success = $paste_id;
             if ($p_visible == '0') {
                 addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite);
             }
-        }
 
     } else {
         $error = $lang['error']; // "Something went wrong";
     }
-	
+
 	// Redirect to paste on successful entry, or on successful edit redirect back to edited paste
 	if ( isset( $success ) ) {
 		if ( $mod_rewrite == '1' ) {
             if ( isset( $_POST['edit'] ) ) {
                 $paste_url = "$edit_paste_id";
             } else {
-                $paste_url = "$success"; 
+                $paste_url = "$success";
             }
         } else {
-            if ( $_POST['edit'] ) {
+            if ( isset( $_POST['edit'] ) ) {
                 $paste_url = "paste.php?id=$edit_paste_id";
             } else {
                 $paste_url = "paste.php?id=$success";

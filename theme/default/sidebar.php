@@ -34,28 +34,25 @@ if(isset($_SESSION['token'])) {
 					</small>
 				</h6>
 			</div>
-				
+
 			<div class="panel-body">
-				<div class="list-widget pagination-content">				
-					<?php         
-						   $user_username = Trim($_SESSION['username']);     
-						   $res = getUserRecent($con,10,$user_username);
+				<div class="list-widget pagination-content">
+					<?php
+						   $user_username = Trim($_SESSION['username']);
+						   $res = getUserRecent(10,$user_username);
 						   while($row = mysqli_fetch_array($res)) {
 							$title =  Trim($row['title']);
 							$p_id =  Trim($row['id']);
 							$p_date = Trim($row['date']);
-							$p_time = Trim($row['now_time']);
-							$nowtime = time();
-							$oldtime = $p_time;
-							$p_time = conTime($nowtime-$oldtime);
+							$p_time = time_elapsed_string($p_date);
 							$title = truncate($title, 6, 15);
                             $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$user_username&id=$p_id":"user.php?del&user=$user_username&id=$p_id";
 					?>
 					<p class="no-margin">
-					<?php 
+					<?php
                     if ($mod_rewrite == '1') {
                         echo '<a href="' . $protocol . $baseurl . '/'.$p_id.'" title="' . $title . '">' . ucfirst($title) . '</a>
-							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; 
+							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>';
                       } else {
 						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>
 							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; }
@@ -70,7 +67,7 @@ if(isset($_SESSION['token'])) {
 					while ($row = mysqli_fetch_array($result)) {
 						$totalpastes = $row['count'];
 					}
-					
+
 					if ($totalpastes == '0') { echo $lang['emptypastebin']; } ?>
 					</p>
 				</div>
@@ -80,12 +77,12 @@ if(isset($_SESSION['token'])) {
 <?php } if (isset($_SESSION['username'])) { ?>
 	<?php } else { ?>
 	<!-- Guest message -->
-			<div class="widget guestmsg" style="background:#399bff;">				
+			<div class="widget guestmsg" style="background:#399bff;">
 			<p class="text"><?php echo $lang['guestmsgtitle'];?></p>
 			<p class="text-body"><?php echo $lang['guestmsgbody'];?></p>
 			</div>
-    <!-- End message -->	
-<?php } 
+    <!-- End message -->
+<?php }
 	if ( isset($privatesite) && $privatesite == "on") { // Remove 'recent pastes' if site is private
 	} else { ?>
 		<!-- Recent Public Pastes -->
@@ -93,25 +90,24 @@ if(isset($_SESSION['token'])) {
 		  <div class="panel-title"><?php echo $lang['recentpastes'];?></div>
 			<div class="panel-body">
 				<div class="list-widget pagination-content">
-					<?php          
-							$res = getRecent($con,10);
+					<?php
+							$res = getRecent(10);
 							while($row = mysqli_fetch_array($res)) {
 							$title =  Trim($row['title']);
 							$p_id =  Trim($row['id']);
 							$p_date = Trim($row['date']);
-							$p_time = Trim($row['now_time']);
+              $p_time = time_elapsed_string( $row['date'] );
 							$nowtime = time();
 							$oldtime = $p_time;
-							$p_time = conTime($nowtime-$oldtime);
 							$title = truncate($title, 6, 15);
 					?>
 
 					<p class="no-margin">
 					<?php
 					if ($mod_rewrite == '1') {
-						echo '<a href="' . $protocol . $baseurl . '/' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; 
+						echo '<a href="' . $protocol . $baseurl . '/' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>';
                     } else {
-						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; 
+						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>';
                     }
 					?>
 						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
@@ -120,11 +116,9 @@ if(isset($_SESSION['token'])) {
 					<?php }
 					// Display a message if the pastebin is empty
 					$query  = "SELECT count(*) as count FROM pastes";
-					$result = mysqli_query( $con, $query );
-					while ($row = mysqli_fetch_array($result)) {
-						$totalpastes = $row['count'];
-					}
-					
+					$result = $pastedb->get_row( $query );
+					$totalpastes = $result->count;
+
 					if ($totalpastes == '0') { echo $lang['emptypastebin']; } ?>
 					</p>
 				</div>
@@ -133,10 +127,11 @@ if(isset($_SESSION['token'])) {
 <?php } ?>
 	</div>
 	<!-- End Panel -->
-	
+
 	<?php if (isset($_SESSION['username'])) { ?>
 	<?php } else { ?>
 	<div style="text-align:center;">
 	<?php echo $ads_1; ?>
 	</div>
-	<?php } ?>
+<?php
+}
