@@ -83,6 +83,7 @@ $language_data = array (
     'CASE_KEYWORDS' => GESHI_CAPS_NO_CHANGE,
     'QUOTEMARKS' => array('"'),
     'ESCAPE_CHAR' => '',
+    'NUMBERS' => array(),
     'KEYWORDS' => array(
         1 => array(
             'all','any','none', "yes", "no"
