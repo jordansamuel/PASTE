@@ -7,11 +7,11 @@ Frontend changes
 *
 
 Backend changes
-* 
+* secure email verifications against SQL injections
 
 Other changes
 * Fix php7 compatibility problems #43
-
+* Code cleanup
 
 New version - 2.1
 -
