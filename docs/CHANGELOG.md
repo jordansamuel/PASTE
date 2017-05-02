@@ -1,16 +1,17 @@
 # Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 14/12/2016)
 
-New version - 2.2 (not released yet)
+New version - 2.2
 -
 
 Frontend changes
-*
+* add french translations
+* set markdown as default paste language
 
 Backend changes
 * secure email verifications against SQL injections
 
 Other changes
-* Fix php7 compatibility problems #43
+* Fix php7 compatibility problems
 * Code cleanup
 
 New version - 2.1
