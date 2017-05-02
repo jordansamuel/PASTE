@@ -1,4 +1,18 @@
 # Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 14/12/2016)
+
+New version - 2.2 (not released yet)
+-
+
+Frontend changes
+*
+
+Backend changes
+* 
+
+Other changes
+* Fix php7 compatibility problems #43
+
+
 New version - 2.1
 -
 Frontend changes
