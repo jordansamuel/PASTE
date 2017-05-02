@@ -80,17 +80,7 @@ while ($row = mysqli_fetch_array($result)) {
 $mail_type = $smtp_protocol;
 
 // Check if IP is banned
-$query  = "SELECT * FROM ban_user";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $banned_ip = isset($banned_ip) . "::" . $row['ip'];
-}
-if ( isset( $banned_ip) ) {
-    if (strpos($banned_ip, $ip) !== false) {
-        die($lang['banned']); // "You have been banned from ".$site_name;
-    }
-}
+if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
 
 // Set theme and language
 $query  = "SELECT * FROM interface";
