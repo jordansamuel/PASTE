@@ -40,40 +40,48 @@ while ($row = mysqli_fetch_array($result)) {
 $username = htmlentities(trim($_GET['username']));
 $code     = htmlentities(trim($_GET['code']));
 
-$query  = "SELECT * FROM users WHERE username='$username'";
-$result = mysqli_query($con, $query);
-if (mysqli_num_rows($result) > 0) {
-    // Username found
-    while ($row = mysqli_fetch_array($result)) {
-        $db_oauth_uid = $row['oauth_uid'];
-        $db_email_id  = Trim($row['email_id']);
-        $db_full_name = $row['full_name'];
-        $db_platform  = $row['platform'];
-        $db_password  = Trim($row['password']);
-        $db_verified  = $row['verified'];
-        $db_picture   = $row['picture'];
-        $db_date      = $row['date'];
-        $db_ip        = $row['ip'];
-        $db_id        = $row['id'];
-    }
-    $ver_code = Md5('4et4$55765' . $db_email_id . 'd94ereg');
-    if ($db_verified == '1') {
-        die("Account already verified.");
-    }
-    if ($ver_code == $code) {
-        $query = "UPDATE users SET verified='1' WHERE username='$username'";
-        mysqli_query($con, $query);
-        if (mysqli_error($con)) {
-            $error = "Something went wrong.";
-        } else {
-            header("Location: login.php?login");
-            exit();
-        }
-    } else {
-        echo $ver_code;
-        die("Verification code is wrong.");
-    }
+$query = "SELECT email_id, verified FROM users WHERE username=?";
+if ($stmt = mysqli_prepare($con, $query)) {
+
+	mysqli_stmt_bind_param($stmt, "s", $username);
+	mysqli_stmt_execute($stmt);
+	mysqli_stmt_store_result($stmt);
+
+	if ( mysqli_stmt_num_rows($stmt) > 0 ) {
+
+		mysqli_stmt_bind_result($stmt, $db_email_id, $db_verified);
+
+		while (mysqli_stmt_fetch($stmt)) {
+			if ($db_verified == '1') {
+				die("Account already verified.");
+			}
+
+			$ver_code = Md5('4et4$55765' . $db_email_id . 'd94ereg');
+
+			if ($ver_code == $code) {
+				// Code okay - let's say the user is verified
+				$query = "UPDATE users SET verified='1' WHERE username=?";
+				$stmt = mysqli_prepare($con, $query);
+
+				mysqli_stmt_bind_param($stmt, "s", $username);
+				mysqli_stmt_execute($stmt);
+
+				if (mysqli_stmt_errno($stmt)) {
+					$error = "Something went wrong.";
+				} else {
+					header("Location: login.php?login");
+					exit();
+				}
+
+			} else {
+				echo $ver_code;
+				die("Invalid verification code.");
+			}
+		}
+	} else {
+		die("Username not found.");
+	}
+	mysqli_stmt_close($stmt);
 } else {
-    die("Username not found.");
+	die('Things went terribly wrong.');
 }
-?>
