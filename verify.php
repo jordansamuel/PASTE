@@ -20,22 +20,6 @@ $con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
 if (mysqli_connect_errno()) {
     die("Unable connect to database");
 }
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
 
 $username = htmlentities(trim($_GET['username']));
 $code     = htmlentities(trim($_GET['code']));
