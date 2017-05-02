@@ -114,6 +114,7 @@ Credits
 Paul Dixon for developing **[the original pastebin.com](https://github.com/lordelph/pastebin)**
 
 **[Pat O'Brien](https://github.com/poblabs)** for numerous contributions to the project.
+**[Viktoria Rei Bauer](https://github.com/ToeiRei)** for her contributions to the project.
 
 Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
