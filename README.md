@@ -41,6 +41,16 @@ mysql -uuser -ppassword databasename < docs/paste.mysqlschema.sql
 ```
 Move docs/config.example.php to config.php and edit
 
+Development setup
+===
+* Set up git
+* Fork this repository
+* Create a database for PASTE.
+* Check out the current master branch of your fork
+* Point your browser to http(s)://example.com/install and follow the instructions on screen or import docs/paste.mysqlschema.sql into your database and copy docs/config.example.php to config.php and edit
+
+Now you can start coding and send in pull requests.
+
 ---
 
 Upgrading
