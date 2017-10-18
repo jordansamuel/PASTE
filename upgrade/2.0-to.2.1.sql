@@ -2,6 +2,8 @@ ALTER TABLE site_info ADD additional_scripts TEXT AFTER ga;
 ALTER TABLE site_info ADD baseurl TEXT after additional_scripts;
 ALTER TABLE captcha ADD recaptcha_sitekey TEXT after color;
 ALTER TABLE captcha ADD recaptcha_secretkey TEXT after recaptcha_sitekey;
+ALTER TABLE mail ADD verification TEXT NULL after id;
+UPDATE mail set verification = "enabled";
 
 CREATE TABLE site_permissions(
   id INT(11) NOT NULL AUTO_INCREMENT,
