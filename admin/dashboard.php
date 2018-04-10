@@ -328,10 +328,12 @@ for ($loop = 0; $loop <= 6; $loop++) {
 						$query = "SELECT @last_id := MAX(id) FROM users";
 						$result = mysqli_query($con, $query);
 
-						while ($row = mysqli_fetch_array($result)) {
-							$last_id = $row['@last_id := MAX(id)'];
+						if($result) {
+							while ($row = mysqli_fetch_array($result)) {
+								$last_id = $row['@last_id := MAX(id)'];
+							}
 						}
-
+	
 						for ($uloop = 0; $uloop <= 6; $uloop++) {
 							$r_my_id = $last_id - $uloop;
 							$query   = "SELECT * FROM users WHERE id='$r_my_id'";
