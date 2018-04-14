@@ -633,7 +633,7 @@ while ($row = mysqli_fetch_array($result)) {
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">SMTP Password</label>
 											  <div class="col-sm-10">
-												<input type="password" class="form-control" name="smtp_pass" placeholder="Email password" value="<?php if ($smtp_password != NULL) {echo('123456');}; ?>">
+												<input type="password" class="form-control" name="smtp_pass" placeholder="Email password" value="<?php echo($smtp_password}; ?>">
 											  </div>
 											</div>
 											
