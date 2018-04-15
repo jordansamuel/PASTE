@@ -633,8 +633,13 @@ while ($row = mysqli_fetch_array($result)) {
 											<div class="form-group">
 											  <label class="col-sm-2 control-label form-label">SMTP Password</label>
 											  <div class="col-sm-10">
-												<input type="text" class="form-control" name="smtp_pass" placeholder="eg gmail password" value="<?php echo $smtp_password; ?>">
+												<input type="password" class="form-control" id="smtp_pass" name="smtp_pass" placeholder="Email password" value="<?php echo($smtp_password); ?>">
 											  </div>
+											</div>
+
+											<div class="form-group">
+											  <div class="col-sm-offset-2 col-sm-10">
+												<button style="margin-bottom: 2%;" id="smtppasstoggle" type="button" class="btn btn-default" onclick="if (smtp_pass.type == 'text') {smtp_pass.type = 'password';} else {smtp_pass.type = 'text';}">Toggle password</button>
 											</div>
 											
 											<input type="hidden" name="smtp_code" value="smtp">
@@ -672,5 +677,24 @@ while ($row = mysqli_fetch_array($result)) {
 	<script type="text/javascript" src="js/jquery.min.js"></script>
 	<script type="text/javascript" src="js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="js/bootstrap-select.js"></script>
+
+	<script>
+		function show() {
+    	var smtppassword = document.getElementById('smtp_pass');
+    	smtppassword.setAttribute('type', 'text');
+		}
+
+		function hide() {
+				var smtppassword = document.getElementById('smtp_pass');
+				smtppassword.setAttribute('type', 'password');
+		}
+
+		if($('#smtppasstoggle').is(':checked')) {
+			show();
+		} else {
+			hide();
+		}
+	</script>
+
   </body>
 </html>
