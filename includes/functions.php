@@ -25,18 +25,16 @@ function str_contains($haystack, $needle, $ignoreCase = false)
 
 function encrypt($value)
 {
-    $iv_size = @mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-    $iv      = @mcrypt_create_iv($iv_size, MCRYPT_RAND);
-    $val     = @mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
-    return base64_encode($val);
+	$salt = "3g4weg6ujrere";
+	$encrypted_string=openssl_encrypt($value,"AES-256-CBC",$salt);
+	return $encrypted_string;
 }
 
 function decrypt($value)
 {
-    $value   = base64_decode($value);
-    $iv_size = @mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-    $iv      = @mcrypt_create_iv($iv_size, MCRYPT_RAND);
-    return @mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SECRET, $value, MCRYPT_MODE_ECB, $iv);
+	$salt = "3g4weg6ujrere";
+	$decrypted_string=openssl_decrypt($value,"AES-256-CBC",$salt);
+	return $decrypted_string;
 }
 
 function deleteMyPaste($con, $paste_id)
