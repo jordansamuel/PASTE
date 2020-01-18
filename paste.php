@@ -39,6 +39,9 @@ if (isset($_GET['id'])) {
     $paste_id = Trim(htmlspecialchars($_POST['id']));
 }
 
+// Prevent SQLInjection
+settype($paste_id, 'integer');
+
 // Database Connection
 $con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
 if (mysqli_connect_errno()) {
