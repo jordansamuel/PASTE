@@ -21,7 +21,7 @@ https://github.com/jordansamuel/PASTE/issues/new
 Requirements
 ===
 * Apache 2.X / Nginx
-* PHP 5.3.7 (or later) with php-mcrypt & GD enabled [PHP5.5+ recommended]
+* PHP 5.3.7 (or later) with php-openssl & GD enabled [PHP5.5+ recommended]
 * MySQL 5.x+
 
 ---
