@@ -25,7 +25,6 @@ function str_contains($haystack, $needle, $ignoreCase = false)
 
 function encrypt($value)
 {
-	$salt = "erag45u652grfd";
 	$encrypted_string=openssl_encrypt($value,"AES-256-CBC",$salt);
 	return $encrypted_string;
 }
