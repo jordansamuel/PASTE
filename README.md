@@ -7,7 +7,7 @@ The original source is available from the previous owner's **[GitHub repository]
 
 A demo of Paste is available on our homepage at **[SourceForge](https://phpaste.sourceforge.io/demo)**
 
-A public version can be found at **[PasteThis](http://pastethis.in)**
+A public version can be found **[here](http://paste.boxlabs.uk)**
 
 IRC: If you would like support or want to contribute to Paste connect to irc.collectiveirc.net in channel #PASTE
 
