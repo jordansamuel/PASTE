@@ -45,6 +45,8 @@ $dbname = "DATABASENAME";
 $sec_key = '';
 define('SECRET',md5($sec_key));
 
+$salt = '';//change this
+
 // Set to 1 to enable Apache's mod_rewrite
 $mod_rewrite = "0";
 
