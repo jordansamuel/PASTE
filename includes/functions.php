@@ -31,7 +31,7 @@ function encrypt($value)
 
 function decrypt($value)
 {
-	$salt = "erag45u652grfd";
+	$salt = $sec_key;
 	$decrypted_string=openssl_decrypt($value,"AES-256-CBC",$salt);
 	return $decrypted_string;
 }

@@ -77,11 +77,9 @@ $dbuser = "' . $data_user . '";
 $dbpassword = "' . $data_pass . '";
 $dbname = "' . $data_name . '";' . "
 
-// Secret key for paste encryption" . '
+// Secret key for paste encryption
 $sec_key' . " = '$data_sec';
 define('SECRET',md5(" . '$sec_key));
-
-$salt = "' . uniqid(mt_rand(), true); '";
 
 // Set to 1 to enable Apache\'s mod_rewrite
 $mod_rewrite = "0";
