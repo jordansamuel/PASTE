@@ -1,4 +1,4 @@
-# Paste 2.1
+# Paste 2.2
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 [![Download PASTE](https://img.shields.io/sourceforge/dt/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
@@ -7,7 +7,7 @@ The original source is available from the previous owner's **[GitHub repository]
 
 A demo of Paste is available on our homepage at **[SourceForge](https://phpaste.sourceforge.io/demo)**
 
-A public version can be found **[here](http://paste.boxlabs.uk)**
+A public version can be found **[here](https://paste.boxlabs.uk)**
 
 IRC: If you would like support or want to contribute to Paste connect to irc.collectiveirc.net in channel #PASTE
 
@@ -21,7 +21,7 @@ https://github.com/jordansamuel/PASTE/issues/new
 Requirements
 ===
 * Apache 2.X / Nginx
-* PHP 5.3.7 (or later) with php-openssl & GD enabled [PHP5.5+ recommended]
+* PHP 5.3.7 (or later) with php-openssl & GD enabled [PHP7.+ recommended]
 * MySQL 5.x+
 
 ---
@@ -55,6 +55,8 @@ Now you can start coding and send in pull requests.
 
 Upgrading
 ===
+* 2.1 to 2.2
+no changes to database
 
 * 2.0 to 2.1
 
