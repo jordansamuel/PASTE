@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in docs/GPL.txt for more details.
  */
-$currentversion = 2.1;
+$currentversion = 2.2;
 
 // Max paste size in MB. This value should always be below the value of
 // post_max_size in your PHP configuration settings (php.ini) or empty errors will occur.

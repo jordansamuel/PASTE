@@ -48,7 +48,7 @@ $data = '<?php
  * GNU General Public License in LIC.txt for more details.
  */
  
-$currentversion = 2.1;
+$currentversion = 2.2;
 
 // Max paste size in MB. This value should always be below the value of
 // post_max_size in your PHP configuration settings (php.ini) or empty errors will occur.
@@ -75,11 +75,11 @@ define(\'G_Application_Name\', \'Paste\'); // Make sure this matches the name of
 $dbhost = "' . $data_host . '";
 $dbuser = "' . $data_user . '";
 $dbpassword = "' . $data_pass . '";
-$dbname = "' . $data_name . '";' . "
+$dbname = "' . $data_name . '";
 
 // Secret key for paste encryption
-$sec_key' . " = '$data_sec';
-define('SECRET',md5(" . '$sec_key));
+$sec_key  = "' . $data_sec . '";
+define(\'SECRET\',md5($sec_key));
 
 // Set to 1 to enable Apache\'s mod_rewrite
 $mod_rewrite = "0";
