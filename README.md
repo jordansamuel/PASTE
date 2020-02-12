@@ -1,4 +1,6 @@
 # Paste 2.2
+[![Download PASTE](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/phpaste/files/latest/download)
+
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 [![Download PASTE](https://img.shields.io/sourceforge/dt/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
@@ -7,15 +9,15 @@ The original source is available from the previous owner's **[GitHub repository]
 
 A demo of Paste is available on our homepage at **[SourceForge](https://phpaste.sourceforge.io/demo)**
 
-A public version can be found **[here](https://paste.boxlabs.uk)**
+A public version can be found **[here](https://paste.boxlabs.uk/)**
 
 IRC: If you would like support or want to contribute to Paste connect to irc.collectiveirc.net in channel #PASTE
 
 Any bugs can be reported at:
 https://github.com/jordansamuel/PASTE/issues/new
 
-[![Frontend](http://i.imgur.com/UxZVxqo.png)](http://pastethis.in/)
-[![Frontend](http://i.imgur.com/peFanYH.png)](http://pastethis.in/)
+[![Frontend](http://i.imgur.com/UxZVxqo.png)](https://paste.boxlabs.uk/)
+[![Frontend](http://i.imgur.com/peFanYH.png)](https://paste.boxlabs.uk/)
 
 
 Requirements
