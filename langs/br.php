@@ -1,6 +1,6 @@
 <?php
 /*
- * Language File: English
+ * Language File: Portuguese
  */
 
 $lang = array();

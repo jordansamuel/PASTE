@@ -40,7 +40,7 @@ if (mysqli_connect_errno()) {
 }
 
 // Get site info
-$query  = "SELECT * FROM site_info";
+$query  = "SELECT * FROM site_info WHERE id='1'";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
@@ -58,7 +58,7 @@ while ($row = mysqli_fetch_array($result)) {
 }
 
 // Set theme and language
-$query  = "SELECT * FROM interface";
+$query  = "SELECT * FROM interface WHERE id='1'";
 $result = mysqli_query($con, $query);
 
 while ($row = mysqli_fetch_array($result)) {
