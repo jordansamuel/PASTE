@@ -58,7 +58,6 @@ if ($stmt = mysqli_prepare($con, $query)) {
 				}
 
 			} else {
-				echo $ver_code;
 				die("Invalid verification code.");
 			}
 		}
