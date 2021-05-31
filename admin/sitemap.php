@@ -203,6 +203,7 @@ while ($row = mysqli_fetch_array($result)) {
 							if (isset($_GET['re'])) {
 								unlink('../sitemap.xml');
 								// which protocol are we on
+								require_once('../includes/functions.php');
 								$protocol = paste_protocol();
 								// level up, dirty but meh
 								$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }

@@ -316,6 +316,13 @@ function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, 
     return $stats;
 }
 
+function paste_protocol() {
+
+  $protocol = ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] == "on" ) ? 'https://' : 'http://';
+
+  return $protocol;
+}
+
 function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
 {
     $c_date    = date('Y-m-d');
@@ -341,12 +348,6 @@ function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
 
     $full_map  = $site_data . $c_sitemap;
     file_put_contents("sitemap.xml", $full_map);
-}
-function paste_protocol() {
-
-  $protocol = ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] == "on" ) ? 'https://' : 'http://';
-
-  return $protocol;
 }
 
 function is_banned($con, $ip) {
