@@ -114,9 +114,8 @@ function updateMyView($con, $paste_id)
 
 function conTime($secs) {
     // round up to 1 second
-    if ($secs == 0) {
+    if ($secs < 1)
         $secs = 1;
-    }
 
     $bit = array(
         ' year' => $secs / 31556926 % 12,
