@@ -17,6 +17,12 @@ session_start();
 require_once('config.php');
 require_once('includes/functions.php');
 
+// Disable access to archives from non GET requests.
+if ($_SERVER['REQUEST_METHOD'] != 'GET') {
+    http_response_code(405);
+    exit('405 Method Not Allowed.');
+}
+
 // UTF-8
 header('Content-Type: text/html; charset=utf-8');
 
@@ -24,6 +30,9 @@ $date    = date('jS F Y');
 $ip      = $_SERVER['REMOTE_ADDR'];
 $data_ip = file_get_contents('tmp/temp.tdata');
 $con     = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+
+// Set site originally to private.
+$privatesite = 'on';
 
 if (mysqli_connect_errno()) {
     die("Unable to connect to database");
@@ -62,19 +71,16 @@ $p_title = $lang['archive']; // "Pastes Archive";
 if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
 
 // Site permissions
-$query  = "SELECT * FROM site_permissions where id='1'";
+$query  = 'SELECT * FROM site_permissions where id = 1 LIMIT 1';
 $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-	$siteprivate	= Trim($row['siteprivate']);
-}
+if ($row = mysqli_fetch_array($result))
+	$siteprivate = Trim($row['siteprivate']);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-} else {
-	if ($siteprivate =="on") {
-		$privatesite = "on";
-    }
-}
+if ($siteprivate == 'on')
+    $privatesite = 'on';
+else
+    $privatesite = 'off';
 
 // Logout
 if (isset($_GET['logout'])) {
