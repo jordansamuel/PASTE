@@ -983,7 +983,7 @@ abstract class BaseFacebook
       }
 
       if (!empty($retained_params)) {
-        $query = '?'.implode($retained_params, '&');
+        $query = '?'.implode('&', $retained_params);
       }
     }
 
