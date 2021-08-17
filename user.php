@@ -74,7 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 	
 // If username defined in URL, then check if it's exists in database. If invalid, redirect to main site.
-$user_username = Trim($_SESSION['username']);
 if ( isset( $_GET['user'] ) ) {
     $profile_username = trim( $_GET['user'] );
     if ( !existingUser( $con, $profile_username ) ) {
@@ -203,6 +202,7 @@ if ( isset($_GET['del']) ) {
     if ( $_SESSION['token'] ) { // Prevent unauthorized deletes
         $paste_id = htmlentities( Trim( $_GET['id'] ) );
         // Check if logged in user owns the paste
+        $user_username = Trim($_SESSION['username']);
         $query    = "SELECT * FROM pastes WHERE id='$paste_id' and member='$user_username'";
         $result   = mysqli_query($con, $query);
         $num_rows = mysqli_num_rows($result);
