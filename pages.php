@@ -136,7 +136,7 @@ while ($row = mysqli_fetch_array($result)) {
     $ads_2    = Trim($row['ads_2']);
     
 }
-if (isset($_GET{'page'})) {
+if (isset($_GET['page'])) {
     $page_name = trim($_GET['page']);
     $sql       = "SELECT * FROM pages where page_name='$page_name'";
     $result    = mysqli_query($con, $sql);

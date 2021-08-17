@@ -68,7 +68,7 @@ if ($last_ip == $ip) {
     mysqli_query($con, $query);
 }
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST{'editme'})) {
+    if (isset($_POST['editme']})) {
         $edit_me_id   = htmlentities(Trim($_POST['editme']));
         $page_name    = Trim($_POST['page_name']);
         $page_title   = Trim($_POST['page_title']);
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $page_content = "";
 }
 
-if (isset($_GET{'edit'})) {
+if (isset($_GET['edit']})) {
     
     $page_id = trim($_GET['edit']);
     $sql     = "SELECT * FROM pages where id='$page_id'";
@@ -207,8 +207,8 @@ if (isset($_GET{'edit'})) {
 								</div>
 								<br />
 								<?php
-								if (isset($_GET{'edit'})) {
-									echo '<input type="hidden" value=' . $_GET{'edit'} . 'id="editme" name="editme" />';
+								if (isset($_GET['edit'])) {
+									echo '<input type="hidden" value=' . $_GET['edit'] . 'id="editme" name="editme" />';
 								}
 								?>
 								<div class='control-group'>
@@ -237,7 +237,7 @@ if (isset($_GET{'edit'})) {
 								<th>Delete</th>
 
 								<?php
-								if (isset($_GET{'delete'})) {
+								if (isset($_GET['delete']})) {
 									$delete = htmlentities(Trim($_GET['delete']));
 									$query  = "DELETE FROM pages WHERE id=$delete";
 									$result = mysqli_query($con, $query);
@@ -262,8 +262,8 @@ if (isset($_GET{'edit'})) {
 
 
 
-								if (isset($_GET{'page'})) { // Get the current page
-									$page   = $_GET{'page'} + 1;
+								if (isset($_GET['page'])) { // Get the current page
+									$page   = $_GET['page'] + 1;
 									$offset = $rec_limit * $page;
 								} else {
 									// Show first set of results

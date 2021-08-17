@@ -97,7 +97,7 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
     }
 }
 
-if (isset($_GET{'delete'})) {
+if (isset($_GET['delete']})) {
 	$delete = htmlentities(Trim($_GET['delete']));
 	$query  = "DELETE FROM ban_user WHERE id=$delete";
 	$result = mysqli_query($con, $query);
@@ -237,8 +237,8 @@ if (isset($_GET{'delete'})) {
 
 
 
-							if (isset($_GET{'page'})) { // Current page
-								$page   = $_GET{'page'} + 1;
+							if (isset($_GET['page'])) { // Current page
+								$page   = $_GET['page'] + 1;
 								$offset = $rec_limit * $page;
 							} else {
 								// Show first set of results
