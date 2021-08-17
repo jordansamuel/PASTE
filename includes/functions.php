@@ -13,14 +13,16 @@
  * GNU General Public License in GPL.txt for more details.
  */
 
-function str_contains($haystack, $needle, $ignoreCase = false)
-{
-    if ($ignoreCase) {
-        $haystack = strtolower($haystack);
-        $needle   = strtolower($needle);
+if (! function_exists('str_contains')) {
+    function str_contains($haystack, $needle, $ignoreCase = false)
+    {
+        if ($ignoreCase) {
+            $haystack = strtolower($haystack);
+            $needle   = strtolower($needle);
+        }
+        $needlePos = strpos($haystack, $needle);
+        return ($needlePos === false ? false : ($needlePos + 1));
     }
-    $needlePos = strpos($haystack, $needle);
-    return ($needlePos === false ? false : ($needlePos + 1));
 }
 
 function encrypt($value)
@@ -54,7 +56,7 @@ LIMIT 0 , $count";
     return $result;
 }
 
-function getUserRecent($con, $count = 5, $username)
+function getUserRecent($con, $username, $count = 5)
 {
     $limit  = $count ? "limit $count" : "";
     $query  = "SELECT *
@@ -161,7 +163,7 @@ function truncate($input, $maxWords, $maxChars)
         $truncated[] = $fragment;
     }
 
-    $result = implode($truncated, ' ');
+    $result = implode(' ', $truncated);
 
     return $result . ($input == $result ? '' : '[...]');
 }

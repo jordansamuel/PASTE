@@ -77,6 +77,7 @@ while ($row = mysqli_fetch_array($result)) {
 require_once("langs/$default_lang");
 
 // Check if IP is banned
+$ip = $_SERVER['REMOTE_ADDR'];
 if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
 
 // Site permissions
@@ -97,7 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Current date & user IP
 $date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
 $data_ip = file_get_contents('tmp/temp.tdata');
 
 // Ads
@@ -120,7 +120,7 @@ if (isset($_GET['logout'])) {
 }
 
 // Escape from quotes
-if (get_magic_quotes_gpc()) {
+if (function_exists('get_magic_quotes_gpc')) {
     function callback_stripslashes(&$val, $name)
     {
         if (get_magic_quotes_gpc())
@@ -143,11 +143,13 @@ while ($row = mysqli_fetch_array($result)) {
     $last_id = $row['@last_id := MAX(id)'];
 }
 
-$query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
+if ($last_id) {
+    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
+    $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['date'];
+    while ($row = mysqli_fetch_array($result)) {
+        $last_date = $row['date'];
+    }
 }
 
 if ($last_date == $date) {

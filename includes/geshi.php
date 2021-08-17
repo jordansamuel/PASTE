@@ -3331,7 +3331,7 @@ class GeSHi {
         $disallowed_before = "(?<![a-zA-Z0-9\$_\|\#|^&";
         $disallowed_after = "(?![a-zA-Z0-9_\|%\\-&;";
         if ($this->lexic_permissions['STRINGS']) {
-            $quotemarks = preg_quote(implode($this->language_data['QUOTEMARKS']), '/');
+            $quotemarks = preg_quote(implode('/', $this->language_data['QUOTEMARKS']));
             $disallowed_before .= $quotemarks;
             $disallowed_after .= $quotemarks;
         }

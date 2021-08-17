@@ -52,12 +52,14 @@ while ($row = mysqli_fetch_array($result)) {
     $last_id = $row['@last_id := MAX(id)'];
 }
 
-$query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
+if ($last_id) {
+    $query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
+    $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['last_date'];
-    $last_ip   = $row['ip'];
+    while ($row = mysqli_fetch_array($result)) {
+        $last_date = $row['last_date'];
+        $last_ip   = $row['ip'];
+    }
 }
 
 if ($last_ip == $ip) {

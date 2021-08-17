@@ -77,11 +77,13 @@ while ($row = mysqli_fetch_array($result)) {
     $last_id = $row['@last_id := MAX(id)'];
 }
 
-$query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
+if ($last_id) {
+    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
+    $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['date'];
+    while ($row = mysqli_fetch_array($result)) {
+        $last_date = $row['date'];
+    }
 }
 
 if ($last_date == $date) {
@@ -136,7 +138,7 @@ while ($row = mysqli_fetch_array($result)) {
     $ads_2    = Trim($row['ads_2']);
     
 }
-if (isset($_GET{'page'})) {
+if (isset($_GET['page'])) {
     $page_name = trim($_GET['page']);
     $sql       = "SELECT * FROM pages where page_name='$page_name'";
     $result    = mysqli_query($con, $sql);

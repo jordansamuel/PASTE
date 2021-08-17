@@ -48,12 +48,14 @@ while ($row = mysqli_fetch_array($result)) {
     $last_id = $row['@last_id := MAX(id)'];
 }
 
-$query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
+if ($last_id) {
+    $query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
+    $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['last_date'];
-    $last_ip   = $row['ip'];
+    while ($row = mysqli_fetch_array($result)) {
+        $last_date = $row['last_date'];
+        $last_ip   = $row['ip'];
+    }
 }
 
 if ($last_ip == $ip) {
@@ -97,7 +99,7 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
     }
 }
 
-if (isset($_GET{'delete'})) {
+if (isset($_GET['delete'])) {
 	$delete = htmlentities(Trim($_GET['delete']));
 	$query  = "DELETE FROM ban_user WHERE id=$delete";
 	$result = mysqli_query($con, $query);
@@ -237,8 +239,8 @@ if (isset($_GET{'delete'})) {
 
 
 
-							if (isset($_GET{'page'})) { // Current page
-								$page   = $_GET{'page'} + 1;
+							if (isset($_GET['page'])) { // Current page
+								$page   = $_GET['page'] + 1;
 								$offset = $rec_limit * $page;
 							} else {
 								// Show first set of results

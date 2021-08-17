@@ -53,12 +53,14 @@ while ($row = mysqli_fetch_array($result)) {
     $last_id = $row['@last_id := MAX(id)'];
 }
 
-$query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
+if ($last_id) {
+    $query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
+    $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['last_date'];
-    $last_ip   = $row['ip'];
+    while ($row = mysqli_fetch_array($result)) {
+        $last_date = $row['last_date'];
+        $last_ip   = $row['ip'];
+    }
 }
 
 if ($last_ip == $ip) {
@@ -334,23 +336,25 @@ for ($loop = 0; $loop <= 6; $loop++) {
 							}
 						}
 	
-						for ($uloop = 0; $uloop <= 6; $uloop++) {
-							$r_my_id = $last_id - $uloop;
-							$query   = "SELECT * FROM users WHERE id='$r_my_id'";
-							$result  = mysqli_query($con, $query);
-							
-							while ($row = mysqli_fetch_array($result)) {
-								$u_date   = $row['date'];
-								$ip       = $row['ip'];
-								$username = $row['username'];
+						if ($last_id) {
+							for ($uloop = 0; $uloop <= 6; $uloop++) {
+								$r_my_id = $last_id - $uloop;
+								$query   = "SELECT * FROM users WHERE id='$r_my_id'";
+								$result  = mysqli_query($con, $query);
+								
+								while ($row = mysqli_fetch_array($result)) {
+									$u_date   = $row['date'];
+									$ip       = $row['ip'];
+									$username = $row['username'];
+								}
+								echo "
+											  <tr>
+												<td>$r_my_id</td>
+												<td>$username</td>
+												<td>$u_date</td>
+												<td><span class='label label-default'>$ip</span></td>
+											  </tr> ";
 							}
-							echo "
-										  <tr>
-											<td>$r_my_id</td>
-											<td>$username</td>
-											<td>$u_date</td>
-											<td><span class='label label-default'>$ip</span></td>
-										  </tr> ";
 						}
 
 						?>

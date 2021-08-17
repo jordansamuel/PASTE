@@ -34,7 +34,7 @@ $protocol = paste_protocol();
 				</h2>
 				<?php
 				$user_username = Trim($_SESSION['username']);
-				$res = getUserRecent($con, 7, $user_username);
+				$res = getUserRecent($con, $user_username, 7);
 				while ($row = mysqli_fetch_array($res)) {
 					$title =  Trim($row['title']);
 					$p_id =  Trim($row['id']);
