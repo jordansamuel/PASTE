@@ -14,10 +14,6 @@ IRC: If you would like support or want to contribute to Paste connect to irc.col
 Any bugs can be reported at:
 https://github.com/jordansamuel/PASTE/issues/new
 
-[![Frontend](http://i.imgur.com/UxZVxqo.png)](https://paste.boxlabs.uk/)
-[![Frontend](http://i.imgur.com/peFanYH.png)](https://paste.boxlabs.uk/)
-
-
 Requirements
 ===
 * Apache 2.X / Nginx
@@ -120,7 +116,6 @@ Everything else can be configured using the admin panel.
 
 ---
 
-
 Credits
 ===
 
@@ -132,3 +127,9 @@ Credits
 The Paste theme was built using Bootstrap, jQuery and various jQuery plugins for
 present and future features, but we do try to keep it bloat free.
 Icons are provided by FontAwesome.
+
+Screenshots
+===
+
+[![Frontend](http://i.imgur.com/UxZVxqo.png)](https://paste.boxlabs.uk/)
+[![Frontend](http://i.imgur.com/peFanYH.png)](https://paste.boxlabs.uk/)
