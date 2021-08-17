@@ -48,8 +48,9 @@ function default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body)
     
 }
 
-function smtp_mail($smtp_host, $smtp_port = 587, $smtp_auth, $smtp_user, $smtp_pass, $smtp_sec = 'tls', $admin_mail, $admin_name, $sent_mail, $subject, $body)
+function smtp_mail($subject, $body, $recipient, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port = 587, $smtp_sec = 'tls')
 {
+
     require_once('class.phpmailer.php');
     require_once('class.smtp.php');
     $mail = new PHPMailer;
@@ -63,7 +64,7 @@ function smtp_mail($smtp_host, $smtp_port = 587, $smtp_auth, $smtp_user, $smtp_p
     
     $mail->From     = $admin_mail;
     $mail->FromName = $admin_name;
-    $mail->AddAddress($sent_mail); // Add a recipient
+    $mail->AddAddress($recipient); // Add a recipient
     
     $mail->IsHTML(true); // Set email format to HTML
     

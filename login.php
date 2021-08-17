@@ -213,7 +213,7 @@ if (isset($_GET['resend'])) {
                 if ($mail_type == '1') {
                     default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
                 } else {
-                    smtp_mail($smtp_host, $smtp_port, $smtp_auth, $smtp_user, $smtp_pass, $smtp_sec, $admin_mail, $admin_name, $sent_mail, $subject, $body);
+                    smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
                 }
                 $success = $lang['mail_suc']; // "Verification code successfully sent to your email.";
 
@@ -268,7 +268,7 @@ if (isset($_GET['forgot'])) {
                 if ($mail_type == '1') {
                     default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
                 } else {
-                    smtp_mail($smtp_host, $smtp_port, $smtp_auth, $smtp_user, $smtp_pass, $smtp_sec, $admin_mail, $admin_name, $sent_mail, $subject, $body);
+                    smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
                 }
                 
             }
@@ -385,7 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 									if ($mail_type == '1') {
 										default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
 									} else {
-										smtp_mail($smtp_host, $smtp_port, $smtp_auth, $smtp_user, $smtp_pass, $smtp_sec, $admin_mail, $admin_name, $sent_mail, $subject, $body);
+										smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
 									}
 								}
                             }
