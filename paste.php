@@ -120,7 +120,7 @@ if (isset($_GET['logout'])) {
 }
 
 // Escape from quotes
-if (get_magic_quotes_gpc()) {
+if (function_exists('get_magic_quotes_gpc')) {
     function callback_stripslashes(&$val, $name)
     {
         if (get_magic_quotes_gpc())
