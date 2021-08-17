@@ -70,7 +70,7 @@ if ($last_ip == $ip) {
     mysqli_query($con, $query);
 }
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['editme']})) {
+    if (isset($_POST['editme'])) {
         $edit_me_id   = htmlentities(Trim($_POST['editme']));
         $page_name    = Trim($_POST['page_name']);
         $page_title   = Trim($_POST['page_title']);
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $page_content = "";
 }
 
-if (isset($_GET['edit']})) {
+if (isset($_GET['edit'])) {
     
     $page_id = trim($_GET['edit']);
     $sql     = "SELECT * FROM pages where id='$page_id'";
@@ -239,7 +239,7 @@ if (isset($_GET['edit']})) {
 								<th>Delete</th>
 
 								<?php
-								if (isset($_GET['delete']})) {
+								if (isset($_GET['delete'])) {
 									$delete = htmlentities(Trim($_GET['delete']));
 									$query  = "DELETE FROM pages WHERE id=$delete";
 									$result = mysqli_query($con, $query);

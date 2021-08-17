@@ -99,7 +99,7 @@ if ( $_SERVER['REQUEST_METHOD'] == 'POST' || isset( $_GET['banip'] ) ) {
     }
 }
 
-if (isset($_GET['delete']})) {
+if (isset($_GET['delete'])) {
 	$delete = htmlentities(Trim($_GET['delete']));
 	$query  = "DELETE FROM ban_user WHERE id=$delete";
 	$result = mysqli_query($con, $query);
