@@ -114,7 +114,7 @@ $protocol = paste_protocol();
 					$title = truncate( $title, 20, 50 );
                     
                     // Guests only see public pastes
-                    if ( !isset( $_SESSION['token'] ) || $_SESSION['username'] != $profile_username ) {
+                    if ( !isset( $_SESSION['token'] ) || isset($_SESSION['username']) && $_SESSION['username'] != $profile_username ) {
                         if ( $row['visible'] == 0 ) {
                             echo '<tr> 
                             <td><a href="' . $protocol . $baseurl . '/'.$p_link.'" title="'.$title.'">'.ucfirst($title).'</a></td>    

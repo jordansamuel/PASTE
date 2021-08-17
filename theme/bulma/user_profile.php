@@ -37,7 +37,7 @@ $protocol = paste_protocol();
                 ?>
 
                 <?php
-                if ($_SESSION['username'] == $profile_username) {
+                if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) {
                 ?>
                     <?php echo $lang['profile-stats']; ?><br />
                     <?php echo $lang['totalpastes'] . ' ' . $profile_total_pastes; ?> &mdash;
@@ -54,12 +54,12 @@ $protocol = paste_protocol();
                         <tr>
                             <td><?php echo $lang['pastetitle']; ?></td>
                             <td><?php echo $lang['pastetime']; ?></td>
-                            <?php if (isset($_SESSION) && $_SESSION['username'] == $profile_username) {
+                            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) {
                                 echo "<td>" . $lang['visibility'] . "</td>";
                             } ?>
                             <td><?php echo $lang['pasteviews']; ?></td>
                             <td><?php echo $lang['pastesyntax']; ?></td>
-                            <?php if (isset($_SESSION) && $_SESSION['username'] == $profile_username) {
+                            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) {
                                 echo "<td>" . $lang['delete'] . "</td>";
                             } ?>
                         </tr>
@@ -68,12 +68,12 @@ $protocol = paste_protocol();
                         <tr>
                             <td><?php echo $lang['pastetitle']; ?></td>
                             <td><?php echo $lang['pastetime']; ?></td>
-                            <?php if (isset($_SESSION) && $_SESSION['username'] == $profile_username) {
+                            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) {
                                 echo "<td>" . $lang['visibility'] . "</td>";
                             } ?>
                             <td><?php echo $lang['pasteviews']; ?></td>
                             <td><?php echo $lang['pastesyntax']; ?></td>
-                            <?php if (isset($_SESSION) && $_SESSION['username'] == $profile_username) {
+                            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) {
                                 echo "<td>" . $lang['delete'] . "</td>";
                             } ?>
                         </tr>
@@ -104,7 +104,7 @@ $protocol = paste_protocol();
                             $title = truncate($title, 20, 50);
 
                             // Guests only see public pastes
-                            if (!isset($_SESSION['token']) || $_SESSION['username'] != $profile_username) {
+                            if (!isset($_SESSION['token']) || isset($_SESSION['username']) && $_SESSION['username'] != $profile_username) {
                                 if ($row['visible'] == 0) {
                                     echo '<tr> 
                                                 <td>
