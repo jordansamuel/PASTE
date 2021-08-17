@@ -77,6 +77,7 @@ while ($row = mysqli_fetch_array($result)) {
 require_once("langs/$default_lang");
 
 // Check if IP is banned
+$ip = $_SERVER['REMOTE_ADDR'];
 if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
 
 // Site permissions
@@ -97,7 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Current date & user IP
 $date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
 $data_ip = file_get_contents('tmp/temp.tdata');
 
 // Ads
