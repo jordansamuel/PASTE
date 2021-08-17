@@ -280,7 +280,7 @@ if (isset($_GET['forgot'])) {
     }
     
 }
-if ($_SERVER['REQUEST_METHOD'] == POST) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Check if logged in
     if (isset($_SESSION['token'])) {
         header("Location: ./");
