@@ -139,11 +139,13 @@ while ($row = mysqli_fetch_array($result)) {
     $last_id = $row['@last_id := MAX(id)'];
 }
 
-$query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-$result = mysqli_query($con, $query);
+if ($last_id) {
+    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
+    $result = mysqli_query($con, $query);
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_date = $row['date'];
+    while ($row = mysqli_fetch_array($result)) {
+        $last_date = $row['date'];
+    }
 }
 
 if ($last_date == $date) {
