@@ -26,30 +26,32 @@ if (mysqli_connect_errno()) {
 	die("Unable connect to database");
 }
 
-$query =  "SELECT * FROM admin";
-$result = mysqli_query($con,$query);
-
-while($row = mysqli_fetch_array($result)) {
-	$adminid =  Trim($row['user']);
-	$password =   $row['pass'];
-}
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-	if ($adminid == htmlentities(trim($_POST['username']))) {
-		if (password_verify($_POST['password'], $password)) {
-			header("Location: dashboard.php");
-			$_SESSION['login'] = true;
-		} else {
-			$msg = '<div class="paste-alert alert6" style="text-align:center;">
-						Wrong User/Password
-					</div>';
-		}
-	} else {
-			$msg = '<div class="paste-alert alert6" style="text-align:center;">
-						Wrong User/Password
-					</div>';
-		
+	$username = htmlentities(trim($_POST['username']));
+
+	$query = 'SELECT user, pass FROM admin WHERE user = ? LIMIT 1';
+	$stmt = mysqli_prepare($con, $query);
+
+	mysqli_stmt_bind_param($stmt, 's', $username);
+
+	mysqli_stmt_execute($stmt);
+
+	mysqli_stmt_bind_result($stmt, $user, $pass);
+
+	mysqli_stmt_fetch($stmt);
+
+	mysqli_stmt_free_result($stmt);
+
+	if ($user && password_verify($_POST['password'], $pass)) {
+		header("Location: dashboard.php");
+		$_SESSION['login'] = true;
+
+		return;
 	}
+
+	$msg = '<div class="paste-alert alert6" style="text-align:center;">
+				Wrong User/Password
+			</div>';
 }
 ?>
 
