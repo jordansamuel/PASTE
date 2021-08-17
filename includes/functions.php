@@ -56,7 +56,7 @@ LIMIT 0 , $count";
     return $result;
 }
 
-function getUserRecent($con, $count = 5, $username)
+function getUserRecent($con, $username, $count = 5)
 {
     $limit  = $count ? "limit $count" : "";
     $query  = "SELECT *
