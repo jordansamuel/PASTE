@@ -33,6 +33,7 @@ if (isset($_GET['logout'])) {
 $date = date('jS F Y');
 $ip   = $_SERVER['REMOTE_ADDR'];
 require_once('../config.php');
+require_once('../includes/functions.php');
 $con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
 
 if (mysqli_connect_errno()) {
@@ -203,7 +204,8 @@ while ($row = mysqli_fetch_array($result)) {
 							<br />
 							<?php
 							if (isset($_GET['re'])) {
-								unlink('../sitemap.xml');
+								if (file_exists('../sitemap.xml'))
+									unlink('../sitemap.xml');
 								// which protocol are we on
 								$protocol = paste_protocol();
 								// level up, dirty but meh
