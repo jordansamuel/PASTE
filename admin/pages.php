@@ -286,8 +286,8 @@ if (isset($_GET['edit'])) {
 									echo '<td>' . $row['page_title'] . '</td>';
 									$myid = $row['id'];
 									echo '<td>' . "<a class='btn btn-success btn-sm' href=../page/" . $row['page_name'] . "> View </a>" . '</td>';
-									echo '<td>' . "<a class='btn btn-default btn-sm' href=" . $_PHP_SELF . "?edit=" . $myid . "> Edit </a>" . '</td>';
-									echo '<td>' . "<a class='btn btn-danger btn-sm' href=" . $_PHP_SELF . "?delete=" . $myid . "> Delete </a>" . '</td>';
+									echo '<td>' . "<a class='btn btn-default btn-sm' href=" . $_SERVER['PHP_SELF'] . "?edit=" . $myid . "> Edit </a>" . '</td>';
+									echo '<td>' . "<a class='btn btn-danger btn-sm' href=" . $_SERVER['PHP_SELF'] . "?delete=" . $myid . "> Delete </a>" . '</td>';
 									$no++;
 								}
 								echo '</tr>';
@@ -300,14 +300,14 @@ if (isset($_GET['edit'])) {
 									if ($last < 0) {
 										
 									} else {
-										echo @"<li><a href=\"$_PHP_SELF?page=$last\">Previous</a></li>";
+										echo @"<li><a href=\"" . $_SERVER['PHP_SELF'] ."?page=$last\">Previous</a></li>";
 									}
 								} else if ($page == 0) {
-									echo @"<li><a href=\"$_PHP_SELF?page=$page\">Next</a></li>";
+									echo @"<li><a href=\"" . $_SERVER['PHP_SELF'] ."?page=$page\">Next</a></li>";
 								} else if ($page > 0) {
 									$last = $page - 2;
-									echo @"<li><a href=\"$_PHP_SELF?page=$last\">Previous</a></li> ";
-									echo @"<li><a href=\"$_PHP_SELF?page=$page\">Next</a></li>";
+									echo @"<li><a href=\"" . $_SERVER['PHP_SELF'] ."?page=$last\">Previous</a></li> ";
+									echo @"<li><a href=\"" . $_SERVER['PHP_SELF'] ."?page=$page\">Next</a></li>";
 								}
 								echo '</ul>';
 								?>
