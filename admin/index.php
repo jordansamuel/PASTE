@@ -18,6 +18,11 @@ require_once('../includes/password.php');
 
 session_start();
 
+if (isset($_SESSION['login'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+
 require_once ('../config.php');
 
 $con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
