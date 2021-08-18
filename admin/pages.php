@@ -199,13 +199,13 @@ if (isset($_GET['edit'])) {
 								<div class="control-group">
 									<label for="page_name">Page name (No spaces, e.g. terms_of_service)</label> <input class="span6" id=
 									"page_name" name="page_name" placeholder="Enter page name"
-									type="text" value="<?php echo isset($page_name); ?>">
+									type="text" value="<?php echo isset($page_name) ? $page_name : ''; ?>">
 								</div>
 								<div class="control-group">
 									<label for="page_title">Page title</label> <input class=
 									"span6" id="page_title" name="page_title" placeholder=
 									"Enter page title" type="text" value=
-									"<?php echo isset($page_title); ?>">
+									"<?php echo isset($page_title) ? $page_title : ''; ?>">
 								</div>
 								<br />
 								<?php
@@ -214,7 +214,7 @@ if (isset($_GET['edit'])) {
 								}
 								?>
 								<div class='control-group'>
-									<textarea class="span6" cols="80" id="editor1" name="data" rows="10"><?php echo isset($page_content); ?></textarea><br>
+									<textarea class="span6" cols="80" id="editor1" name="data" rows="10"><?php echo isset($page_content) ? $page_content : ''; ?></textarea><br>
 								</div>
 								<button class="btn btn-default btn-sm">Save</button>
 							</form>
