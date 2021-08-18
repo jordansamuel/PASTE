@@ -202,7 +202,8 @@ while ($row = mysqli_fetch_array($result)) {
 							<br />
 							<?php
 							if (isset($_GET['re'])) {
-								unlink('../sitemap.xml');
+								if (file_exists('../sitemap.xml'))
+									unlink('../sitemap.xml');
 								// which protocol are we on
 								$protocol = paste_protocol();
 								// level up, dirty but meh
