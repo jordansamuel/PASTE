@@ -274,7 +274,8 @@ if (isset($_GET['forgot'])) {
             }
             
         } else {
-            $error = $lang['email_not']; //"Email not found";  
+            sleep(rand(0.4, 2));
+            $success   = $lang['pass_change'];
         }
         
     }
