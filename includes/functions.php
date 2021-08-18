@@ -27,16 +27,37 @@ if (! function_exists('str_contains')) {
 
 function encrypt($value)
 {
-	$salt = $sec_key;
-	$encrypted_string=openssl_encrypt($value,"AES-256-CBC",$salt);
-	return $encrypted_string;
+    global $sec_key;
+
+    $ivlen = openssl_cipher_iv_length($cipher = "AES-256-CBC");
+    $iv    = openssl_random_pseudo_bytes($ivlen);
+
+	$encrypted = openssl_encrypt($value, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
+
+    $hmac = hash_hmac('sha256', $encrypted, $sec_key, true);
+
+	return base64_encode($iv . $hmac . $encrypted);
 }
 
 function decrypt($value)
 {
-	$salt = $sec_key;
-	$decrypted_string=openssl_decrypt($value,"AES-256-CBC",$salt);
-	return $decrypted_string;
+    global $sec_key;
+
+    $decoded = base64_decode($value);
+
+    $ivlen = openssl_cipher_iv_length($cipher = "AES-256-CBC");
+    $iv    = substr($decoded, 0, $ivlen);
+    $hmac  = substr($decoded, $ivlen, $sha256len = 32);
+
+    $encrypted = substr($decoded, $ivlen + $sha256len);
+
+	$decrypted = openssl_decrypt($encrypted, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
+
+    if (hash_equals($hmac, hash_hmac('sha256', $encrypted, $sec_key, true))) {
+        return $decrypted;
+    }
+
+    return '';
 }
 
 function deleteMyPaste($con, $paste_id)
