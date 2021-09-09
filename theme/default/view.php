@@ -97,7 +97,7 @@ $protocol = paste_protocol();
 						<!-- Raw data -->
 						<div class="form-group">
 							<div class="col-md-12">
-							  <textarea class="form-control" rows="15" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo $op_content; ?></textarea>
+							  <textarea class="form-control" rows="15" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo htmlspecialchars($op_content, ENT_QUOTES, 'UTF-8'); ?></textarea>
 							</div>
 						</div>
 					</div>
@@ -165,7 +165,7 @@ $protocol = paste_protocol();
 								<!-- Text area -->
 								<div class="form-group">
 									<div class="col-md-12">
-									  <textarea class="form-control" rows="15" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo $op_content; ?></textarea>
+									  <textarea class="form-control" rows="15" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo htmlspecialchars($op_content, ENT_QUOTES, 'UTF-8'); ?></textarea>
 									</div>
 								</div>
 

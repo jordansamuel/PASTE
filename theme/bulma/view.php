@@ -80,7 +80,7 @@ $protocol = paste_protocol();
 					<hr>
 					<h1 class="title is-6 "><?php echo $lang['rawpaste']; ?><h1>
 							<!-- Raw  -->
-							<textarea style="line-height: 1.2;" class="textarea mx-1" rows="13" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo $op_content; ?></textarea>
+							<textarea style="line-height: 1.2;" class="textarea mx-1" rows="13" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo htmlspecialchars($op_content, ENT_QUOTES, 'UTF-8'); ?></textarea>
 							<hr>
 							<p><?php echo $lang['registertoedit']; ?></p>
 						<?php } else { ?>
@@ -146,7 +146,7 @@ $protocol = paste_protocol();
 											</div>
 										</nav>
 										<!-- Text area -->
-										<textarea style="line-height: 1.2;" class="textarea mx-1" rows="13" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo $op_content; ?></textarea>
+										<textarea style="line-height: 1.2;" class="textarea mx-1" rows="13" id="code" name="paste_data" onkeydown="return catchTab(this,event)" placeholder="helloworld"><?php echo htmlspecialchars($op_content, ENT_QUOTES, 'UTF-8'); ?></textarea>
 										<br>
 										<nav class="level">
 											<div class="level-left">
