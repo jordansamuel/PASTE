@@ -4,14 +4,14 @@
  * -------
  * Author: Nigel McNie (nigel@geshi.org), Zéfling (zefling@ikilote.net)
  * Copyright: (c) 2004 Nigel McNie (http://qbnz.com/highlighter/)
- * Release Version: 1.0.8.12
+ * Release Version: 1.0.9.1
  * Date Started: 2004/06/18
  *
  * CSS language file for GeSHi.
  *
  * CHANGES
  * -------
- * 2014/07/14 (1.0.8.12)
+ * 2014/07/14 (1.0.8.13)
  *  - update for current CSS3 (properties, value, expression, unites & color)
  *  - remove pseudo class regex
  *  - add rules regex

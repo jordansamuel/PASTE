@@ -4,14 +4,14 @@
  * --------
  * Author: Sebastian Godelet (sebastian.godelet+github@gmail.com)
  * Copyright: (c) 2014
- * Release Version: 1.0.8.12
+ * Release Version: 1.0.9.1
  * Date Started: 2014/10/30
  *
  * Mercury language file for GeSHi.
  *
  * CHANGES
  * -------
- * 2014/10/30 (1.0.8.12)
+ * 2014/10/30 (1.0.8.13)
  *  -  First Release
  *
  * TODO (updated 2014/10/30)

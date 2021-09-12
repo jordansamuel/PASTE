@@ -1,1 +1,0 @@
-Direct access not allowed.
