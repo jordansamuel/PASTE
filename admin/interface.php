@@ -70,6 +70,25 @@ if ($last_ip == $ip) {
     mysqli_query($con, $query);
 }
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$d_lang  = Trim($_POST['lang']);
+	$d_theme = Trim($_POST['theme']);
+	
+	$query = "UPDATE interface SET lang='$d_lang', theme='$d_theme' WHERE id='1'";
+	mysqli_query($con, $query);
+	
+	if (mysqli_errno($con)) {
+		$msg = '<div class="paste-alert alert6" style="text-align: center;">
+	 ' . mysqli_error($con) . '
+	 </div>';
+		
+	} else {
+		$msg = '<div class="paste-alert alert3" style="text-align: center;">
+		 Settings saved
+		 </div>';
+	}
+}
+
 if ( ! isset($d_theme) && ! isset($d_lang) ) {
 	$query = "SELECT theme, lang FROM interface WHERE id='1'";
 	$result = mysqli_query( $con, $query );
@@ -160,27 +179,6 @@ if ( ! isset($d_theme) && ! isset($d_lang) ) {
 				</div>
 			</div>
 			<!-- End Menu -->
-			
-			<?php
-			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-				$d_lang  = Trim($_POST['lang']);
-				$d_theme = Trim($_POST['theme']);
-				
-				$query = "UPDATE interface SET lang='$d_lang', theme='$d_theme' WHERE id='1'";
-				mysqli_query($con, $query);
-				
-				if (mysqli_errno($con)) {
-					$msg = '<div class="paste-alert alert6" style="text-align: center;">
-				 ' . mysqli_error($con) . '
-				 </div>';
-					
-				} else {
-					$msg = '<div class="paste-alert alert3" style="text-align: center;">
-					 Settings saved
-					 </div>';
-				}
-			}
-			?>
 
 			<!-- Start Interface Settings -->
 			<div class="row">
