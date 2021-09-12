@@ -70,6 +70,15 @@ if ($last_ip == $ip) {
     mysqli_query($con, $query);
 }
 
+if ( ! isset($d_theme) && ! isset($d_lang) ) {
+	$query = "SELECT theme, lang FROM interface WHERE id='1'";
+	$result = mysqli_query( $con, $query );
+	while ( $row = mysqli_fetch_array( $result ) ) {
+		$d_theme = $row['theme'];
+		$d_lang = $row['lang'];
+	}
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -195,7 +204,8 @@ if ($last_ip == $ip) {
 													$ffname = $files1[$loop];
 												if ($ffname == "index.php") {/* we don't want index.php showing */}
 													else {
-														echo '<option value="' . $ffname . '">' . $fname . '</option>';
+														$sel=( $d_lang == $ffname )?'selected="selected"':'';
+														echo '<option value="' . $ffname . '" '.$sel.'>' . $fname . '</option>';
 													}
 												}
 												?>
@@ -205,15 +215,6 @@ if ($last_ip == $ip) {
 											<h6>Theme</h6>
 												<select class="selectpicker" name="theme">
 												<?php
-												// Find the current theme if not set from $_POST
-												if ( !isset( $d_theme ) ) {
-													$query = "SELECT theme FROM interface WHERE id='1'";
-													$result = mysqli_query( $con, $query );
-													while ( $row = mysqli_fetch_array( $result ) ) {
-														$d_theme = $row['theme'];
-													}
-												}
-												
 												$dir    = '../theme';
 												$files1 = scandir($dir);
 
