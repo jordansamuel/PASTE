@@ -78,7 +78,7 @@ For Nginx, use the example config in **[docs/nginx.example.conf](https://github.
 ---
 Changelog
 ===
-See **[docs/CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/master/docs/CHANGELOG.md)**
+See **[CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/HEAD/CHANGELOG.md)**
 
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
