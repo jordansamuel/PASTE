@@ -49,7 +49,7 @@ xmlhttp.onreadystatechange=function()
     {
     }
   }
-$.post("configure.php", {data_host:sql_host,data_name:sql_name,data_user:sql_user,data_pass:sql_pass,data_sec:sql_sec}, function(results){
+$.post("install/configure.php", {data_host:sql_host,data_name:sql_name,data_user:sql_user,data_pass:sql_pass,data_sec:sql_sec}, function(results){
 if (results == 0) {
      $("#alertfailed").show();
      $("#install").show();
@@ -86,7 +86,7 @@ $("#alertfailed").hide();
 $("#install").hide();
 $("#configure").hide();
 $("#pre_load").show();
-$.post("install.php", {admin_user:user,admin_pass:pass}, function(results){
+$.post("install/install.php", {admin_user:user,admin_pass:pass}, function(results){
      $("#logpanel").show();
      $("#log").append(results);
      $("#pre_load").hide();
