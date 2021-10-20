@@ -73,12 +73,12 @@ Set mod_rewrite in config.php to 1
 
 For Apache, just use .htaccess
 
-For Nginx, use the example config in **[docs/nginx.example.conf](https://github.com/jordansamuel/PASTE/blob/master/docs/nginx.example.conf)**
+For Nginx, use the example config in **[docs/nginx.example.conf](https://github.com/jordansamuel/PASTE/blob/HEAD/docs/nginx.example.conf)**
 
 ---
 Changelog
 ===
-See **[CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/HEAD/CHANGELOG.md)**
+See **[docs/CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/HEAD/docs/CHANGELOG.md)**
 
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
