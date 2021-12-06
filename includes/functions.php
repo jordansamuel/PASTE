@@ -148,7 +148,7 @@ function updateMyView($con, $paste_id)
 function conTime($seconds)
 {
     if (! \is_int($seconds)) {
-        throw new \InvalidArgumentException('Argument 1 passed to secondsToHumanReadable() must be of the type int, ' . \gettype($seconds) . ' given');
+        throw new \InvalidArgumentException('Argument 1 passed to conTime() must be of the type int, ' . \gettype($seconds) . ' given');
     }
 
     $now = new \DateTime('@0');
