@@ -6,13 +6,13 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in GPL.txt for more details.
  */
- 
+
 session_start();
 
 $directory = 'install';
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     } else {
         $_SESSION['captcha_mode'] = "none";
-    }        
+    }
 }
 
 // Check if IP is banned
@@ -191,26 +191,26 @@ if ($last_date == $date) {
     if (str_contains($data_ip, $ip)) {
         $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
         $result = mysqli_query($con, $query);
-        
+
         while ($row = mysqli_fetch_array($result)) {
             $last_tpage = Trim($row['tpage']);
         }
         $last_tpage = $last_tpage + 1;
-        
+
         // IP already exists, Update view count
         $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
         mysqli_query($con, $query);
     } else {
         $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
         $result = mysqli_query($con, $query);
-        
+
         while ($row = mysqli_fetch_array($result)) {
             $last_tpage  = Trim($row['tpage']);
             $last_tvisit = Trim($row['tvisit']);
         }
         $last_tpage  = $last_tpage + 1;
         $last_tvisit = $last_tvisit + 1;
-        
+
         // Update both tpage and tvisit.
         $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
         mysqli_query($con, $query);
@@ -220,14 +220,14 @@ if ($last_date == $date) {
     // Delete the file and clear data_ip
     unlink("tmp/temp.tdata");
     $data_ip = "";
-    
+
     // New date is created
     $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
     mysqli_query($con, $query);
-    
+
     // Update the IP
     file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
+
 }
 
 // POST Handler
@@ -238,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		goto OutPut;
 		exit;
 	}
-	
+
 	// Check if fields are only white space
 	if (trim($_POST["paste_data"]) == '') {
 		$error = $lang['empty_paste'];
@@ -252,7 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		goto OutPut;
 		exit;
 	}
-			
+
     // Check POST data status
     if (isset($_POST['title']) And isset($_POST['paste_data'])) {
         if ($cap_e == "on" && !isset($_SESSION['username'])) {
@@ -263,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     // reCAPTCHA Errors
                     switch( $response["error-codes"][0] ) {
                         case "missing-input-response":
-                            $error = $lang['missing-input-response']; 
+                            $error = $lang['missing-input-response'];
                             break;
                         case "missing-input-secret":
                             $error = $lang['missing-input-secret'];
@@ -300,8 +300,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             $p_password = password_hash($p_password, PASSWORD_DEFAULT);
         }
-        $p_encrypt = Trim(htmlspecialchars($_POST['encrypted']));
-        
+
+        $encrypted = isset($_POST['encrypted']) ? $_POST['encrypted'] : '';
+        $p_encrypt = Trim(htmlspecialchars($encrypted));
+
         if ($p_encrypt == "" || $p_encrypt == null) {
             $p_encrypt = "0";
         } else {
@@ -309,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $p_encrypt = "1";
             $p_content = encrypt($p_content);
         }
-        
+
         if (isset($_SESSION['token'])) {
             $p_member = Trim($_SESSION['username']);
         } else {
@@ -354,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $edit_paste_id = $_POST['paste_id'];
             $query = "UPDATE pastes SET title='$p_title',content='$p_content',visible='$p_visible',code='$p_code',expiry='$expires',password='$p_password',encrypt='$p_encrypt',member='$p_member',date='$p_date',ip='$ip' WHERE id = '$edit_paste_id'";
         } else {
-            $query = "INSERT INTO pastes (title,content,visible,code,expiry,password,encrypt,member,date,ip,now_time,views,s_date) VALUES 
+            $query = "INSERT INTO pastes (title,content,visible,code,expiry,password,encrypt,member,date,ip,now_time,views,s_date) VALUES
             ('$p_title','$p_content','$p_visible','$p_code','$expires','$p_password','$p_encrypt','$p_member','$p_date','$ip','$now_time','0','$date')";
         }
         $result = mysqli_query($con, $query);
@@ -375,14 +377,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         $error = $lang['error']; // "Something went wrong";
     }
-	
+
 	// Redirect to paste on successful entry, or on successful edit redirect back to edited paste
 	if ( isset( $success ) ) {
 		if ( $mod_rewrite == '1' ) {
             if ( isset( $_POST['edit'] ) ) {
                 $paste_url = "$edit_paste_id";
             } else {
-                $paste_url = "$success"; 
+                $paste_url = "$success";
             }
         } else {
             if ( $_POST['edit'] ) {
@@ -401,4 +403,3 @@ OutPut:
 require_once('theme/' . $default_theme . '/header.php');
 require_once('theme/' . $default_theme . '/main.php');
 require_once('theme/' . $default_theme . '/footer.php');
-?>
