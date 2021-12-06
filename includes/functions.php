@@ -13,7 +13,7 @@
  * GNU General Public License in GPL.txt for more details.
  */
 
-if (! function_exists('str_contains')) {
+if (!function_exists('str_contains')) {
     function str_contains($haystack, $needle, $ignoreCase = false)
     {
         if ($ignoreCase) {
@@ -32,11 +32,11 @@ function encrypt($value)
     $ivlen = openssl_cipher_iv_length($cipher = "AES-256-CBC");
     $iv    = openssl_random_pseudo_bytes($ivlen);
 
-	$encrypted = openssl_encrypt($value, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
+    $encrypted = openssl_encrypt($value, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
 
     $hmac = hash_hmac('sha256', $encrypted, $sec_key, true);
 
-	return base64_encode($iv . $hmac . $encrypted);
+    return base64_encode($iv . $hmac . $encrypted);
 }
 
 function decrypt($value)
@@ -51,7 +51,7 @@ function decrypt($value)
 
     $encrypted = substr($decoded, $ivlen + $sha256len);
 
-	$decrypted = openssl_decrypt($encrypted, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
+    $decrypted = openssl_decrypt($encrypted, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
 
     if (hash_equals($hmac, hash_hmac('sha256', $encrypted, $sec_key, true))) {
         return $decrypted;
@@ -106,15 +106,17 @@ function getTotalPastes($con, $username)
     return $count;
 }
 
-function isValidUsername($str) {
+function isValidUsername($str)
+{
     return !preg_match('/[^A-Za-z0-9.#\\-$]/', $str);
 }
 
-function existingUser( $con, $username ) {
+function existingUser($con, $username)
+{
     $query = "SELECT * FROM users WHERE username = '$username'";
-    $result = mysqli_query( $con, $query );
-    $num_rows = mysqli_num_rows( $result );
-    if ( $num_rows == 0 ) {
+    $result = mysqli_query($con, $query);
+    $num_rows = mysqli_num_rows($result);
+    if ($num_rows == 0) {
         // No records. User doesn't exist.
         return false;
     } else {
@@ -135,38 +137,47 @@ function updateMyView($con, $paste_id)
     $result = mysqli_query($con, $query);
 }
 
-function conTime($secs) {
-    // round up to 1 second
-    if ($secs < 1)
-        $secs = 1;
-
-    $bit = array(
-        ' year' => $secs / 31556926 % 12,
-        ' week' => $secs / 604800 % 52,
-        ' day' => $secs / 86400 % 7,
-        ' hour' => $secs / 3600 % 24,
-        ' min' => $secs / 60 % 60,
-        ' sec' => $secs % 60
-    );
-
-    foreach ($bit as $k => $v) {
-        if ($v > 1)
-            $ret[] = $v . $k . 's';
-        if ($v == 1)
-            $ret[] = $v . $k;
+/**
+ * Convert seconds to a human readable string.
+ *
+ * @source https://stackoverflow.com/a/40777273/6158792 Written by Hans Henrik Bergan.
+ * @param int $seconds
+ *
+ * @return string
+ */
+function conTime($seconds)
+{
+    if (! \is_int($seconds)) {
+        throw new \InvalidArgumentException('Argument 1 passed to secondsToHumanReadable() must be of the type int, ' . \gettype($seconds) . ' given');
     }
-    array_splice($ret, count($ret) - 1, 0, 'and');
-    $ret[] = 'ago';
 
-    $val = join(' ', $ret);
-    if (str_contains($val, "week")) {
-    } else {
-        $val = str_replace("and", "", $val);
+    $now = new \DateTime('@0');
+    $then = new \DateTime("@$seconds");
+    $ret = '';
+
+    if ($seconds === 0)
+        return '0 seconds';
+
+    $diff = $now->diff($then);
+
+    foreach (array(
+        'y' => 'year',
+        'm' => 'month',
+        'd' => 'day',
+        'h' => 'hour',
+        'i' => 'minute',
+        's' => 'second'
+    ) as $time => $timename) {
+        if ($diff->$time !== 0) {
+            $ret .= $diff->$time . ' ' . $timename;
+            if ($diff->$time !== 1 && $diff->$time !== -1) {
+                $ret .= 's';
+            }
+            $ret .= ' ';
+        }
     }
-    if (Trim($val) == "ago") {
-        $val = "1 sec ago";
-    }
-    return $val;
+
+    return substr($ret, 0, -1);
 }
 
 function truncate($input, $maxWords, $maxChars)
@@ -274,13 +285,14 @@ function rawView($paste_id, $p_title, $p_content, $p_code)
     return $stats;
 }
 
-function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang ) {
+function embedView($paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang)
+{
     $stats = false;
-    if ( $p_content ) {
+    if ($p_content) {
         // Build the output
         $output = "<div class='paste_embed_container'>";
-            $output .= "<style>"; // Add our own styles
-            $output .= "
+        $output .= "<style>"; // Add our own styles
+        $output .= "
             .paste_embed_container {
                 font-size: 12px;
                 color: #333;
@@ -323,31 +335,32 @@ function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, 
                 background: #ffffff;
                 line-height:20px;
             }";
-            $output .= "</style>";
-            $output .= "$ges_style"; // Dynamic GeSHI Style
-            $output .= $p_content; // Paste content
-            $output .= "<div class='paste_embed_footer'>";
-			$output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower( $lang['view-raw'] ) . "</a>";
-			$output .= "</div>";
-			$output .= "</div>";
+        $output .= "</style>";
+        $output .= "$ges_style"; // Dynamic GeSHI Style
+        $output .= $p_content; // Paste content
+        $output .= "<div class='paste_embed_footer'>";
+        $output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower($lang['view-raw']) . "</a>";
+        $output .= "</div>";
+        $output .= "</div>";
 
         // Display embed content using json_encode since that escapes
         // characters well enough to satisfy javascript. http://stackoverflow.com/a/169035
-        header( 'Content-type: text/javascript; charset=utf-8;' );
-        echo 'document.write(' . json_encode( $output ) . ')';
+        header('Content-type: text/javascript; charset=utf-8;');
+        echo 'document.write(' . json_encode($output) . ')';
         $stats = true;
     } else {
         // 404
-        header( 'HTTP/1.1 404 Not Found' );
+        header('HTTP/1.1 404 Not Found');
     }
     return $stats;
 }
 
-function paste_protocol() {
+function paste_protocol()
+{
 
-  $protocol = ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] == "on" ) ? 'https://' : 'http://';
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? 'https://' : 'http://';
 
-  return $protocol;
+    return $protocol;
 }
 
 function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
@@ -355,8 +368,8 @@ function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
     $c_date    = date('Y-m-d');
     $site_data = file_get_contents("sitemap.xml");
     $site_data = str_replace("</urlset>", "", $site_data);
-	// which protocol are we on
-	$protocol = paste_protocol();
+    // which protocol are we on
+    $protocol = paste_protocol();
 
     if ($mod_rewrite == "1") {
         $server_name = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/" . $paste_id;
@@ -364,8 +377,8 @@ function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
         $server_name = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/paste.php?id=" . $paste_id;
     }
 
-	$c_sitemap =
-'	<url>
+    $c_sitemap =
+        '	<url>
 		<loc>' . $server_name . '</loc>
 		<priority>' . $priority . '</priority>
 		<changefreq>' . $changefreq . '</changefreq>
@@ -377,19 +390,20 @@ function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
     file_put_contents("sitemap.xml", $full_map);
 }
 
-function is_banned($con, $ip) {
-        $query  = "SELECT id FROM ban_user WHERE ip=?";
-        if ($stmt = mysqli_prepare($con, $query)) {
+function is_banned($con, $ip)
+{
+    $query  = "SELECT id FROM ban_user WHERE ip=?";
+    if ($stmt = mysqli_prepare($con, $query)) {
         mysqli_stmt_bind_param($stmt, "s", $ip);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_store_result($stmt);
 
-                if ( mysqli_stmt_num_rows($stmt) > 0 ) {
-                        mysqli_stmt_close($stmt);
-                        return true;
-                } else {
-                        mysqli_stmt_close($stmt);
-                        return false;
-                }
+        if (mysqli_stmt_num_rows($stmt) > 0) {
+            mysqli_stmt_close($stmt);
+            return true;
+        } else {
+            mysqli_stmt_close($stmt);
+            return false;
         }
+    }
 }
