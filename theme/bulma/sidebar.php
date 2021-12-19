@@ -84,12 +84,11 @@ $protocol = paste_protocol();
 	if (isset($_SESSION['username'])) { ?>
 	<?php } else { ?>
 		<!-- Guest message -->
-		<nav id="categories" class="bd-categories is-hidden">
-			<div class="bd-category ">
-				<p class="text-body"><?php echo $lang['guestmsgbody']; ?></p>
-			</div>
-			<hr>
-		</nav>
+		<div class="notification is-info">
+			<p><?php echo $lang['guestmsgtitle']; ?></p>
+			<br>
+			<p><?php echo $lang['guestmsgbody']; ?></p>
+		</div>
 	<?php }
 	if (isset($privatesite) && $privatesite == "on") {
 	} else { ?>
