@@ -67,9 +67,29 @@
 									</div>
 								</div>
 								<div class="field">
-									<input class="button is-info" type="submit" name="signin" value="Login" value="<?php echo md5($date . $ip); ?>">
+									<input class="button is-info is-fullwidth" type="submit" name="signin" value="Login" value="<?php echo md5($date . $ip); ?>">
 								</div>
 								<hr>
+								<!-- Oauth -->
+								<?php if ($enablegoog == "no") {
+								} else { ?>
+									<a class="button is-fullwidth is-google my-4" href="oauth/google.php?login">
+										<span class="icon">
+											<i class="fab fa-google"></i>
+										</span>
+										<span>Sign in with Google</span>
+									</a>
+								<?php }
+								if ($enablefb == "no") {
+								} else { ?>
+									<a class="button is-fullwidth is-facebook" href="oauth/facebook.php?login">
+										<span class="icon">
+											<i class="fab fa-facebook"></i>
+										</span>
+										<span>Sign in with Facebook</span>
+									</a>
+								<?php } ?>
+								<!-- // -->
 							</div>
 							<div class="column">
 							</div>
@@ -81,35 +101,6 @@
 							</div>
 						</div>
 					</form>
-					<!-- Oauth -->
-					<?php if ($enablegoog == "no") {
-					} else { ?>
-						<div class="control">
-							<a href="oauth/google.php?login">
-								<div class="google-btn">
-									<div class="google-icon-wrapper">
-										<img class="google-icon" src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" />
-									</div>
-									<p class="btn-text">Sign up with Google</p>
-								</div>
-							</a>
-						</div>
-						<br>
-					<?php }
-					if ($enablefb == "no") {
-					} else { ?>
-						<div class="control">
-							<a class="btn-fb" href="oauth/facebook.php?login">
-								<div class="fb-content">
-									<div class="logo">
-										<img src="https://facebookbrand.com/wp-content/uploads/2019/04/f_logo_RGB-Hex-Blue_512.png?w=512&h=512" alt="" width="32px" height="32px">
-									</div>
-									<p>Sign up with Facebook</p>
-								</div>
-							</a>
-						</div>
-					<?php } ?>
-					<!-- // -->
 				<?php // Registration page
 				} elseif (isset($_GET['register'])) {
 				?>
@@ -154,9 +145,29 @@
 									</div>
 								</div>
 								<div class="field">
-									<input class="button is-info" type="submit" name="signup" value="Register" value="<?php echo md5($date . $ip); ?>">
+									<input class="button is-info is-fullwidth" type="submit" name="signup" value="Register" value="<?php echo md5($date . $ip); ?>">
 								</div>
 								<hr>
+								<!-- Oauth -->
+								<?php if ($enablegoog == "no") {
+								} else { ?>
+									<a class="button is-fullwidth is-google my-4" href="oauth/google.php?login">
+										<span class="icon">
+											<i class="fab fa-google"></i>
+										</span>
+										<span>Sign up with Google</span>
+									</a>
+								<?php }
+								if ($enablefb == "no") {
+								} else { ?>
+									<a class="button is-fullwidth is-facebook" href="oauth/facebook.php?login">
+										<span class="icon">
+											<i class="fab fa-facebook"></i>
+										</span>
+										<span>Sign up with Facebook</span>
+									</a>
+								<?php } ?>
+								<!-- // -->
 							</div>
 							<div class="column">
 							</div>
@@ -168,35 +179,6 @@
 							</div>
 						</div>
 					</form>
-					<!-- Oauth -->
-					<?php if ($enablegoog == "no") {
-					} else { ?>
-						<div class="control">
-							<a href="oauth/google.php?login">
-								<div class="google-btn">
-									<div class="google-icon-wrapper">
-										<img class="google-icon" src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" />
-									</div>
-									<p class="btn-text">Sign up with Google</p>
-								</div>
-							</a>
-						</div>
-						<br>
-					<?php }
-					if ($enablefb == "no") {
-					} else { ?>
-						<div class="control">
-							<a class="btn-fb" href="oauth/facebook.php?login">
-								<div class="fb-content">
-									<div class="logo">
-										<img src="https://facebookbrand.com/wp-content/uploads/2019/04/f_logo_RGB-Hex-Blue_512.png?w=512&h=512" alt="" width="32px" height="32px">
-									</div>
-									<p>Sign up with Facebook</p>
-								</div>
-							</a>
-						</div>
-					<?php } ?>
-					<!-- // -->
 				<?php // Forgot password
 				} elseif (isset($_GET['forgot'])) {
 				?>
@@ -214,7 +196,7 @@
 									</div>
 								</div>
 								<div class="field">
-									<input class="button" type="submit" name="forgot" value="Submit" value="<?php echo md5($date . $ip); ?>" />
+									<input class="button is-fullwidth is-info" type="submit" name="forgot" value="Submit" value="<?php echo md5($date . $ip); ?>" />
 								</div>
 							</div>
 							<div class="column">
@@ -244,7 +226,7 @@
 									</div>
 								</div>
 								<div class="field">
-									<input class="button" type="submit" value="Submit" name="resend" value="<?php echo md5($date . $ip); ?>" />
+									<input class="button is-fullwidth is-info" type="submit" value="Submit" name="resend" value="<?php echo md5($date . $ip); ?>" />
 								</div>
 							</div>
 							<div class="column">
