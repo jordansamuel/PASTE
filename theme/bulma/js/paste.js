@@ -91,6 +91,14 @@ $(function () {
 });
 */
 
+$('[data-target~="#signin"],[data-target~="#signup"]').click(function () {
+  $(".modal").addClass("is-active");
+});
+
+$(".modal-close").click(function () {
+  $(".modal").removeClass("is-active");
+});
+
 // Import from Paste 1.9
 function showdiv(e) {
   document.getElementById(e).style.display = "inline";
