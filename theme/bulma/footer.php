@@ -19,7 +19,8 @@
   <div class="container">
     <div class="columns">
       <div class="column is-8">
-        <strong><?php echo $site_name; ?></strong> by <a href="https://github.com/wsehl">wsehl</a>, on <a href="https://github.com/wsehl/wspaste">github</a>
+        Copyright &copy; <?php echo date("Y"); ?> <strong><?php echo $site_name; ?></strong> All rights reserved.
+        Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste</a>
       </div>
       <div class="column is-4">
         <?php if (isset($_SESSION['username'])) { ?>
@@ -82,7 +83,11 @@
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/paste.js"></script>
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/modal-fx.min.js"></script>
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/datatables.min.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/autosize.min.js"></script>
 
+<script>
+  autosize(document.getElementById("code"));
+</script>
 
 <!--Notification -->
 <script>

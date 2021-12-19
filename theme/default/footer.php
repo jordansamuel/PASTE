@@ -58,6 +58,11 @@
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/bootstrap-select.js"></script>
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/jquery-ui.min.js"></script>
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/datatables.min.js"></script>
+<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/autosize.min.js"></script>
+
+<script>
+  autosize(document.getElementById("code"));
+</script>
 
 <script>
 $(document).ready(function() {
