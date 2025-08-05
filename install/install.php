@@ -1,329 +1,366 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
- 
-require_once("../config.php");
 
-// PHP <5.5 compatibility
-require_once('../includes/password.php');
+// Start output buffering
+ob_start();
 
-$admin_user = htmlentities(Trim($_POST['admin_user']));
-$admin_pass = password_hash($_POST['admin_pass'], PASSWORD_DEFAULT);
-$date = date("j F Y");
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-// level up, dirty but meh
-$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }
+// Ensure JSON content type
+header('Content-Type: application/json; charset=utf-8');
 
-if (mysqli_connect_errno()) {
-	echo "Failed to connect:" . mysqli_connect_error() . "<br />";
+// Disable display errors
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+// Check required files
+$config_file = '../config.php';
+if (!file_exists($config_file)) {
+    ob_end_clean();
+    error_log("config.php not found in install.php");
+    echo json_encode(['status' => 'error', 'message' => 'config.php not found. Run configure.php first.']);
+    exit;
 }
 
-// Admin
-$sql = "CREATE TABLE admin
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-user VARCHAR(250),
-pass VARCHAR(250)
-)";
-	// Execute query
+try {
+    require_once $config_file;
+} catch (Exception $e) {
+    ob_end_clean();
+    error_log("Error including config.php in install.php: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Failed to include config.php: ' . $e->getMessage()]);
+    exit;
+}
 
-	if (mysqli_query($con, $sql)) {
-		echo "admin table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+function sanitizeInput($input) {
+    return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+}
 
-	$query = "INSERT INTO admin (user,pass) VALUES ('$admin_user','$admin_pass')";
-	mysqli_query($con, $query);
+// Sanitize input
+$admin_user = isset($_POST['admin_user']) ? sanitizeInput($_POST['admin_user']) : '';
+$admin_pass = isset($_POST['admin_pass']) ? password_hash($_POST['admin_pass'], PASSWORD_DEFAULT) : '';
+$date = date('Y-m-d H:i:s');
 
-// Admin history
-$sql = "CREATE TABLE admin_history
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-last_date VARCHAR(255),
-ip VARCHAR(255)
-)";
-	// Execute query
+// Connect to database using PDO
+try {
+    $dsn = "mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4";
+    $pdo = new PDO($dsn, $dbuser, $dbpassword);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch (PDOException $e) {
+    ob_end_clean();
+    error_log("Database connection failed in install.php: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $e->getMessage()]);
+    exit;
+}
 
-	if (mysqli_query($con, $sql)) {
-		echo "admin_history table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+// Calculate base URL
+$base_path = dirname($_SERVER['PHP_SELF'], 2);
+$baseurl = '//' . $_SERVER['SERVER_NAME'] . $base_path;
 
-// Site info
-$sql = "CREATE TABLE site_info
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-title VARCHAR(255),
-des mediumtext,
-keyword mediumtext,
-site_name VARCHAR(255),
-email VARCHAR(255),
-twit VARCHAR(4000),
-face VARCHAR(4000),
-gplus VARCHAR(4000),
-ga VARCHAR(255),
-additional_scripts text, 
-baseurl text
-)";
-	// Execute query
+// Function to check if table exists
+function tableExists($pdo, $table) {
+    try {
+        $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
+        return $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        error_log("Error checking table $table: " . $e->getMessage());
+        return false;
+    }
+}
 
-	if (mysqli_query($con, $sql)) {
-		echo "site_info table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+// Function to check if column exists
+function columnExists($pdo, $table, $column) {
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
+        return $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        error_log("Error checking column $column in $table: " . $e->getMessage());
+        return false;
+    }
+}
 
-	$query = "INSERT INTO site_info (title,des,keyword,site_name,email,twit,face,gplus,ga,additional_scripts,baseurl) VALUES ('Paste','Paste can store text, source code or sensitive data for a set period of time.','paste,pastebin.com,pastebin,text,paste,online paste','Paste','','https://twitter.com/','https://www.facebook.com/','https://plus.google.com/','UA-','','" . '//' . $_SERVER['SERVER_NAME'] . $levelup . "')";
-	mysqli_query($con, $query);
+// Initialize output array
+$output = [];
 
-// Site Permissions
-$sql = "CREATE TABLE site_permissions
-(
-id int(11) NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-disableguest varchar(255) DEFAULT NULL,
-siteprivate varchar(255) DEFAULT NULL
-)
-";
-	// Execute query
+try {
+    // Admin table
+    if (!tableExists($pdo, 'admin')) {
+        $pdo->exec("CREATE TABLE admin (
+            id INT NOT NULL AUTO_INCREMENT,
+            user VARCHAR(250) NOT NULL,
+            pass VARCHAR(250) NOT NULL,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "admin table created.";
+    }
+    
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM admin WHERE user = :user");
+    $stmt->execute(['user' => $admin_user]);
+    if ($stmt->fetchColumn() == 0 && $admin_user && $admin_pass) {
+        $stmt = $pdo->prepare("INSERT INTO admin (user, pass) VALUES (:user, :pass)");
+        $stmt->execute(['user' => $admin_user, 'pass' => $admin_pass]);
+        $output[] = "Admin user inserted.";
+    } elseif ($admin_user && $admin_pass) {
+        $output[] = "Admin user already exists, skipping insertion.";
+    }
 
-	if (mysqli_query($con, $sql)) {
-		echo "site_permissions table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+    // Admin history table
+    if (!tableExists($pdo, 'admin_history')) {
+        $pdo->exec("CREATE TABLE admin_history (
+            id INT NOT NULL AUTO_INCREMENT,
+            last_date DATETIME NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "admin_history table created.";
+    }
 
-	$query = "INSERT INTO site_permissions (id,disableguest,siteprivate) VALUES (1, 'on', 'on'), (2, 'off', 'off')";
+    // Site info table
+    if (!tableExists($pdo, 'site_info')) {
+        $pdo->exec("CREATE TABLE site_info (
+            id INT NOT NULL AUTO_INCREMENT,
+            title VARCHAR(255) NOT NULL,
+            des MEDIUMTEXT,
+            keyword MEDIUMTEXT,
+            site_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255),
+            twit VARCHAR(255),
+            face VARCHAR(255),
+            gplus VARCHAR(255),
+            ga VARCHAR(255),
+            additional_scripts TEXT,
+            baseurl TEXT NOT NULL,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "site_info table created.";
 
-	mysqli_query($con, $query);
+        $stmt = $pdo->prepare("INSERT INTO site_info (title, des, keyword, site_name, email, twit, face, gplus, ga, additional_scripts, baseurl) 
+            VALUES (:title, :des, :keyword, :site_name, :email, :twit, :face, :gplus, :ga, :additional_scripts, :baseurl)");
+        $stmt->execute([
+            'title' => 'Paste',
+            'des' => 'Paste can store text, source code or sensitive data for a set period of time.',
+            'keyword' => 'paste,pastebin.com,pastebin,text,paste,online paste',
+            'site_name' => 'Paste',
+            'email' => '',
+            'twit' => 'https://twitter.com/',
+            'face' => 'https://www.facebook.com/',
+            'gplus' => 'https://plus.google.com/',
+            'ga' => 'UA-',
+            'additional_scripts' => '',
+            'baseurl' => $baseurl
+        ]);
+        $output[] = "Site info inserted.";
+    }
 
-// Interface
-$sql = "CREATE TABLE interface
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-theme text,
-lang text
-)";
-	// Execute query
+    // Site permissions table
+    if (!tableExists($pdo, 'site_permissions')) {
+        $pdo->exec("CREATE TABLE site_permissions (
+            id INT NOT NULL AUTO_INCREMENT,
+            disableguest VARCHAR(10) NOT NULL DEFAULT 'off',
+            siteprivate VARCHAR(10) NOT NULL DEFAULT 'off',
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "site_permissions table created.";
 
-	if (mysqli_query($con, $sql)) {
-		echo "interface table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+        $pdo->exec("INSERT INTO site_permissions (id, disableguest, siteprivate) VALUES (1, 'off', 'off')");
+        $output[] = "Site permissions inserted.";
+    } else {
+        $stmt = $pdo->query("SELECT COUNT(*) FROM site_permissions WHERE id = 1");
+        if ($stmt->fetchColumn() == 0) {
+            $pdo->exec("INSERT INTO site_permissions (id, disableguest, siteprivate) VALUES (1, 'off', 'off')");
+            $output[] = "Site permissions inserted.";
+        } else {
+            $output[] = "Site permissions already exist, skipping insertion.";
+        }
+    }
 
-	$query = "INSERT INTO interface (theme,lang) VALUES ('default','en.php')";
-	mysqli_query($con, $query);
+    // Interface table
+    if (!tableExists($pdo, 'interface')) {
+        $pdo->exec("CREATE TABLE interface (
+            id INT NOT NULL AUTO_INCREMENT,
+            theme VARCHAR(50) NOT NULL DEFAULT 'default',
+            lang VARCHAR(50) NOT NULL DEFAULT 'en.php',
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "interface table created.";
 
-// Pastes
-$sql = "CREATE TABLE pastes
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-title text,
-content longtext,
-visible text,
-code text,
-expiry text,
-password text,
-encrypt text,
-member text,
-date text,
-ip text,
-now_time text,
-views text,
-s_date text
-)";
-	// Execute query
+        $pdo->exec("INSERT INTO interface (theme, lang) VALUES ('default', 'en.php')");
+        $output[] = "Interface settings inserted.";
+    }
 
-	if (mysqli_query($con, $sql)) {
-		echo "pastes table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+    // Pastes table
+    if (!tableExists($pdo, 'pastes')) {
+        $pdo->exec("CREATE TABLE pastes (
+            id INT NOT NULL AUTO_INCREMENT,
+            title VARCHAR(255) NOT NULL DEFAULT 'Untitled',
+            content LONGTEXT NOT NULL,
+            visible VARCHAR(10) NOT NULL DEFAULT '0',
+            code VARCHAR(50) NOT NULL DEFAULT 'text',
+            expiry VARCHAR(50),
+            password VARCHAR(255) NOT NULL DEFAULT 'NONE',
+            encrypt VARCHAR(1) NOT NULL DEFAULT '0',
+            member VARCHAR(255) NOT NULL DEFAULT 'Guest',
+            date DATETIME NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            now_time VARCHAR(50),
+            views INT NOT NULL DEFAULT 0,
+            s_date DATE,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "pastes table created.";
+    } else {
+        // Check and add encrypt column if missing
+        if (!columnExists($pdo, 'pastes', 'encrypt')) {
+            $pdo->exec("ALTER TABLE pastes ADD encrypt VARCHAR(1) NOT NULL DEFAULT '0'");
+            $output[] = "Added encrypt column to pastes table.";
+        }
+    }
 
-// Users
-$sql = "CREATE TABLE users
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-oauth_uid text,
-username text,
-email_id text,
-full_name text,
-platform text,
-password text,
-verified text,
-picture text,
-date text,
-ip text
-)";
-	// Execute query
+    // Users table
+    if (!tableExists($pdo, 'users')) {
+        $pdo->exec("CREATE TABLE users (
+            id INT NOT NULL AUTO_INCREMENT,
+            oauth_uid VARCHAR(255),
+            username VARCHAR(255) NOT NULL,
+            email_id VARCHAR(255),
+            full_name VARCHAR(255),
+            platform VARCHAR(50),
+            password VARCHAR(255),
+            verified VARCHAR(10) NOT NULL DEFAULT '0',
+            picture TEXT,
+            date DATETIME NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "users table created.";
+    }
 
-	if (mysqli_query($con, $sql)) {
-		echo "users table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+    // Ban user table
+    if (!tableExists($pdo, 'ban_user')) {
+        $pdo->exec("CREATE TABLE ban_user (
+            id INT NOT NULL AUTO_INCREMENT,
+            ip VARCHAR(45) NOT NULL,
+            last_date DATETIME NOT NULL,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "ban_user table created.";
+    }
 
+    // Mail table
+    if (!tableExists($pdo, 'mail')) {
+        $pdo->exec("CREATE TABLE mail (
+            id INT NOT NULL AUTO_INCREMENT,
+            verification VARCHAR(20) NOT NULL DEFAULT 'enabled',
+            smtp_host VARCHAR(255),
+            smtp_username VARCHAR(255),
+            smtp_password VARCHAR(255),
+            smtp_port VARCHAR(10),
+            protocol VARCHAR(20) NOT NULL DEFAULT '1',
+            auth VARCHAR(20) NOT NULL DEFAULT 'true',
+            socket VARCHAR(20) NOT NULL DEFAULT 'ssl',
+            oauth_client_id VARCHAR(255) NOT NULL DEFAULT '',
+            oauth_client_secret VARCHAR(255) NOT NULL DEFAULT '',
+            oauth_refresh_token VARCHAR(255) NOT NULL DEFAULT '',
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "mail table created.";
 
-// Bans
-$sql = "CREATE TABLE ban_user
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-ip VARCHAR(255),
-last_date VARCHAR(255)
-)";
-	// Execute query
+        $pdo->exec("INSERT INTO mail (verification, smtp_host, smtp_username, smtp_password, smtp_port, protocol, auth, socket, oauth_client_id, oauth_client_secret, oauth_refresh_token) 
+            VALUES ('enabled', '', '', '', '', '1', 'true', 'ssl', '', '', '')");
+        $output[] = "Mail settings inserted.";
+    }
 
-	if (mysqli_query($con, $sql)) {
-		echo "ban_user table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+    // Pages table
+    if (!tableExists($pdo, 'pages')) {
+        $pdo->exec("CREATE TABLE pages (
+            id INT NOT NULL AUTO_INCREMENT,
+            last_date DATETIME NOT NULL,
+            page_name VARCHAR(255) NOT NULL,
+            page_title MEDIUMTEXT NOT NULL,
+            page_content LONGTEXT,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "pages table created.";
+    }
 
-// Mail
-$sql = "CREATE TABLE mail
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-verification text,
-smtp_host text,
-smtp_username text,
-smtp_password text,
-smtp_port text,
-protocol text,
-auth text,
-socket text
-)";
-	// Execute query
+    // Page view table
+    if (!tableExists($pdo, 'page_view')) {
+        $pdo->exec("CREATE TABLE page_view (
+            id INT NOT NULL AUTO_INCREMENT,
+            date DATE NOT NULL,
+            tpage INT NOT NULL DEFAULT 0,
+            tvisit INT NOT NULL DEFAULT 0,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "page_view table created.";
+    }
 
-	if (mysqli_query($con, $sql)) {
-		echo "mail table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+    // Ads table
+    if (!tableExists($pdo, 'ads')) {
+        $pdo->exec("CREATE TABLE ads (
+            id INT NOT NULL AUTO_INCREMENT,
+            text_ads TEXT,
+            ads_1 TEXT,
+            ads_2 TEXT,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "ads table created.";
 
-	$query = "INSERT INTO mail (verification,smtp_host,smtp_username,smtp_password,smtp_port,protocol,auth,socket) VALUES ('enabled','','','','','1','true','ssl')";
-	mysqli_query($con, $query);
+        $pdo->exec("INSERT INTO ads (text_ads, ads_1, ads_2) VALUES ('', '', '')");
+        $output[] = "Ads settings inserted.";
+    }
 
-// Pages
-$sql = "CREATE TABLE pages
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-last_date VARCHAR(255),
-page_name VARCHAR(255),
-page_title mediumtext,
-page_content longtext
-)";
-	// Execute query
+    // Sitemap options table
+    if (!tableExists($pdo, 'sitemap_options')) {
+        $pdo->exec("CREATE TABLE sitemap_options (
+            id INT NOT NULL AUTO_INCREMENT,
+            priority VARCHAR(10) NOT NULL DEFAULT '0.9',
+            changefreq VARCHAR(20) NOT NULL DEFAULT 'daily',
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "sitemap_options table created.";
 
-	if (mysqli_query($con, $sql)) {
-		echo "pages table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
+        $pdo->exec("INSERT INTO sitemap_options (id, priority, changefreq) VALUES (1, '0.9', 'daily')");
+        $output[] = "Sitemap options inserted.";
+    }
 
-	mysqli_query($con, $query);
+    // Captcha table
+    if (!tableExists($pdo, 'captcha')) {
+        $pdo->exec("CREATE TABLE captcha (
+            id INT NOT NULL AUTO_INCREMENT,
+            cap_e VARCHAR(10) NOT NULL DEFAULT 'off',
+            mode VARCHAR(50) NOT NULL DEFAULT 'Normal',
+            mul VARCHAR(10) NOT NULL DEFAULT 'off',
+            allowed TEXT NOT NULL,
+            color VARCHAR(7) NOT NULL DEFAULT '#000000',
+            recaptcha_sitekey TEXT,
+            recaptcha_secretkey TEXT,
+            PRIMARY KEY(id)
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "captcha table created.";
 
-// Page views
-$sql = "CREATE TABLE page_view
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-date VARCHAR(255),
-tpage VARCHAR(255),
-tvisit VARCHAR(255)
-)";
-	// Execute query
+        $pdo->exec("INSERT INTO captcha (cap_e, mode, mul, allowed, color, recaptcha_sitekey, recaptcha_secretkey) 
+            VALUES ('off', 'Normal', 'off', 'ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789', '#000000', '', '')");
+        $output[] = "Captcha settings inserted.";
+    }
 
-	if (mysqli_query($con, $sql)) {
-		echo "page_view table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
-
-// Ads
-$sql = "CREATE TABLE ads
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-text_ads text,
-ads_1 text,
-ads_2 text
-)";
-	// Execute query
-
-	if (mysqli_query($con, $sql)) {
-		echo "Ad related tables created. <br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
-
-	$query = "INSERT INTO ads (text_ads,ads_1,ads_2) VALUES ('','','')";
-	mysqli_query($con, $query);
-
-// Sitemap options
-$sql = "CREATE TABLE sitemap_options
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-priority VARCHAR(255),
-changefreq VARCHAR(255)
-)";
-	// Execute query
-
-	if (mysqli_query($con, $sql)) {
-		echo "sitemap_options table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
-
-	$query = "INSERT INTO sitemap_options (id,priority,changefreq) VALUES ('1','0.9','daily')";
-	mysqli_query($con, $query);
-
-// Captcha
-$sql = "CREATE TABLE captcha
-(
-id INT NOT NULL AUTO_INCREMENT,
-PRIMARY KEY(id),
-cap_e VARCHAR(255),
-mode VARCHAR(255),
-mul VARCHAR(255),
-allowed text,
-color mediumtext,
-recaptcha_sitekey text,
-recaptcha_secretkey text
-)";
-	// Execute query
-
-	if (mysqli_query($con, $sql)) {
-		echo "captcha table created.<br />";
-	} else {
-		echo "Error creating table: " . mysqli_error($con) . "<br />";
-	}
-
-	$query = "INSERT INTO captcha (cap_e,mode,mul,allowed,color,recaptcha_sitekey,recaptcha_secretkey) VALUES ('off','Normal','off','ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789','#000000','','')";
-	mysqli_query($con, $query);
+    ob_end_clean();
+    echo json_encode([
+        'status' => 'success',
+        'message' => implode('<br>', $output) . '<br>Installation completed successfully. Remove the /install directory and set secure permissions on config.php (e.g., chmod 600 config.php). Proceed to the <a href="../" class="btn btn-primary">main site</a> or your <a href="../admin" class="btn btn-primary">dashboard</a>.'
+    ]);
+} catch (PDOException $e) {
+    ob_end_clean();
+    error_log("Installation error in install.php: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Installation failed: ' . $e->getMessage()]);
+} catch (Exception $e) {
+    ob_end_clean();
+    error_log("Unexpected error in install.php: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Unexpected error: ' . $e->getMessage()]);
+}
 ?>
-
-If you received no errors above, you can assume everything went OK. You can now remove the /install directory and proceed to the <a href="../" class="btn btn-default">main site</a> or your <a href="../admin" class="btn btn-default">dashboard</a>

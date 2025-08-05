@@ -1,91 +1,143 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
 
-$data_host = htmlentities(Trim($_POST['data_host']));
-$data_name = htmlentities(Trim($_POST['data_name']));
-$data_user = htmlentities(Trim($_POST['data_user']));
-$data_pass = htmlentities(Trim($_POST['data_pass']));
-$data_sec  = htmlentities(Trim($_POST['data_sec']));
+// Start output buffering
+ob_start();
 
+// Ensure JSON content type
+header('Content-Type: application/json; charset=utf-8');
 
-$con = mysqli_connect($data_host, $data_user, $data_pass, $data_name);
+// Disable display errors
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 
-if (mysqli_connect_errno()) {
-    echo "0";
-    goto fx;
+// Check PDO MySQL extension
+if (!extension_loaded('pdo_mysql')) {
+    ob_end_clean();
+    error_log("configure.php: PDO MySQL extension is not loaded");
+    echo json_encode(['status' => 'error', 'message' => 'PDO MySQL extension is not loaded. Please enable it in php.ini.']);
+    exit;
 }
 
-// which protocol are we on
-$protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
-// level up, dirty but meh
-$x=2;$path = dirname($_SERVER['PHP_SELF']); while(max(0, --$x)) { $levelup = dirname($path); }
+// Get and sanitize POST data
+$dbhost = isset($_POST['data_host']) ? htmlspecialchars(trim($_POST['data_host']), ENT_QUOTES, 'UTF-8') : '';
+$dbname = isset($_POST['data_name']) ? htmlspecialchars(trim($_POST['data_name']), ENT_QUOTES, 'UTF-8') : '';
+$dbuser = isset($_POST['data_user']) ? htmlspecialchars(trim($_POST['data_user']), ENT_QUOTES, 'UTF-8') : '';
+$dbpassword = isset($_POST['data_pass']) ? $_POST['data_pass'] : '';
 
+error_log("configure.php: Received POST data - dbhost: $dbhost, dbname: $dbname, dbuser: $dbuser");
 
-$data = '<?php
+if (empty($dbhost) || empty($dbname) || empty($dbuser)) {
+    ob_end_clean();
+    error_log("configure.php: Missing required database parameters");
+    echo json_encode(['status' => 'error', 'message' => 'Please provide all required database information (host, database name, user).']);
+    exit;
+}
+
+// Test database connection
+try {
+    $dsn = "mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4";
+    $pdo = new PDO($dsn, $dbuser, $dbpassword);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    error_log("configure.php: Database connection successful");
+} catch (PDOException $e) {
+    ob_end_clean();
+    error_log("configure.php: Database connection failed: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $e->getMessage()]);
+    exit;
+}
+
+// Generate random key
+try {
+    $sec_key = bin2hex(random_bytes(32));
+    error_log("configure.php: Generated random key: $sec_key");
+} catch (Exception $e) {
+    ob_end_clean();
+    error_log("configure.php: Failed to generate random key: " . $e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'Failed to generate random key: ' . $e->getMessage()]);
+    exit;
+}
+
+// Check permissions
+$config_file = '../config.php';
+$parent_dir = dirname($config_file);
+$current_user = posix_getpwuid(posix_geteuid())['name'];
+$dir_stat = stat($parent_dir);
+$dir_owner = posix_getpwuid($dir_stat['uid'])['name'];
+$dir_group = posix_getgrgid($dir_stat['gid'])['name'];
+$dir_perms = sprintf("%o", $dir_stat['mode'] & 0777);
+
+if (!is_writable($parent_dir)) {
+    ob_end_clean();
+    error_log("configure.php: Parent directory is not writable: $parent_dir (owner: $dir_owner, group: $dir_group, permissions: $dir_perms, current user: $current_user)");
+    echo json_encode([
+        'status' => 'error',
+        'message' => "Parent directory ($parent_dir) is not writable. Owner: $dir_owner, Group: $dir_group, Permissions: $dir_perms, Current user: $current_user. Ensure write permissions (e.g., chmod 775 $parent_dir, chown www-data:www-data $parent_dir)."
+    ]);
+    exit;
+}
+
+if (file_exists($config_file) && !is_writable($config_file)) {
+    $file_stat = stat($config_file);
+    $file_owner = posix_getpwuid($file_stat['uid'])['name'];
+    $file_group = posix_getgrgid($file_stat['gid'])['name'];
+    $file_perms = sprintf("%o", $file_stat['mode'] & 0777);
+    ob_end_clean();
+    error_log("configure.php: config.php exists but is not writable (owner: $file_owner, group: $file_group, permissions: $file_perms, current user: $current_user)");
+    echo json_encode([
+        'status' => 'error',
+        'message' => "config.php exists but is not writable. Owner: $file_owner, Group: $file_group, Permissions: $file_perms, Current user: $current_user. Check permissions (e.g., chmod 644 config.php, chown www-data:www-data config.php)."
+    ]);
+    exit;
+}
+
+// config.php
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$config_content = <<<EOD
+<?php
 /*
- * $ID Project: Paste 2.0 - J.Samuel
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in LIC.txt for more details.
+ * Paste 2.2 - J.Samuel
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LIC.txt for details.
  */
- 
-$currentversion = 2.2;
 
-// Max paste size in MB. This value should always be below the value of
-// post_max_size in your PHP configuration settings (php.ini) or empty errors will occur.
-// The value we got on installation of Paste was: post_max_size = ' . ini_get('post_max_size') . '
-// Otherwise, the maximum value that can be set is 4000 (4GB)
-$pastelimit = "0.5"; // 0.5 = 512 kilobytes, 1 = 1MB
- 
-// OAUTH (to enable, change to yes and edit)
-$enablefb = "no";
-$enablegoog = "no";
+\$currentversion = 2.2;
+\$pastelimit = "10"; // 10 MB
 
-// "CHANGE THIS" = Replace with your details
-// Facebook
-define(\'FB_APP_ID\', \'CHANGE THIS\'); // Your application ID, see https://developers.facebook.com/docs/apps/register
-define(\'FB_APP_SECRET\', \'CHANGE THIS\');    // What\'s your Secret key
+// OAuth settings
+\$enablefb = "no";
+\$enablegoog = "no";
 
-// Google 
-define(\'G_Client_ID\', \'CHANGE THIS\'); // Get a Client ID from https://console.developers.google.com/projectselector/apis/library
-define(\'G_Client_Secret\', \'CHANGE THIS\'); // What\'s your Secret key
-define(\'G_Redirect_Uri\', \'' . $protocol . $_SERVER['SERVER_NAME'] . $levelup . '/oauth/google.php\'); // Leave this as is
-define(\'G_Application_Name\', \'Paste\'); // Make sure this matches the name of your application
+define('FB_APP_ID', '');
+define('FB_APP_SECRET', '');
+define('G_Client_ID', '');
+define('G_Client_Secret', '');
+define('G_Redirect_Uri', '$protocol{$_SERVER['SERVER_NAME']}/oauth/google.php');
+define('G_Application_Name', 'Paste');
 
 // Database information
-$dbhost = "' . $data_host . '";
-$dbuser = "' . $data_user . '";
-$dbpassword = "' . $data_pass . '";
-$dbname = "' . $data_name . '";
+\$dbhost = "$dbhost";
+\$dbuser = "$dbuser";
+\$dbpassword = "$dbpassword";
+\$dbname = "$dbname";
 
-// Secret key for paste encryption
-$sec_key  = "' . $data_sec . '";
-define(\'SECRET\',md5($sec_key));
+// 256-bit key for encryption (generated on install)
+\$sec_key = "$sec_key";
+define('SECRET', \$sec_key);
 
-// Set to 1 to enable Apache\'s mod_rewrite
-$mod_rewrite = "0";
+\$mod_rewrite = "0";
 
-// Available GeSHi formats
-$geshiformats =array(' . "
+// GeSHi formats
+\$geshiformats = [
     '4cs' => 'GADV 4CS',
     '6502acme' => 'ACME Cross Assembler',
     '6502kickass' => 'Kick Assembler',
@@ -318,32 +370,28 @@ $geshiformats =array(' . "
     'yaml' => 'YAML',
     'z80' => 'ZiLOG Z80 Assembler',
     'zxbasic' => 'ZXBasic'
-);
+];
 
-// Popular formats that are listed first." . '
-$popular_formats=array(' . "
-    'text',
-    'html4strict',
-    'html5',
-    'css',
-    'javascript',
-    'php',
-    'perl',
-    'python',
-    'postgresql',
-    'sql',
-    'xml',
-    'java',
-    'c',
-    'csharp',
-    'cpp',
-    'markdown'
-);
-?>";
+\$popular_formats = [
+    'text', 'html4strict', 'html5', 'css', 'javascript', 'php', 'perl',
+    'python', 'postgresql', 'sql', 'xml', 'java', 'c', 'csharp', 'cpp', 'markdown'
+];
+?>
+EOD;
 
-file_put_contents('../config.php', $data);
+if (file_put_contents($config_file, $config_content, LOCK_EX) === false) {
+    ob_end_clean();
+    error_log("configure.php: Failed to write config.php");
+    echo json_encode(['status' => 'error', 'message' => 'Failed to write config.php. Check directory and file permissions.']);
+    exit;
+}
 
-echo "1";
+error_log("configure.php: Successfully wrote config.php");
 
-fx:
+// Clean output buffer and send success response
+ob_end_clean();
+echo json_encode([
+    'status' => 'success',
+    'message' => 'Configuration saved successfully. Proceed to configure the admin account.'
+]);
 ?>
