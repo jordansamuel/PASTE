@@ -1,0 +1,4 @@
+#alertfailed, #configure, #logpanel, #pre_load { display: none; }
+.applogo { text-align: center; padding: 20px; }
+.logo { font-size: 24px; font-weight: bold; color: #333; text-decoration: none; }
+.footer { margin-top: 20px; padding: 10px; background: #f8f9fa; }
