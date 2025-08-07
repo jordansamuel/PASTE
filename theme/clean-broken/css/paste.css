@@ -1,0 +1,24 @@
+/* Fonts */
+	/* Open Sans */
+	@import url(//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,600,700,800,300);
+
+/* Bootstrap Main CSS File (unedited) */
+@import url('bootstrap.min.css');
+
+/* Theme Style */
+@import url('style.min.css');
+
+/* Responsive Style */
+@import url('responsive.css');
+
+/* Font Awesome */
+@import url('plugins/font-awesome.min.css');
+
+/* Data Tables */
+@import url('plugins/datatables.min.css');
+
+/* Bootstrap Checkbox */
+@import url('plugins/bootstrap-checkbox.min.css');
+
+/* Bootstrap Select */
+@import url('plugins/bootstrap-select.min.css');

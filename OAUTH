@@ -1,0 +1,192 @@
+Google OAuth 2.0 Setup for Paste Application
+This guide explains how to configure Google OAuth 2.0 for the Paste application to enable Gmail SMTP email sending. The Paste application uses PHPMailer with OAuth 2.0 to authenticate with Gmail, requiring a Client ID, Client Secret, and Refresh Token, which are managed via configuration.php, mail.php, and get_oauth_token.php.
+Prerequisites
+
+Paste Application: Installed at /home/web/paste.boxlabs.uk with the updated install.php, configuration.php, mail.php, and get_oauth_token.php (as provided in previous responses).
+Google Account: A Google account with access to the Google Cloud Console.
+Domain: Access to paste.boxlabs.uk (HTTP or HTTPS).
+Admin Access: Admin credentials for http://paste.boxlabs.uk/admin/ or https://paste.boxlabs.uk/admin/.
+PHP Dependencies: Ensure google/apiclient is installed:cd /home/web/paste.boxlabs.uk/mail
+composer require google/apiclient:^2.12
+
+
+
+Step-by-Step Configuration
+1. Create a Google Cloud Project
+
+Go to the Google Cloud Console.
+Click the project dropdown at the top and select New Project.
+Enter a project name (e.g., Paste-OAuth), select a billing account if prompted, and click Create.
+Once created, select the project from the dropdown.
+
+2. Enable Gmail API
+
+In the Google Cloud Console, navigate to APIs & Services > Library.
+Search for Gmail API.
+Click Gmail API and click Enable.
+
+3. Configure OAuth Consent Screen
+
+Go to APIs & Services > OAuth consent screen.
+Select External user type and click Create.
+Fill in the consent screen details:
+App name: Paste Application
+User support email: Your admin email (e.g., admin@paste.boxlabs.uk).
+Developer contact information: Your email.
+Leave other fields as default or customize as needed.
+
+
+Click Save and Continue.
+On the Scopes page, click Add or Remove Scopes, search for https://mail.google.com/, check it, and click Update.
+Click Save and Continue.
+On the Test Users page (if in testing mode), add your Gmail address (e.g., your.email@gmail.com) and click Save and Continue.
+Review and click Back to Dashboard.
+
+4. Create OAuth 2.0 Credentials
+
+Go to APIs & Services > Credentials.
+Click Create Credentials > OAuth 2.0 Client IDs.
+Select Web application as the application type.
+Fill in the details:
+Name: Paste OAuth Client
+Authorized JavaScript origins: 
+http://paste.boxlabs.uk (if using HTTP)
+https://paste.boxlabs.uk (if using HTTPS)
+
+
+Authorized redirect URIs:
+http://paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php (for HTTP)
+https://paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php (for HTTPS)
+
+
+
+
+Click Create.
+Note the Client ID and Client Secret displayed. Download the JSON file for reference, but only the Client ID and Client Secret are needed.
+
+5. Configure Paste Application
+
+Log in to the Paste admin panel:
+Visit http://paste.boxlabs.uk/admin/ or https://paste.boxlabs.uk/admin/.
+Log in with your admin credentials (set during install.php).
+
+
+Navigate to Configuration:
+Go to http://paste.boxlabs.uk/admin/configuration.php or https://paste.boxlabs.uk/admin/configuration.php.
+Click the Mail Settings tab.
+
+
+Enter OAuth Credentials:
+Mail Protocol: Select SMTP (value: 2).
+SMTP Host: Enter smtp.gmail.com.
+SMTP Port: Enter 587.
+SMTP Protocol: Select TLS.
+SMTP Auth: Select True.
+SMTP User: Enter your Gmail address (e.g., your.email@gmail.com).
+Client ID: Paste the Client ID from Google Cloud Console.
+Client Secret: Paste the Client Secret from Google Cloud Console.
+Click Save.
+
+
+Authorize with Google:
+After saving, a Authorize with Google button should appear.
+Click it to be redirected to /mail/PHPMailer/get_oauth_token.php.
+Sign in with your Gmail account and grant permission for the https://mail.google.com/ scope.
+Upon successful authorization, you’ll be redirected back to get_oauth_token.php, which saves the Refresh Token to the mail table.
+You should see a success message: “OAuth refresh token saved successfully.”
+
+
+
+6. Test SMTP Configuration
+
+In the Mail Settings tab, click Test SMTP.
+Verify the result:
+Success: “Test email sent successfully” indicates the OAuth setup is correct.
+Error: If you see “Please fill in OAuth settings for Gmail SMTP,” ensure all fields (Client ID, Client Secret, Refresh Token) are populated.
+If other errors occur, check the PHP error log:tail -f /var/log/php_errors.log
+
+
+
+
+
+7. Secure the Application
+
+Restrict get_oauth_token.php:
+The file is already restricted to authenticated admins via session checks (in get_oauth_token.php). Only logged-in admins can access it.
+
+
+File Permissions:
+Ensure correct permissions:chmod 644 /home/web/paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php
+chown www-data:www-data /home/web/paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php
+
+
+
+
+Nginx (Optional):
+For additional security on Nginx, add to your configuration (e.g., /etc/nginx/sites-available/paste.boxlabs.uk):location /mail/PHPMailer/get_oauth_token.php {
+    allow 127.0.0.1;
+    allow ::1;
+    # Add admin IP if known, e.g., allow 192.168.1.100;
+    deny all;
+}
+
+
+Reload Nginx:sudo nginx -t && sudo systemctl reload nginx
+
+
+
+
+
+Troubleshooting
+
+Invalid Redirect URI:
+Ensure the redirect URIs in Google Cloud Console exactly match:
+http://paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php or https://paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php.
+
+
+Test your site’s protocol: curl -I http://paste.boxlabs.uk or https://paste.boxlabs.uk.
+
+
+OAuth Error (e.g., “access_denied”):
+Verify the Gmail API scope (https://mail.google.com/) is enabled.
+Ensure your Gmail address is added as a test user in the OAuth consent screen (if in testing mode).
+
+
+No Refresh Token:
+Check that get_oauth_token.php saved the token to the mail table:mysql -u $dbuser -p$dbpassword $dbname -e "SELECT oauth_refresh_token FROM mail WHERE id = 1;"
+
+
+If empty, repeat the authorization step.
+
+
+SMTP Test Fails:
+Enable debugging in mail.php:$mailer->SMTPDebug = 2;
+
+
+Check logs: tail -f /var/log/php_errors.log.
+
+
+Unauthorized Access to get_oauth_token.php:
+Verify session-based restriction is working:
+In a private browser, visit http://paste.boxlabs.uk/mail/PHPMailer/get_oauth_token.php.
+Expected: Redirect to ../index.php.
+
+
+Check logs for unauthorized attempts:tail -f /var/log/php_errors.log
+
+
+
+
+
+Additional Notes
+
+HTTPS Recommendation: For security, use HTTPS (https://paste.boxlabs.uk). Update Google Cloud redirect URIs accordingly.
+Session Security: Ensure php.ini settings are secure:session.cookie_httponly = 1
+session.cookie_secure = 1  # If using HTTPS
+session.use_strict_mode = 1
+
+
+Backup Credentials: Store your Client ID, Client Secret, and Refresh Token securely (e.g., not in version control).
+Testing Mode: If your OAuth app is in “Testing” mode in Google Cloud Console, only test users can authorize. Publish the app to “Production” for general use.
+
+For further assistance, refer to the Google OAuth 2.0 Documentation or file an issue at Paste GitHub.
