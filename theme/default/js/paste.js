@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         notification.classList.remove('fade-out');
                         notification.textContent = '';
                     }, 500); // Match CSS fade-out duration
-                }, 3000); // Show for 3 seconds
+                }, 10000); // Show for 10 seconds
             } else {
                 console.error('Notification element not found');
             }
