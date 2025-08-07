@@ -14,10 +14,17 @@ if (typeof jQuery === 'undefined') {
 
 $(document).ready(function() {
     console.log('Document ready. Binding form handlers.');
-    
+
+    // Handle database configuration form submission
     $('#db-form').on('submit', function(e) {
         e.preventDefault();
         console.log('Database form submitted:', $(this).serialize());
+        $('#install').hide();
+        $('#configure').hide();
+        $('#pre_load').show();
+        $('#alertfailed').hide();
+        $('#admin-alertfailed').hide(); // Explicitly hide admin error
+
         $.ajax({
             url: 'configure.php',
             method: 'POST',
@@ -25,31 +32,36 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 console.log('configure.php response:', response);
-                if (response.status === 'error') {
-                    $('#error-details').text(response.message);
-                    $('#alertfailed').show();
-                    $('#install').show();
-                    $('#configure').hide();
-                } else {
-                    $('#install').hide();
+                $('#pre_load').hide();
+                if (response.status === 'success') {
                     $('#configure').show();
+                    $('#logpanel').show();
+                    $('#log').html(response.message);
+                } else {
+                    $('#install').show();
+                    $('#alertfailed').show();
+                    $('#error-details').text(response.message || 'Unknown error occurred.');
                 }
             },
             error: function(xhr, status, error) {
-                console.error('configure.php AJAX error:', status, error);
-                $('#error-details').text('AJAX error: ' + status + ' - ' + error);
+                console.error('configure.php AJAX error:', status, error, xhr.responseText);
+                $('#pre_load').hide();
+                $('#install').show();
                 $('#alertfailed').show();
+                $('#error-details').text('Configuration failed: ' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : status + ' - ' + error));
             }
         });
     });
 
+    // Handle admin configuration form submission
     $('#admin-form').on('submit', function(e) {
         e.preventDefault();
         console.log('Admin form submitted:', $(this).serialize());
-        $('#alertfailed').hide();
-        $('#install').hide();
         $('#configure').hide();
         $('#pre_load').show();
+        $('#alertfailed').hide();
+        $('#admin-alertfailed').hide();
+
         $.ajax({
             url: 'install.php',
             method: 'POST',
@@ -57,16 +69,27 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 console.log('install.php response:', response);
+                $('#pre_load').hide();
                 $('#logpanel').show();
                 $('#log').html(response.message);
-                $('#pre_load').hide();
             },
             error: function(xhr, status, error) {
-                console.error('install.php AJAX error:', status, error);
-                $('#logpanel').show();
-                $('#log').html('An error occurred during installation: ' + status + ' - ' + error);
+                console.error('install.php AJAX error:', status, error, xhr.responseText);
                 $('#pre_load').hide();
+                $('#configure').show();
+                $('#admin-alertfailed').show();
+                $('#admin-error-details').text('Error admin setup failed: ' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : status + ' - ' + error));
             }
         });
+    });
+
+    // Warn about OAuth without HTTPS
+    $('#enablegoog, #enablefb').on('change', function() {
+        if (($(this).attr('id') === 'enablegoog' && $(this).val() === 'yes') || 
+            ($(this).attr('id') === 'enablefb' && $(this).val() === 'yes')) {
+            if (window.location.protocol !== 'https:') {
+                alert('Warning: Enabling OAuth without HTTPS is insecure and may cause issues with OAuth providers. Consider enabling SSL/TLS.');
+            }
+        }
     });
 });

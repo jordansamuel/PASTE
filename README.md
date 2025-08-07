@@ -1,8 +1,6 @@
-<<<<<<< HEAD
-# Paste 3
+Paste 3
 =======
-# Paste 3.0
->>>>>>> a6163c96 (Paste 3.0)
+
 [![Download PASTE](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
@@ -49,6 +47,8 @@ Now you can start coding and send in pull requests.
 Upgrading
 ===
 3.0 schema changes
+run the installer to update database
+(backup first)
 
 
 * 2.1 to 2.2
@@ -124,11 +124,5 @@ Credits
 * **[Viktoria Rei Bauer](https://github.com/ToeiRei)** for her contributions to the project.
 * Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
-The Paste theme was built using Bootstrap.
-Icons are provided by FontAwesome.
+The Paste theme was built using Bootstrap 5
 
-Screenshots
-===
-
-[![Frontend](http://i.imgur.com/UxZVxqo.png)](https://paste.boxlabs.uk/)
-[![Frontend](http://i.imgur.com/peFanYH.png)](https://paste.boxlabs.uk/)

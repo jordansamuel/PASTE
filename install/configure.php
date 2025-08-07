@@ -18,24 +18,6 @@ header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
-<<<<<<< HEAD
-// Check PDO MySQL extension
-if (!extension_loaded('pdo_mysql')) {
-    ob_end_clean();
-    error_log("configure.php: PDO MySQL extension is not loaded");
-    echo json_encode(['status' => 'error', 'message' => 'PDO MySQL extension is not loaded. Please enable it in php.ini.']);
-    exit;
-}
-
-// Get and sanitize POST data
-$dbhost = isset($_POST['data_host']) ? htmlspecialchars(trim($_POST['data_host']), ENT_QUOTES, 'UTF-8') : '';
-$dbname = isset($_POST['data_name']) ? htmlspecialchars(trim($_POST['data_name']), ENT_QUOTES, 'UTF-8') : '';
-$dbuser = isset($_POST['data_user']) ? htmlspecialchars(trim($_POST['data_user']), ENT_QUOTES, 'UTF-8') : '';
-$dbpassword = isset($_POST['data_pass']) ? $_POST['data_pass'] : '';
-
-error_log("configure.php: Received POST data - dbhost: $dbhost, dbname: $dbname, dbuser: $dbuser");
-
-=======
 // Check required PHP extensions
 $required_extensions = ['pdo_mysql'];
 $optional_extensions = ['openssl', 'curl'];
@@ -65,7 +47,6 @@ $enablesmtp = isset($_POST['enablesmtp']) && $_POST['enablesmtp'] === 'yes' ? 'y
 
 error_log("configure.php: Received POST data - dbhost: $dbhost, dbname: $dbname, dbuser: $dbuser, enablegoog: $enablegoog, enablefb: $enablefb, enablesmtp: $enablesmtp");
 
->>>>>>> a6163c96 (Paste 3.0)
 if (empty($dbhost) || empty($dbname) || empty($dbuser)) {
     ob_end_clean();
     error_log("configure.php: Missing required database parameters");
@@ -83,34 +64,13 @@ try {
 } catch (PDOException $e) {
     ob_end_clean();
     error_log("configure.php: Database connection failed: " . $e->getMessage());
-<<<<<<< HEAD
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $e->getMessage()]);
-=======
     echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')]);
->>>>>>> a6163c96 (Paste 3.0)
     exit;
 }
 
 // Generate random key
 try {
     $sec_key = bin2hex(random_bytes(32));
-<<<<<<< HEAD
-    error_log("configure.php: Generated random key: $sec_key");
-} catch (Exception $e) {
-    ob_end_clean();
-    error_log("configure.php: Failed to generate random key: " . $e->getMessage());
-    echo json_encode(['status' => 'error', 'message' => 'Failed to generate random key: ' . $e->getMessage()]);
-    exit;
-}
-
-// Check permissions
-$config_file = '../config.php';
-$parent_dir = dirname($config_file);
-$current_user = posix_getpwuid(posix_geteuid())['name'];
-$dir_stat = stat($parent_dir);
-$dir_owner = posix_getpwuid($dir_stat['uid'])['name'];
-$dir_group = posix_getgrgid($dir_stat['gid'])['name'];
-=======
     error_log("configure.php: Generated random key");
 } catch (Exception $e) {
     ob_end_clean();
@@ -132,7 +92,6 @@ $current_user = posix_getpwuid(posix_geteuid())['name'] ?? 'unknown';
 $dir_stat = stat($parent_dir);
 $dir_owner = posix_getpwuid($dir_stat['uid'])['name'] ?? 'unknown';
 $dir_group = posix_getgrgid($dir_stat['gid'])['name'] ?? 'unknown';
->>>>>>> a6163c96 (Paste 3.0)
 $dir_perms = sprintf("%o", $dir_stat['mode'] & 0777);
 
 if (!is_writable($parent_dir)) {
@@ -140,49 +99,25 @@ if (!is_writable($parent_dir)) {
     error_log("configure.php: Parent directory is not writable: $parent_dir (owner: $dir_owner, group: $dir_group, permissions: $dir_perms, current user: $current_user)");
     echo json_encode([
         'status' => 'error',
-<<<<<<< HEAD
-        'message' => "Parent directory ($parent_dir) is not writable. Owner: $dir_owner, Group: $dir_group, Permissions: $dir_perms, Current user: $current_user. Ensure write permissions (e.g., chmod 775 $parent_dir, chown www-data:www-data $parent_dir)."
-=======
         'message' => 'Parent directory is not writable. Ensure write permissions (e.g., chmod 775 ' . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . ').'
->>>>>>> a6163c96 (Paste 3.0)
     ]);
     exit;
 }
 
 if (file_exists($config_file) && !is_writable($config_file)) {
     $file_stat = stat($config_file);
-<<<<<<< HEAD
-    $file_owner = posix_getpwuid($file_stat['uid'])['name'];
-    $file_group = posix_getgrgid($file_stat['gid'])['name'];
-=======
     $file_owner = posix_getpwuid($file_stat['uid'])['name'] ?? 'unknown';
     $file_group = posix_getgrgid($file_stat['gid'])['name'] ?? 'unknown';
->>>>>>> a6163c96 (Paste 3.0)
     $file_perms = sprintf("%o", $file_stat['mode'] & 0777);
     ob_end_clean();
     error_log("configure.php: config.php exists but is not writable (owner: $file_owner, group: $file_group, permissions: $file_perms, current user: $current_user)");
     echo json_encode([
         'status' => 'error',
-<<<<<<< HEAD
-        'message' => "config.php exists but is not writable. Owner: $file_owner, Group: $file_group, Permissions: $file_perms, Current user: $current_user. Check permissions (e.g., chmod 644 config.php, chown www-data:www-data config.php)."
-=======
         'message' => 'config.php exists but is not writable. Check permissions (e.g., chmod 644 config.php).'
->>>>>>> a6163c96 (Paste 3.0)
     ]);
     exit;
 }
 
-<<<<<<< HEAD
-// config.php
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-$config_content = <<<EOD
-<?php
-/*
- * Paste 2.2 - J.Samuel
- * Licensed under GNU General Public License, version 3 or later.
- * See LIC.txt for details.
-=======
 // config.php content
 $config_content = <<<EOD
 <?php
@@ -193,24 +128,11 @@ $config_content = <<<EOD
  *
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
->>>>>>> a6163c96 (Paste 3.0)
  */
 
 \$currentversion = 2.2;
 \$pastelimit = "10"; // 10 MB
 
-<<<<<<< HEAD
-// OAuth settings
-\$enablefb = "no";
-\$enablegoog = "no";
-
-define('FB_APP_ID', '');
-define('FB_APP_SECRET', '');
-define('G_Client_ID', '');
-define('G_Client_Secret', '');
-define('G_Redirect_Uri', '$protocol{$_SERVER['SERVER_NAME']}/oauth/google.php');
-define('G_Application_Name', 'Paste');
-=======
 // OAuth settings (for signups)
 \$enablefb = "$enablefb";
 \$enablegoog = "$enablegoog";
@@ -253,7 +175,6 @@ EOD;
 
 // Database and other settings
 $config_content .= <<<EOD
->>>>>>> a6163c96 (Paste 3.0)
 
 // Database information
 \$dbhost = "$dbhost";
@@ -261,11 +182,7 @@ $config_content .= <<<EOD
 \$dbpassword = "$dbpassword";
 \$dbname = "$dbname";
 
-<<<<<<< HEAD
-// 256-bit key for encryption (generated on install)
-=======
 // Secret key for encryption
->>>>>>> a6163c96 (Paste 3.0)
 \$sec_key = "$sec_key";
 define('SECRET', \$sec_key);
 
@@ -523,8 +440,6 @@ if (file_put_contents($config_file, $config_content, LOCK_EX) === false) {
 
 error_log("configure.php: Successfully wrote config.php");
 
-<<<<<<< HEAD
-=======
 // Prepare success message
 $success_message = 'Configuration saved successfully.';
 if ($enablegoog === 'yes' || $enablefb === 'yes' || $enablesmtp === 'yes') {
@@ -545,15 +460,10 @@ if ($https_warning) {
 }
 $success_message .= 'Proceed to configure the admin account.';
 
->>>>>>> a6163c96 (Paste 3.0)
 // Clean output buffer and send success response
 ob_end_clean();
 echo json_encode([
     'status' => 'success',
-<<<<<<< HEAD
-    'message' => 'Configuration saved successfully. Proceed to configure the admin account.'
-=======
     'message' => $success_message
->>>>>>> a6163c96 (Paste 3.0)
 ]);
 ?>
