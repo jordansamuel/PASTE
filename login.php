@@ -41,7 +41,7 @@ try {
 }
 
 // Current Date & User IP
-$date = date('jS F Y');
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
 $ip = $_SERVER['REMOTE_ADDR'];
 $tmp_dir = 'tmp';
 $tmp_file = "$tmp_dir/temp.tdata";

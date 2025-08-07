@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] != 'GET') {
     exit('405 Method Not Allowed.');
 }
 
-$date = date('jS F Y');
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
 $ip = $_SERVER['REMOTE_ADDR'];
 $data_ip = file_get_contents('tmp/temp.tdata');
 

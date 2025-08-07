@@ -9,6 +9,9 @@
  */
 declare(strict_types=1);
 
+// Set default timezone
+date_default_timezone_set('UTC');
+
 // Start database connection
 try {
     $dsn = "mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4";
@@ -20,8 +23,6 @@ try {
 } catch (PDOException $e) {
     die("Unable to connect to database: " . $e->getMessage());
 }
-
-use PDOException;
 
 function str_contains_polyfill(string $haystack, string $needle, bool $ignoreCase = false): bool
 {

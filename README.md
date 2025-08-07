@@ -125,10 +125,4 @@ Credits
 * Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
 The Paste theme was built using Bootstrap 5
-<<<<<<< HEAD
-=======
-Screenshots
-===
-
->>>>>>> refs/remotes/origin/master
 

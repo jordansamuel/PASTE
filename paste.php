@@ -28,7 +28,7 @@ try {
     $row = $stmt->fetch();
     $title = trim($row['title'] ?? '');
     $des = trim($row['des'] ?? '');
-    $baseurl = trim($row['baseurl'] ?? '');
+    $baseurl = rtrim(trim($row['baseurl'] ?? ''), '/') . '/'; // Normalize baseurl
     $keyword = trim($row['keyword'] ?? '');
     $site_name = trim($row['site_name'] ?? '');
     $email = trim($row['email'] ?? '');
@@ -45,7 +45,9 @@ try {
     require_once("langs/$default_lang");
 
     $ip = $_SERVER['REMOTE_ADDR'];
-    if (is_banned($pdo, $ip)) die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
+    if (is_banned($pdo, $ip)) {
+        die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
+    }
 
     $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id = '1'");
     $row = $stmt->fetch();
@@ -56,7 +58,7 @@ try {
         $privatesite = "on";
     }
 
-    $date = date('jS F Y');
+	$date = date('Y-m-d H:i:s');
     $data_ip = file_get_contents('tmp/temp.tdata');
 
     $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
@@ -71,6 +73,7 @@ try {
         unset($_SESSION['oauth_uid']);
         unset($_SESSION['username']);
         session_destroy();
+        exit;
     }
 
     if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
@@ -96,139 +99,148 @@ try {
             if (str_contains_polyfill($data_ip, $ip)) {
                 $stmt = $pdo->prepare("SELECT tpage FROM page_view WHERE id = ?");
                 $stmt->execute([$last_id]);
-                $last_tpage = trim($stmt->fetchColumn()) + 1;
+                $last_tpage = (int) trim($stmt->fetchColumn()) + 1;
                 $stmt = $pdo->prepare("UPDATE page_view SET tpage = ? WHERE id = ?");
                 $stmt->execute([$last_tpage, $last_id]);
             } else {
                 $stmt = $pdo->prepare("SELECT tpage, tvisit FROM page_view WHERE id = ?");
                 $stmt->execute([$last_id]);
                 $row = $stmt->fetch();
-                $last_tpage = trim($row['tpage']) + 1;
-                $last_tvisit = trim($row['tvisit']) + 1;
+                $last_tpage = (int) trim($row['tpage']) + 1;
+                $last_tvisit = (int) trim($row['tvisit']) + 1;
                 $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
                 $stmt->execute([$last_tpage, $last_tvisit, $last_id]);
                 file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
             }
         } else {
-            unlink("tmp/temp.tdata");
-            $data_ip = "";
+            if (file_exists('tmp/temp.tdata')) {
+                unlink('tmp/temp.tdata');
+            }
+            $data_ip = '';
             $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
             $stmt->execute([$date]);
             file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
         }
     } else {
-        unlink("tmp/temp.tdata");
-        $data_ip = "";
+        if (file_exists('tmp/temp.tdata')) {
+            unlink('tmp/temp.tdata');
+        }
+        $data_ip = '';
         $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
         $stmt->execute([$date]);
         file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
     }
 
     $p_private_error = '0';
-    $stmt = $pdo->prepare("SELECT * FROM pastes WHERE id = ?");
-    $stmt->execute([$paste_id]);
-    if ($stmt->rowCount() > 0) {
-        $row = $stmt->fetch();
-        $p_title = (string) ($row['title'] ?? '');
-        $p_content = (string) ($row['content'] ?? '');
-        $p_visible = $row['visible'] ?? '0';
-        $p_code = (string) ($row['code'] ?? 'text');
-        $p_expiry = trim($row['expiry'] ?? 'NULL');
-        $p_password = (string) ($row['password'] ?? 'NONE'); // Ensure this is set
-        $p_member = (string) ($row['member'] ?? '');
-        $p_date = (string) ($row['date'] ?? '');
-        $p_encrypt = $row['encrypt'] ?? '0';
-        $p_views = (int) ($row['views'] ?? 0);
+    if ($paste_id) {
+        $stmt = $pdo->prepare("SELECT * FROM pastes WHERE id = ?");
+        $stmt->execute([$paste_id]);
+        if ($stmt->rowCount() > 0) {
+            $row = $stmt->fetch();
+            $p_title = (string) ($row['title'] ?? '');
+            $p_content = (string) ($row['content'] ?? '');
+            $p_visible = $row['visible'] ?? '0';
+            $p_code = (string) ($row['code'] ?? 'text');
+            $p_expiry = trim($row['expiry'] ?? 'NULL');
+            $p_password = (string) ($row['password'] ?? 'NONE');
+            $p_member = (string) ($row['member'] ?? '');
+            $p_date = (string) ($row['date'] ?? '');
+            $p_encrypt = $row['encrypt'] ?? '0';
+            $p_views = (int) ($row['views'] ?? 0);
 
-        if ($p_visible == "2") {
-            if (isset($_SESSION['username']) && $p_member == (string) ($_SESSION['username'] ?? '')) {
-                // Authorized
-            } else {
-                $notfound = $lang['privatepaste'] ?? 'This is a private paste.';
-                $p_private_error = '1';
-                goto Not_Valid_Paste;
-            }
-        }
-        if ($p_expiry != "NULL" && $p_expiry != "SELF") {
-            $input_time = (int) $p_expiry;
-            $current_time = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
-            if ($input_time < $current_time) {
-                $notfound = $lang['expired'] ?? 'This paste has expired.';
-                $p_private_error = '1';
-                goto Not_Valid_Paste;
-            }
-        }
-        if ($p_encrypt == "1") {
-            $p_content = decrypt($p_content, hex2bin(SECRET)) ?? '';
-            if ($p_content === '') {
-                $error = ($lang['error'] ?? 'Error') . ': Decryption failed.';
-                goto Not_Valid_Paste;
-            }
-        }
-        $op_content = trim(htmlspecialchars_decode($p_content));
-
-        if (isset($_GET['download'])) {
-            if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
-                doDownload($paste_id, $p_title, $op_content, $p_code);
-                exit();
-            } else {
-                $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
-            }
-        }
-
-        if (isset($_GET['raw'])) {
-            if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
-                rawView($paste_id, $p_title, $op_content, $p_code);
-                exit();
-            } else {
-                $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
-            }
-        }
-
-        $highlight = [];
-        $prefix_size = strlen('!highlight!');
-        if ($prefix_size) {
-            $lines = explode("\n", $p_content);
-            $p_content = "";
-            foreach ($lines as $idx => $line) {
-                if (substr($line, 0, $prefix_size) == '!highlight!') {
-                    $highlight[] = $idx + 1;
-                    $line = substr($line, $prefix_size);
+            if ($p_visible == "2") {
+                if (isset($_SESSION['username']) && $p_member == (string) ($_SESSION['username'] ?? '')) {
+                    // Authorized
+                } else {
+                    $notfound = $lang['privatepaste'] ?? 'This is a private paste.';
+                    $p_private_error = '1';
+                    goto Not_Valid_Paste;
                 }
-                $p_content .= $line . "\n";
             }
-            $p_content = rtrim($p_content);
-        }
+            if ($p_expiry != "NULL" && $p_expiry != "SELF") {
+                $input_time = (int) $p_expiry;
+                $current_time = time();
+                if ($input_time < $current_time) {
+                    $notfound = $lang['expired'] ?? 'This paste has expired.';
+                    $p_private_error = '1';
+                    goto Not_Valid_Paste;
+                }
+            }
+            if ($p_encrypt == "1") {
+                $p_content = decrypt($p_content, hex2bin(SECRET)) ?? '';
+                if ($p_content === '') {
+                    $error = ($lang['error'] ?? 'Error') . ': Decryption failed.';
+                    goto Not_Valid_Paste;
+                }
+            }
+            $op_content = trim(htmlspecialchars_decode($p_content));
 
-        $p_content = htmlspecialchars_decode($p_content);
-        if ($p_code == "markdown") {
-            include($parsedown_path);
-            $Parsedown = new Parsedown();
-            $p_content = $Parsedown->text($p_content);
+            if (isset($_GET['download'])) {
+                if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
+                    doDownload($paste_id, $p_title, $op_content, $p_code);
+                    exit();
+                } else {
+                    $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+                }
+            }
+
+            if (isset($_GET['raw'])) {
+                if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
+                    rawView($paste_id, $p_title, $op_content, $p_code);
+                    exit();
+                } else {
+                    $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+                }
+            }
+
+            $highlight = [];
+            $prefix_size = strlen('!highlight!');
+            if ($prefix_size) {
+                $lines = explode("\n", $p_content);
+                $p_content = "";
+                foreach ($lines as $idx => $line) {
+                    if (substr($line, 0, $prefix_size) == '!highlight!') {
+                        $highlight[] = $idx + 1;
+                        $line = substr($line, $prefix_size);
+                    }
+                    $p_content .= $line . "\n";
+                }
+                $p_content = rtrim($p_content);
+            }
+
+            $p_content = htmlspecialchars_decode($p_content);
+            if ($p_code == "markdown") {
+                include($parsedown_path);
+                $Parsedown = new Parsedown();
+                $p_content = $Parsedown->text($p_content);
+            } else {
+                $geshi = new GeSHi($p_content, $p_code, $path);
+                $geshi->enable_classes();
+                $geshi->set_header_type(GESHI_HEADER_DIV);
+                $geshi->set_line_style('color: #aaaaaa; width:auto;');
+                $geshi->set_code_style('color: #757584;');
+                if (count($highlight)) {
+                    $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+                    $geshi->highlight_lines_extra($highlight);
+                    $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+                } else {
+                    $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
+                }
+                $p_content = $geshi->parse_code();
+                $ges_style = '<style>' . $geshi->get_stylesheet() . '</style>';
+            }
+
+            if (isset($_GET['embed'])) {
+                if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
+                    embedView($paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang);
+                    exit();
+                } else {
+                    $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+                }
+            }
         } else {
-            $geshi = new GeSHi($p_content, $p_code, $path);
-            $geshi->enable_classes();
-            $geshi->set_header_type(GESHI_HEADER_DIV);
-            $geshi->set_line_style('color: #aaaaaa; width:auto;');
-            $geshi->set_code_style('color: #757584;');
-            if (count($highlight)) {
-                $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-                $geshi->highlight_lines_extra($highlight);
-                $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
-            } else {
-                $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
-            }
-            $p_content = $geshi->parse_code();
-            $ges_style = '<style>' . $geshi->get_stylesheet() . '</style>';
-        }
-
-        if (isset($_GET['embed'])) {
-            if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
-                embedView($paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang);
-                exit();
-            } else {
-                $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
-            }
+            header("HTTP/1.1 404 Not Found");
+            $notfound = $lang['notfound'] ?? 'Paste not found.';
         }
     } else {
         header("HTTP/1.1 404 Not Found");
@@ -238,36 +250,36 @@ try {
     require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
     if ($p_password == "NONE") {
         updateMyView($pdo, $paste_id); // Increment view count first
-        $p_download = $mod_rewrite == '1' ? "download/$paste_id" : "paste.php?download&id=$paste_id";
-        $p_raw = $mod_rewrite == '1' ? "raw/$paste_id" : "paste.php?raw&id=$paste_id";
-        $p_embed = $mod_rewrite == '1' ? "embed/$paste_id" : "paste.php?embed&id=$paste_id";
+        $p_download = $mod_rewrite == '1' ? $baseurl . "download/$paste_id" : $baseurl . "paste.php?download&id=$paste_id";
+        $p_raw = $mod_rewrite == '1' ? $baseurl . "raw/$paste_id" : $baseurl . "paste.php?raw&id=$paste_id";
+        $p_embed = $mod_rewrite == '1' ? $baseurl . "embed/$paste_id" : $baseurl . "paste.php?embed&id=$paste_id";
         require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/view.php');
         // Check views after increment
         $stmt = $pdo->prepare("SELECT views FROM pastes WHERE id = ?");
         $stmt->execute([$paste_id]);
         $current_views = (int) $stmt->fetchColumn();
-        if ($p_expiry == "SELF" && $current_views == 2) {
+        if ($p_expiry == "SELF" && $current_views >= 2) {
             deleteMyPaste($pdo, $paste_id);
         }
     } else {
         // Initialize $p_password from POST or session if not already set
-        $p_password = $p_password ?? (isset($_POST['mypass']) ? trim($_POST['mypass']) : (isset($_SESSION['p_password']) ? $_SESSION['p_password'] : ''));
-        $p_download = "paste.php?download&id=$paste_id&password=" . htmlspecialchars($p_password, ENT_QUOTES, 'UTF-8');
-        $p_raw = "paste.php?raw&id=$paste_id&password=" . htmlspecialchars($p_password, ENT_QUOTES, 'UTF-8');
-        if (isset($_POST['mypass']) && password_verify($_POST['mypass'], $p_password)) {
+        $p_password_input = isset($_POST['mypass']) ? trim($_POST['mypass']) : (isset($_SESSION['p_password']) ? $_SESSION['p_password'] : '');
+        $p_download = $mod_rewrite == '1' ? $baseurl . "download/$paste_id?password=" . htmlspecialchars($p_password_input, ENT_QUOTES, 'UTF-8') : $baseurl . "paste.php?download&id=$paste_id&password=" . htmlspecialchars($p_password_input, ENT_QUOTES, 'UTF-8');
+        $p_raw = $mod_rewrite == '1' ? $baseurl . "raw/$paste_id?password=" . htmlspecialchars($p_password_input, ENT_QUOTES, 'UTF-8') : $baseurl . "paste.php?raw&id=$paste_id&password=" . htmlspecialchars($p_password_input, ENT_QUOTES, 'UTF-8');
+        $p_embed = $mod_rewrite == '1' ? $baseurl . "embed/$paste_id?password=" . htmlspecialchars($p_password_input, ENT_QUOTES, 'UTF-8') : $baseurl . "paste.php?embed&id=$paste_id&password=" . htmlspecialchars($p_password_input, ENT_QUOTES, 'UTF-8');
+        if ($p_password_input && password_verify($p_password_input, $p_password)) {
             updateMyView($pdo, $paste_id); // Increment view count first
             require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/view.php');
             // Check views after increment
             $stmt = $pdo->prepare("SELECT views FROM pastes WHERE id = ?");
             $stmt->execute([$paste_id]);
             $current_views = (int) $stmt->fetchColumn();
-            if ($p_expiry == "SELF" && $current_views == 2) {
+            if ($p_expiry == "SELF" && $current_views >= 2) {
                 deleteMyPaste($pdo, $paste_id);
             }
         } else {
-            $error = isset($_POST['mypass']) ? ($lang['wrongpwd'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
-            $_SESSION['p_password'] = $p_password; // Persist for retry
-            $paste_id = $paste_id; // Ensure paste_id is available
+            $error = $p_password_input ? ($lang['wrongpwd'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+            $_SESSION['p_password'] = $p_password_input; // Persist for retry
             require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/errors.php');
         }
     }
@@ -280,6 +292,7 @@ Not_Valid_Paste:
 
     require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/footer.php');
 } catch (PDOException $e) {
+    error_log("paste.php: Database error: " . $e->getMessage());
     $error = ($lang['error'] ?? 'Database error.') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
     require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/errors.php');

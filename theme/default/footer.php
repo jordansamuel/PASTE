@@ -8,10 +8,10 @@
 <footer class="container-xl py-3 my-4 border-top">
     <div class="row">
         <div class="col-md-4 mb-0 text-muted">
-            Copyright &copy; <?php echo date("Y"); ?> <a href="/" class="text-decoration-none"><?php echo htmlspecialchars($site_name ?? 'Paste', ENT_QUOTES, 'UTF-8'); ?></a>. All rights reserved.
+            Copyright &copy; <?php echo date("Y"); ?> <a href="<?php echo htmlspecialchars($baseurl, ENT_QUOTES, 'UTF-8'); ?>" class="text-decoration-none"><?php echo htmlspecialchars($site_name ?? 'Paste', ENT_QUOTES, 'UTF-8'); ?></a>. All rights reserved.
         </div>
         <div class="col-md-4 text-center">
-            <a href="/" class="d-inline-flex align-items-center text-decoration-none" aria-label="Paste Home">
+            <a href="<?php echo htmlspecialchars($baseurl, ENT_QUOTES, 'UTF-8'); ?>" class="d-inline-flex align-items-center text-decoration-none" aria-label="Paste Home">
                 <i class="bi bi-clipboard me-2" style="font-size: 1.5rem;"></i>
             </a>
         </div>
@@ -23,7 +23,7 @@
 
 <?php if (!isset($_SESSION['username'])): ?>
     <div class="text-center mb-4">
-        <?php echo htmlspecialchars($ads_2 ?? '', ENT_QUOTES, 'UTF-8'); ?>
+        <?php echo $ads_2 ?? ''; ?>
     </div>
 <?php endif; ?>
 
@@ -38,7 +38,7 @@
 <?php if (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha"): ?>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <?php endif; ?>
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/paste.js"></script>
+<script src="<?php echo htmlspecialchars($baseurl . 'theme/' . $default_theme . '/js/paste.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <!-- Google Analytics -->
 <?php if (!empty($ga)): ?>
@@ -47,7 +47,7 @@
 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-ga('create', '<?php echo $ga; ?>', 'auto');
+ga('create', '<?php echo htmlspecialchars($ga, ENT_QUOTES, 'UTF-8'); ?>', 'auto');
 ga('send', 'pageview');
 </script>
 <?php endif; ?>

@@ -7,7 +7,6 @@
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
  */
-$protocol = paste_protocol();
 ?>
 
 <div class="content">
@@ -105,7 +104,7 @@ $protocol = paste_protocol();
                         if (!isset($_SESSION['token']) || (isset($_SESSION['username']) && $_SESSION['username'] != $profile_username)) {
                             if ($row['visible'] == '0') {
                                 echo '<tr> 
-                                    <td><a href="' . $protocol . $baseurl . '/' . htmlspecialchars($p_link) . '" title="' . htmlspecialchars($title) . '">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
+                                    <td><a href="' . htmlspecialchars($baseurl . $p_link) . '" title="' . htmlspecialchars($title) . '">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
                                     <td>' . htmlspecialchars($p_date) . '</td>
                                     <td>' . htmlspecialchars($p_views) . '</td>
                                     <td>' . htmlspecialchars(strtoupper($p_code)) . '</td>
@@ -113,12 +112,12 @@ $protocol = paste_protocol();
                             }
                         } else {
                             echo '<tr> 
-                                <td><a href="' . $protocol . $baseurl . '/' . htmlspecialchars($p_link) . '" title="' . htmlspecialchars($title) . '">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
+                                <td><a href="' . htmlspecialchars($baseurl . $p_link) . '" title="' . htmlspecialchars($title) . '">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
                                 <td>' . htmlspecialchars($p_date) . '</td>
                                 <td>' . htmlspecialchars($p_visible) . '</td>
                                 <td>' . htmlspecialchars($p_views) . '</td>
                                 <td>' . htmlspecialchars(strtoupper($p_code)) . '</td>
-                                <td><a href="' . $protocol . $baseurl . '/' . htmlspecialchars($p_delete_link) . '" class="text-danger" title="Delete ' . htmlspecialchars($title) . '"><i class="bi bi-trash" aria-hidden="true"></i></a></td>    
+                                <td><a href="' . htmlspecialchars($baseurl . $p_delete_link) . '" class="text-danger" title="Delete ' . htmlspecialchars($title) . '"><i class="bi bi-trash" aria-hidden="true"></i></a></td>    
                             </tr>';                   
                         }
                     }

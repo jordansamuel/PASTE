@@ -8,6 +8,9 @@
  * See LICENCE for details.
  */
 
+// Set default timezone
+date_default_timezone_set('UTC');
+
 // Start output buffering
 ob_start();
 
@@ -70,6 +73,7 @@ try {
     $pdo = new PDO("mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4", $dbuser, $dbpassword);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo->exec("SET time_zone = '+00:00'");
 } catch (PDOException $e) {
     ob_end_clean();
     error_log("install.php: Database connection failed: " . $e->getMessage());
@@ -77,8 +81,8 @@ try {
     exit;
 }
 
-// Calculate base URL
-$base_path = dirname($_SERVER['PHP_SELF'], 2);
+// Calculate base URL with trailing slash
+$base_path = rtrim(dirname($_SERVER['PHP_SELF'], 2), '/') . '/';
 $baseurl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['SERVER_NAME'] . $base_path;
 
 // Function to check if table exists
@@ -92,14 +96,36 @@ function tableExists($pdo, $table) {
     }
 }
 
-// Function to check if column exists
-function columnExists($pdo, $table, $column) {
+// Function to get column definitions
+function getColumnDefinition($pdo, $table, $column) {
     try {
         $stmt = $pdo->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
-        return $stmt->rowCount() > 0;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("install.php: Error checking column $column in $table: " . $e->getMessage());
         return false;
+    }
+}
+
+// Function to check and update column
+function ensureColumn($pdo, $table, $column, $expected_def, &$output, &$errors) {
+    $current_def = getColumnDefinition($pdo, $table, $column);
+    if (!$current_def) {
+        try {
+            $pdo->exec("ALTER TABLE `$table` ADD $column $expected_def");
+            $output[] = "Added column $column to $table.";
+        } catch (PDOException $e) {
+            $errors[] = "Failed to add column $column to $table: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            error_log("install.php: Failed to add column $column to $table: " . $e->getMessage());
+        }
+    } elseif (strtolower($current_def['Type']) !== strtolower($expected_def)) {
+        try {
+            $pdo->exec("ALTER TABLE `$table` MODIFY COLUMN $column $expected_def");
+            $output[] = "Modified column $column in $table to match expected definition.";
+        } catch (PDOException $e) {
+            $errors[] = "Failed to modify column $column in $table: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            error_log("install.php: Failed to modify column $column in $table: " . $e->getMessage());
+        }
     }
 }
 
@@ -117,6 +143,10 @@ try {
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "admin table created.";
+    } else {
+        ensureColumn($pdo, 'admin', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'admin', 'user', 'VARCHAR(250) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'admin', 'pass', 'VARCHAR(250) NOT NULL', $output, $errors);
     }
     
     // Check and insert admin user
@@ -148,6 +178,10 @@ try {
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "admin_history table created.";
+    } else {
+        ensureColumn($pdo, 'admin_history', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'admin_history', 'last_date', 'DATETIME NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'admin_history', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
     }
 
     // Site info table
@@ -185,6 +219,29 @@ try {
             'baseurl' => $baseurl
         ]);
         $output[] = "Site info inserted.";
+    } else {
+        ensureColumn($pdo, 'site_info', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'title', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'des', 'MEDIUMTEXT', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'keyword', 'MEDIUMTEXT', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'site_name', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'email', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'twit', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'face', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'gplus', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'ga', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'additional_scripts', 'TEXT', $output, $errors);
+        ensureColumn($pdo, 'site_info', 'baseurl', 'TEXT NOT NULL', $output, $errors);
+
+        // Update existing baseurl to include trailing slash
+        try {
+            $stmt = $pdo->prepare("UPDATE site_info SET baseurl = :baseurl WHERE id = 1");
+            $stmt->execute(['baseurl' => $baseurl]);
+            $output[] = "Updated baseurl in site_info to include trailing slash.";
+        } catch (PDOException $e) {
+            $errors[] = "Failed to update baseurl in site_info: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            error_log("install.php: Failed to update baseurl in site_info: " . $e->getMessage());
+        }
     }
 
     // Site permissions table
@@ -200,6 +257,10 @@ try {
         $pdo->exec("INSERT INTO site_permissions (id, disableguest, siteprivate) VALUES (1, 'off', 'off')");
         $output[] = "Site permissions inserted.";
     } else {
+        ensureColumn($pdo, 'site_permissions', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'site_permissions', 'disableguest', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
+        ensureColumn($pdo, 'site_permissions', 'siteprivate', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
+
         $stmt = $pdo->query("SELECT COUNT(*) FROM site_permissions WHERE id = 1");
         if ($stmt->fetchColumn() == 0) {
             $pdo->exec("INSERT INTO site_permissions (id, disableguest, siteprivate) VALUES (1, 'off', 'off')");
@@ -221,6 +282,10 @@ try {
 
         $pdo->exec("INSERT INTO interface (theme, lang) VALUES ('default', 'en.php')");
         $output[] = "Interface settings inserted.";
+    } else {
+        ensureColumn($pdo, 'interface', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'interface', 'theme', 'VARCHAR(50) NOT NULL DEFAULT \'default\'', $output, $errors);
+        ensureColumn($pdo, 'interface', 'lang', 'VARCHAR(50) NOT NULL DEFAULT \'en.php\'', $output, $errors);
     }
 
     // Pastes table
@@ -244,10 +309,20 @@ try {
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "pastes table created.";
     } else {
-        if (!columnExists($pdo, 'pastes', 'encrypt')) {
-            $pdo->exec("ALTER TABLE pastes ADD encrypt VARCHAR(1) NOT NULL DEFAULT '0'");
-            $output[] = "Added encrypt column to pastes table.";
-        }
+        ensureColumn($pdo, 'pastes', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'title', 'VARCHAR(255) NOT NULL DEFAULT \'Untitled\'', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'content', 'LONGTEXT NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'visible', 'VARCHAR(10) NOT NULL DEFAULT \'0\'', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'code', 'VARCHAR(50) NOT NULL DEFAULT \'text\'', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'expiry', 'VARCHAR(50)', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'password', 'VARCHAR(255) NOT NULL DEFAULT \'NONE\'', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'encrypt', 'VARCHAR(1) NOT NULL DEFAULT \'0\'', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'member', 'VARCHAR(255) NOT NULL DEFAULT \'Guest\'', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'date', 'DATETIME NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'now_time', 'VARCHAR(50)', $output, $errors);
+        ensureColumn($pdo, 'pastes', 'views', 'INT NOT NULL DEFAULT 0', $output, $errors);
+        ensureColumn($pdo, 'pastes', 's_date', 'DATE', $output, $errors);
     }
 
     // Users table
@@ -269,9 +344,21 @@ try {
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "users table created.";
-    } elseif (($enablegoog === 'yes' || $enablefb === 'yes') && !columnExists($pdo, 'users', 'refresh_token')) {
-        $pdo->exec("ALTER TABLE users ADD refresh_token VARCHAR(255) DEFAULT NULL");
-        $output[] = "Added refresh_token column to users table.";
+    } else {
+        ensureColumn($pdo, 'users', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'users', 'oauth_uid', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'users', 'username', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'email_id', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'users', 'full_name', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'users', 'platform', 'VARCHAR(50)', $output, $errors);
+        ensureColumn($pdo, 'users', 'password', 'VARCHAR(255)', $output, $errors);
+        ensureColumn($pdo, 'users', 'verified', 'VARCHAR(10) NOT NULL DEFAULT \'0\'', $output, $errors);
+        ensureColumn($pdo, 'users', 'picture', 'TEXT', $output, $errors);
+        ensureColumn($pdo, 'users', 'date', 'DATETIME NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
+        if ($enablegoog === 'yes' || $enablefb === 'yes') {
+            ensureColumn($pdo, 'users', 'refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
+        }
     }
 
     // Ban user table
@@ -283,6 +370,10 @@ try {
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "ban_user table created.";
+    } else {
+        ensureColumn($pdo, 'ban_user', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'ban_user', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'ban_user', 'last_date', 'DATETIME NOT NULL', $output, $errors);
     }
 
     // Mail table
@@ -310,6 +401,19 @@ try {
         $pdo->exec("INSERT INTO mail (verification, smtp_host, smtp_username, smtp_password, smtp_port, protocol, auth, socket, oauth_client_id, oauth_client_secret, oauth_refresh_token) 
             VALUES ($smtp_values)");
         $output[] = "Mail settings inserted" . ($enablesmtp === 'yes' ? " with Gmail SMTP defaults." : ".");
+    } else {
+        ensureColumn($pdo, 'mail', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'mail', 'verification', 'VARCHAR(20) NOT NULL DEFAULT \'enabled\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'smtp_host', 'VARCHAR(255)' . ($enablesmtp === 'yes' ? " DEFAULT 'smtp.gmail.com'" : ""), $output, $errors);
+        ensureColumn($pdo, 'mail', 'smtp_username', 'VARCHAR(255) DEFAULT \'\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'smtp_password', 'VARCHAR(255) DEFAULT \'\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'smtp_port', 'VARCHAR(10)' . ($enablesmtp === 'yes' ? " DEFAULT '587'" : ""), $output, $errors);
+        ensureColumn($pdo, 'mail', 'protocol', 'VARCHAR(20) NOT NULL DEFAULT \'2\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'auth', 'VARCHAR(20) NOT NULL DEFAULT \'true\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'socket', 'VARCHAR(20) NOT NULL DEFAULT \'tls\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'oauth_client_id', 'VARCHAR(255) NOT NULL DEFAULT \'\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'oauth_client_secret', 'VARCHAR(255) NOT NULL DEFAULT \'\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'oauth_refresh_token', 'VARCHAR(255) NOT NULL DEFAULT \'\'', $output, $errors);
     }
 
     // Pages table
@@ -323,6 +427,12 @@ try {
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "pages table created.";
+    } else {
+        ensureColumn($pdo, 'pages', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'pages', 'last_date', 'DATETIME NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'pages', 'page_name', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'pages', 'page_title', 'MEDIUMTEXT NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'pages', 'page_content', 'LONGTEXT', $output, $errors);
     }
 
     // Page view table
@@ -335,6 +445,11 @@ try {
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "page_view table created.";
+    } else {
+        ensureColumn($pdo, 'page_view', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'page_view', 'date', 'DATE NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'page_view', 'tpage', 'INT NOT NULL DEFAULT 0', $output, $errors);
+        ensureColumn($pdo, 'page_view', 'tvisit', 'INT NOT NULL DEFAULT 0', $output, $errors);
     }
 
     // Ads table
@@ -350,6 +465,11 @@ try {
 
         $pdo->exec("INSERT INTO ads (text_ads, ads_1, ads_2) VALUES ('', '', '')");
         $output[] = "Ads settings inserted.";
+    } else {
+        ensureColumn($pdo, 'ads', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'ads', 'text_ads', 'TEXT', $output, $errors);
+        ensureColumn($pdo, 'ads', 'ads_1', 'TEXT', $output, $errors);
+        ensureColumn($pdo, 'ads', 'ads_2', 'TEXT', $output, $errors);
     }
 
     // Sitemap options table
@@ -364,6 +484,10 @@ try {
 
         $pdo->exec("INSERT INTO sitemap_options (id, priority, changefreq) VALUES (1, '0.9', 'daily')");
         $output[] = "Sitemap options inserted.";
+    } else {
+        ensureColumn($pdo, 'sitemap_options', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'sitemap_options', 'priority', 'VARCHAR(10) NOT NULL DEFAULT \'0.9\'', $output, $errors);
+        ensureColumn($pdo, 'sitemap_options', 'changefreq', 'VARCHAR(20) NOT NULL DEFAULT \'daily\'', $output, $errors);
     }
 
     // Captcha table
@@ -384,10 +508,19 @@ try {
         $pdo->exec("INSERT INTO captcha (cap_e, mode, mul, allowed, color, recaptcha_sitekey, recaptcha_secretkey) 
             VALUES ('off', 'Normal', 'off', 'ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789', '#000000', '', '')");
         $output[] = "Captcha settings inserted.";
+    } else {
+        ensureColumn($pdo, 'captcha', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'cap_e', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'mode', 'VARCHAR(50) NOT NULL DEFAULT \'Normal\'', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'mul', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'allowed', 'TEXT NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'color', 'VARCHAR(7) NOT NULL DEFAULT \'#000000\'', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'recaptcha_sitekey', 'TEXT', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'recaptcha_secretkey', 'TEXT', $output, $errors);
     }
 
     // Prepare post-installation message
-    $post_install_message = 'Installation completed successfully. ';
+    $post_install_message = 'Installation and schema update completed successfully. ';
     if ($enablegoog === 'yes') {
         $post_install_message .= 'Configure Google OAuth at <a href="https://console.developers.google.com" target="_blank">Google Cloud Console</a> with redirect URI: ' . htmlspecialchars($redirect_uri, ENT_QUOTES, 'UTF-8') . ' and scopes: userinfo.profile, userinfo.email, mail.google.com. Update G_CLIENT_ID and G_CLIENT_SECRET in config.php. ';
     }

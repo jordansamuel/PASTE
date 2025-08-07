@@ -16,7 +16,7 @@ if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
     exit();
 }
 
-$date = date('jS F Y');
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
 $ip = $_SERVER['REMOTE_ADDR'];
 require_once('../config.php');
 

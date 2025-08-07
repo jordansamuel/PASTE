@@ -15,7 +15,7 @@ require_once('includes/functions.php');
 // UTF-8
 header('Content-Type: text/html; charset=utf-8');
 
-$date = date('jS F Y');
+$date = date('Y-m-d H:i:s');
 $ip = $_SERVER['REMOTE_ADDR'];
 $data_ip = file_get_contents('tmp/temp.tdata');
 

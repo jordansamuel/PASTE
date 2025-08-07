@@ -10,25 +10,25 @@
 session_start();
 require_once('../config.php'); // Moved to top to ensure DB variables are defined
 
-if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
-    error_log("dashboard.php: Session validation failed - admin_login or admin_id not set. Session: " . json_encode($_SESSION));
-    header("Location: index.php");
-    exit();
-}
-
-// Debug database configuration
-if (!isset($dbhost) || !isset($dbname) || !isset($dbuser) || !isset($dbpassword)) {
-    error_log("dashboard.php: Database configuration variables missing - dbhost: " . (isset($dbhost) ? $dbhost : 'undefined') . 
-              ", dbname: " . (isset($dbname) ? $dbname : 'undefined') . 
-              ", dbuser: " . (isset($dbuser) ? $dbuser : 'undefined') . 
-              ", dbpassword: " . (isset($dbpassword) ? '[hidden]' : 'undefined'));
-    die("Unable to connect to database: Configuration variables missing");
-}
-
+// Fetch $baseurl from site_info
 try {
     $pdo = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpassword);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $stmt = $pdo->query("SELECT baseurl FROM site_info WHERE id = 1");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $baseurl = $row['baseurl'] ?? '';
+} catch (PDOException $e) {
+    error_log("dashboard.php: Failed to fetch baseurl: " . $e->getMessage());
+    die("Unable to fetch site configuration: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+}
 
+if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
+    error_log("dashboard.php: Session validation failed - admin_login or admin_id not set. Session: " . json_encode($_SESSION));
+    header("Location: " . htmlspecialchars($baseurl . 'admin/index.php', ENT_QUOTES, 'UTF-8'));
+    exit();
+}
+
+try {
     // Validate admin
     $stmt = $pdo->prepare("SELECT id, user FROM admin WHERE id = ?");
     $stmt->execute([$_SESSION['admin_id']]);
@@ -37,27 +37,29 @@ try {
         error_log("dashboard.php: Admin validation failed - id: {$_SESSION['admin_id']}, user: {$_SESSION['admin_login']}, found: " . ($row ? json_encode($row) : 'null'));
         unset($_SESSION['admin_login']);
         unset($_SESSION['admin_id']);
-        header("Location: index.php");
+        header("Location: " . htmlspecialchars($baseurl . 'admin/index.php', ENT_QUOTES, 'UTF-8'));
         exit();
     }
 } catch (PDOException $e) {
     error_log("dashboard.php: Database connection failed: " . $e->getMessage());
-    die("Unable to connect to database: " . htmlspecialchars($e->getMessage()));
+    die("Unable to connect to database: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 
 if (isset($_GET['logout'])) {
     unset($_SESSION['admin_login']);
     unset($_SESSION['admin_id']);
     session_destroy();
-    header("Location: index.php");
+    header("Location: " . htmlspecialchars($baseurl . 'admin/index.php', ENT_QUOTES, 'UTF-8'));
     exit();
 }
 
-$date = date('jS F Y');
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
 $ip = $_SERVER['REMOTE_ADDR'];
 require_once('../includes/functions.php');
 
 // Log admin activity
+$last_ip = null;
+$last_date = null;
 $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM admin_history");
 $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['last_id'] ?? null;
 
@@ -65,13 +67,19 @@ if ($last_id) {
     $stmt = $pdo->prepare("SELECT last_date, ip FROM admin_history WHERE id = ?");
     $stmt->execute([$last_id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $last_date = $row['last_date'] ?? null;
-    $last_ip = $row['ip'] ?? null;
+    if ($row) {
+        $last_date = $row['last_date'];
+        $last_ip = $row['ip'];
+    }
 }
 
 if ($last_ip !== $ip || $last_date !== $date) {
-    $stmt = $pdo->prepare("INSERT INTO admin_history (last_date, ip) VALUES (?, ?)");
-    $stmt->execute([$date, $ip]);
+    try {
+        $stmt = $pdo->prepare("INSERT INTO admin_history (last_date, ip) VALUES (?, ?)");
+        $stmt->execute([$date, $ip]);
+    } catch (PDOException $e) {
+        error_log("dashboard.php: Failed to log admin activity: " . $e->getMessage());
+    }
 }
 
 // Fetch page view statistics
@@ -94,8 +102,8 @@ if ($page_last_id) {
 }
 
 // Count today's users
-$c_date = date('jS F Y');
-$stmt = $pdo->prepare("SELECT COUNT(id) AS count FROM users WHERE date = ?");
+$c_date = date('Y-m-d');
+$stmt = $pdo->prepare("SELECT COUNT(id) AS count FROM users WHERE DATE(date) = ?");
 $stmt->execute([$c_date]);
 $today_users_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
@@ -140,18 +148,19 @@ for ($loop = 0; $loop <= 6; $loop++) {
     <title>Paste - Dashboard</title>
     <link rel="shortcut icon" href="favicon.ico">
     <link href="css/paste.css" rel="stylesheet" type="text/css" />
-</head>
-<body>
+  </head>
+  <body>
+  
     <div id="top" class="clearfix">
         <div class="applogo">
-            <a href="../" class="logo">Paste</a>
+          <a href="../" class="logo">Paste</a>
         </div>
         <ul class="top-right">
             <li class="dropdown link">
                 <a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b><?php echo htmlspecialchars($_SESSION['admin_login']); ?></b><span class="caret"></span></a>
                 <ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
-                    <li><a href="admin.php">Settings</a></li>
-                    <li><a href="?logout">Logout</a></li>
+                  <li><a href="admin.php">Settings</a></li>
+                  <li><a href="?logout">Logout</a></li>
                 </ul>
             </li>
         </ul>
@@ -163,40 +172,40 @@ for ($loop = 0; $loop <= 6; $loop++) {
                 <div class="col-md-12">
                     <ul class="panel quick-menu clearfix">
                         <li class="col-xs-3 col-sm-2 col-md-1 menu-active">
-                            <a href="dashboard.php"><i class="fa fa-home"></i>Dashboard</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/dashboard.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-house"></i>Dashboard</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="configuration.php"><i class="fa fa-cogs"></i>Configuration</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/configuration.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-gear"></i>Configuration</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="interface.php"><i class="fa fa-eye"></i>Interface</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/interface.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-eye"></i>Interface</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="admin.php"><i class="fa fa-user"></i>Admin Account</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/admin.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-person"></i>Admin Account</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="pastes.php"><i class="fa fa-clipboard"></i>Pastes</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/pastes.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-clipboard"></i>Pastes</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="users.php"><i class="fa fa-users"></i>Users</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/users.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-people"></i>Users</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="ipbans.php"><i class="fa fa-ban"></i>IP Bans</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/ipbans.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-ban"></i>IP Bans</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="stats.php"><i class="fa fa-line-chart"></i>Statistics</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/stats.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-graph-up"></i>Statistics</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="ads.php"><i class="fa fa-gbp"></i>Ads</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/ads.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-currency-pound"></i>Ads</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="pages.php"><i class="fa fa-file"></i>Pages</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/pages.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-file-earmark"></i>Pages</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="sitemap.php"><i class="fa fa-map-signs"></i>Sitemap</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/sitemap.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-map"></i>Sitemap</a>
                         </li>
                         <li class="col-xs-3 col-sm-2 col-md-1">
-                            <a href="tasks.php"><i class="fa fa-tasks"></i>Tasks</a>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'admin/tasks.php', ENT_QUOTES, 'UTF-8'); ?>"><i class="bi bi-list-task"></i>Tasks</a>
                         </li>
                     </ul>
                 </div>
@@ -211,8 +220,8 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                 <div class="col-md-3">
                                     <div class="panel panel-default">
                                         <div class="panel-body text-center">
-                                            <h6><i class="fa fa-eye"></i> Views</h6>
-                                            <p><span class="badge"><?php echo $today_page; ?></span></p>
+                                            <h6><i class="bi bi-eye"></i> Views</h6>
+                                            <p><span class="badge"><?php echo htmlspecialchars($today_page, ENT_QUOTES, 'UTF-8'); ?></span></p>
                                             <small>Today</small>
                                         </div>
                                     </div>
@@ -220,8 +229,8 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                 <div class="col-md-3">
                                     <div class="panel panel-default">
                                         <div class="panel-body text-center">
-                                            <h6><i class="fa fa-clipboard"></i> Pastes</h6>
-                                            <p><span class="badge"><?php echo $today_pastes_count; ?></span></p>
+                                            <h6><i class="bi bi-clipboard"></i> Pastes</h6>
+                                            <p><span class="badge"><?php echo htmlspecialchars($today_pastes_count, ENT_QUOTES, 'UTF-8'); ?></span></p>
                                             <small>Today</small>
                                         </div>
                                     </div>
@@ -229,8 +238,8 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                 <div class="col-md-3">
                                     <div class="panel panel-default">
                                         <div class="panel-body text-center">
-                                            <h6><i class="fa fa-users"></i> Users</h6>
-                                            <p><span class="badge"><?php echo $today_users_count; ?></span></p>
+                                            <h6><i class="bi bi-people"></i> Users</h6>
+                                            <p><span class="badge"><?php echo htmlspecialchars($today_users_count, ENT_QUOTES, 'UTF-8'); ?></span></p>
                                             <small>Today</small>
                                         </div>
                                     </div>
@@ -238,8 +247,8 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                 <div class="col-md-3">
                                     <div class="panel panel-default">
                                         <div class="panel-body text-center">
-                                            <h6><i class="fa fa-users"></i> Unique Views</h6>
-                                            <p><span class="badge"><?php echo $today_visit; ?></span></p>
+                                            <h6><i class="bi bi-person-lines-fill"></i> Unique Views</h6>
+                                            <p><span class="badge"><?php echo htmlspecialchars($today_visit, ENT_QUOTES, 'UTF-8'); ?></span></p>
                                             <small>Today</small>
                                         </div>
                                     </div>
@@ -282,11 +291,11 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                         $title = truncate($title, 5, 30);
                                         echo "
                                             <tr>
-                                                <td>$p_id</td>
-                                                <td>" . htmlspecialchars($p_member) . "</td>
-                                                <td>" . htmlspecialchars($p_date) . "</td>
-                                                <td><span class='badge'>" . htmlspecialchars($p_ip) . "</span></td>
-                                                <td>$p_view</td>
+                                                <td>" . htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8') . "</td>
+                                                <td>" . htmlspecialchars($p_member, ENT_QUOTES, 'UTF-8') . "</td>
+                                                <td>" . htmlspecialchars($p_date, ENT_QUOTES, 'UTF-8') . "</td>
+                                                <td><span class='badge'>" . htmlspecialchars($p_ip, ENT_QUOTES, 'UTF-8') . "</span></td>
+                                                <td>" . htmlspecialchars($p_view, ENT_QUOTES, 'UTF-8') . "</td>
                                             </tr>";
                                     }
                                     ?>
@@ -322,14 +331,14 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                             $row = $stmt->fetch(PDO::FETCH_ASSOC);
                                             if ($row) {
                                                 $u_date = $row['date'];
-                                                $ip = $row['ip'];
-                                                $username = htmlspecialchars($row['username']);
+                                                $ip = htmlspecialchars($row['ip'], ENT_QUOTES, 'UTF-8');
+                                                $username = htmlspecialchars($row['username'], ENT_QUOTES, 'UTF-8');
                                                 echo "
                                                     <tr>
-                                                        <td>$r_my_id</td>
+                                                        <td>" . htmlspecialchars($r_my_id, ENT_QUOTES, 'UTF-8') . "</td>
                                                         <td>$username</td>
-                                                        <td>" . htmlspecialchars($u_date) . "</td>
-                                                        <td><span class='badge'>" . htmlspecialchars($ip) . "</span></td>
+                                                        <td>" . htmlspecialchars($u_date, ENT_QUOTES, 'UTF-8') . "</td>
+                                                        <td><span class='badge'>$ip</span></td>
                                                     </tr>";
                                             }
                                         }
@@ -368,11 +377,11 @@ for ($loop = 0; $loop <= 6; $loop++) {
                                             $row = $stmt->fetch(PDO::FETCH_ASSOC);
                                             if ($row) {
                                                 $last_date = $row['last_date'];
-                                                $ip = htmlspecialchars($row['ip']);
+                                                $ip = htmlspecialchars($row['ip'], ENT_QUOTES, 'UTF-8');
                                                 echo "
                                                     <tr>
-                                                        <td>$c_my_id</td>
-                                                        <td>" . htmlspecialchars($last_date) . "</td>
+                                                        <td>" . htmlspecialchars($c_my_id, ENT_QUOTES, 'UTF-8') . "</td>
+                                                        <td>" . htmlspecialchars($last_date, ENT_QUOTES, 'UTF-8') . "</td>
                                                         <td><span class='badge'>$ip</span></td>
                                                     </tr>";
                                             }
@@ -392,8 +401,8 @@ for ($loop = 0; $loop <= 6; $loop++) {
                             <p>
                                 <?php
                                 $latestversion = @file_get_contents('https://raw.githubusercontent.com/boxlabss/PASTE/releases/version');
-                                echo "Latest version: " . htmlspecialchars($latestversion) . "&mdash; Installed version: " . htmlspecialchars($currentversion);
-                                if ($currentversion == $latestversion) {
+                                echo "Latest version: " . htmlspecialchars($latestversion !== false ? $latestversion : 'Unknown', ENT_QUOTES, 'UTF-8') . "&mdash; Installed version: " . htmlspecialchars($currentversion ?? 'Unknown', ENT_QUOTES, 'UTF-8');
+                                if ($currentversion && $latestversion && $currentversion == $latestversion) {
                                     echo '<br>You have the latest version';
                                 } else {
                                     echo '<br>Your Paste installation is outdated. Get the latest version from <a href="https://sourceforge.net/projects/phpaste/files/latest/download">SourceForge</a>';
@@ -416,9 +425,9 @@ for ($loop = 0; $loop <= 6; $loop++) {
         </div>
     </div>
 
-    <script type="text/javascript" src="js/jquery.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap-select.js"></script>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/bootstrap-select.js"></script>
 </body>
 </html>
 <?php $pdo = null; ?>

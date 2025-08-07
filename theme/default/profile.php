@@ -18,7 +18,7 @@
       <div class="col-lg-10">
         <div class="card">
           <div class="card-header">
-            <?php echo htmlspecialchars($lang['totalpastes'] ?? 'Total Pastes') . ' ' . htmlspecialchars($total_pastes ?? 0) . ' <a class="btn btn-outline-light float-end" href="user.php?user=' . htmlspecialchars($_SESSION['username'] ?? '') . '" target="_self">' . htmlspecialchars($lang['mypastes'] ?? 'My Pastes') . '</a>'; ?>
+            <?php echo htmlspecialchars($lang['totalpastes'] ?? 'Total Pastes') . ' ' . htmlspecialchars($total_pastes ?? 0) . ' <a class="btn btn-outline-light float-end" href="' . htmlspecialchars($baseurl . ($mod_rewrite ? 'user/' . urlencode($_SESSION['username'] ?? '') : 'user.php?user=' . urlencode($_SESSION['username'] ?? ''))) . '" target="_self">' . htmlspecialchars($lang['mypastes'] ?? 'My Pastes') . '</a>'; ?>
           </div>
           
           <div class="card-body">
@@ -34,7 +34,7 @@
             <div class="card-header text-center">
               <?php echo htmlspecialchars($lang['myprofile'] ?? 'My Profile'); ?>
             </div>
-            <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post" class="text-center mt-3">
+            <form action="<?php echo htmlspecialchars($baseurl . 'profile.php'); ?>" method="post" class="text-center mt-3">
               <div class="form-group mb-3">
                 <input disabled="" type="text" class="form-control w-50 mx-auto" name="username" style="cursor:not-allowed;" placeholder="<?php echo htmlspecialchars($user_username ?? ''); ?>">
                 <i class="bi bi-person" style="position: absolute; right: 25%; top: 50%; transform: translateY(-50%); color: #666;"></i>

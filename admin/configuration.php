@@ -16,7 +16,7 @@ if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
     exit();
 }
 
-$date = date('jS F Y');
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
 $ip = $_SERVER['REMOTE_ADDR'];
 require_once '../config.php';
 require_once '../mail/mail.php';
@@ -228,28 +228,23 @@ try {
     <title>Paste - Configuration</title>
     <link rel="shortcut icon" href="favicon.ico">
     <link href="css/paste.css" rel="stylesheet" type="text/css" />
-</head>
-<body>
+  </head>
+  <body>
+  
     <div id="top" class="clearfix">
-        <!-- Start App Logo -->
         <div class="applogo">
-            <a href="../" class="logo">Paste</a>
+          <a href="../" class="logo">Paste</a>
         </div>
-        <!-- End App Logo -->
-
-        <!-- Start Top Right -->
         <ul class="top-right">
             <li class="dropdown link">
                 <a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b><?php echo htmlspecialchars($_SESSION['admin_login']); ?></b><span class="caret"></span></a>
                 <ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
-                    <li><a href="admin.php">Settings</a></li>
-                    <li><a href="?logout">Logout</a></li>
+                  <li><a href="admin.php">Settings</a></li>
+                  <li><a href="?logout">Logout</a></li>
                 </ul>
             </li>
         </ul>
-        <!-- End Top Right -->
     </div>
-    <!-- END TOP -->
 
     <div class="content">
         <!-- START CONTAINER -->

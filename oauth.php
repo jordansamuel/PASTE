@@ -27,7 +27,7 @@ global $pdo;
 
 try {
     // Current date & user IP
-    $date = date('jS F Y');
+    $date = date('Y-m-d H:i:s');
     $ip = $_SERVER['REMOTE_ADDR'];
 
     // Get site info

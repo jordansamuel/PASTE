@@ -64,8 +64,8 @@ $offset = ($page - 1) * $perPage;
                                                 $p_time_ago = conTime(time() - $p_time);
                                                 $title = truncate($title, 20, 50);
                                                 $url = $mod_rewrite == '1' 
-                                                    ? htmlspecialchars($protocol . $baseurl . '/' . $p_id)
-                                                    : htmlspecialchars($protocol . $baseurl . '/paste.php?id=' . $p_id);
+                                                    ? htmlspecialchars( $baseurl . '' . $p_id)
+                                                    : htmlspecialchars( $baseurl . 'paste.php?id=' . $p_id);
                                                 ?>
                                                 <tr>
                                                     <td><a href="<?php echo $url; ?>" title="<?php echo htmlspecialchars($title); ?>"><?php echo ucfirst(htmlspecialchars($title)); ?></a></td>

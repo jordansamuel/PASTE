@@ -9,6 +9,9 @@
  */
 session_start();
 
+// Set default timezone
+date_default_timezone_set('UTC');
+
 $directory = 'install';
 if (file_exists($directory)) {
     header("Location: install");
@@ -40,7 +43,7 @@ $default_lang = trim($row['lang'] ?? 'en.php');
 $default_theme = trim($row['theme'] ?? 'default');
 require_once("langs/$default_lang");
 
-$date = date('jS F Y');
+$date = date('Y-m-d');
 $ip = $_SERVER['REMOTE_ADDR'];
 $data_ip = file_get_contents('tmp/temp.tdata');
 
@@ -196,8 +199,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $p_password = trim($_POST['pass'] ?? '') === '' ? 'NONE' : trim($_POST['pass']);
         $p_encrypt = '1'; // Always encrypt
         $p_member = (string) ($_SESSION['username'] ?? 'Guest');
-        $p_date = date('jS F Y h:i:s A');
+        $p_date = date('Y-m-d H:i:s');
         $now_time = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
+        $date = date('Y-m-d');
 
         // Encrypt content
         try {
@@ -250,6 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: $paste_url");
             exit;
         } catch (PDOException $e) {
+            error_log("Database error in INSERT/UPDATE: " . $e->getMessage() . " | Query: " . $stmt->queryString);
             $error = ($lang['paste_db_error'] ?? 'Database error.') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
             goto OutPut;
         }
