@@ -1,24 +1,249 @@
-/* Fonts */
-	/* Open Sans */
-	@import url(//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,600,700,800,300);
+body {
+    font-family: monospace;
+    background-color: #1a1a1a !important; /* Dark base theme */
+    color: #fff;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden;
+}
 
-/* Bootstrap Main CSS File (unedited) */
-@import url('bootstrap.min.css');
+.card {
+    background-color: #222;
+    border: none;
+    color: #fff;
+    margin-bottom: 1.5rem;
+}
 
-/* Theme Style */
-@import url('style.min.css');
+.container-xl {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
 
-/* Responsive Style */
-@import url('responsive.css');
+/* reCAPTCHA dark mode fix */
+.g-recaptcha {
+    background-color: #222 !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 1.5rem !important; /* Consistent spacing below reCAPTCHA */
+    width: 304px !important; /* Default reCAPTCHA width */
+    overflow: hidden !important;
+}
 
-/* Font Awesome */
-@import url('plugins/font-awesome.min.css');
+.g-recaptcha > div,
+.g-recaptcha iframe {
+    background-color: #222 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
 
-/* Data Tables */
-@import url('plugins/datatables.min.css');
+.g-recaptcha * {
+    background-color: #222 !important;
+    color: #fff !important;
+    border: none !important;
+}
 
-/* Bootstrap Checkbox */
-@import url('plugins/bootstrap-checkbox.min.css');
+/* Additional rule to target reCAPTCHA wrapper */
+.g-recaptcha > div > div {
+    background-color: #222 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
 
-/* Bootstrap Select */
-@import url('plugins/bootstrap-select.min.css');
+/* Ensure reCAPTCHA iframe scales correctly */
+.g-recaptcha iframe {
+    transform: scale(1) !important;
+    -webkit-transform: scale(1) !important;
+    transform-origin: 0 0 !important;
+    -webkit-transform-origin: 0 0 !important;
+}
+
+/* Submit button spacing */
+.paste-button {
+    width: 150px;
+    margin-top: 1.5rem !important; /* Space above submit button */
+}
+
+/* Form container */
+.form-group, .card-body {
+    background-color: #222 !important;
+    padding: 15px;
+    margin: 0 !important;
+}
+
+/* CodeMirror styles */
+.CodeMirror {
+    height: 400px;
+    background-color: #222 !important;
+    border: none !important;
+    color: #fff !important;
+}
+
+.CodeMirror-gutters {
+    background-color: #222 !important;
+    border-right: 1px solid #fff !important;
+}
+
+.CodeMirror-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1050;
+}
+
+/* Other existing styles */
+.list-group-item-dark {
+    background-color: #343a40;
+}
+
+.page-link {
+    background-color: #343a40;
+    border-color: #495057;
+}
+
+.line-number-tooltip {
+    position: absolute;
+    background: #333;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    z-index: 1000;
+    display: none;
+}
+
+.recent-paste-button {
+    margin-left: auto;
+    min-width: 30px;
+}
+
+.list-group-item {
+    display: flex;
+    align-items: center;
+    padding-right: 10px;
+}
+
+.navbar-nav-guest {
+    margin-left: auto !important;
+}
+
+.navbar-nav.me-auto {
+    margin-right: 1rem !important;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.card-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.card-header .meta {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.card-header .btn-group {
+    flex-shrink: 0;
+}
+
+.code-content .de1, .paste .de2, .paste .li1, .paste .li2 { color: #ffffff !important; }
+.code-content .kw1, .paste .sy1 { color: #ff79c6 !important; }
+.code-content .kw2 { color: #bd93f9 !important; }
+.code-content .st0 { color: #8be9fd !important; }
+.code-content .co1, .paste .coMULTI { color: #6272a4 !important; }
+.code-content .nu0 { color: #f1fa8c !important; }
+.code-content .me1, .code-content .me2 { color: #50fa7b !important; }
+.code-content .br0 { color: #eee !important; }
+.code-content .sy0 { color: #ffb86c !important; }
+.code-content .re0 { color: #eee !important; }
+.code-content .st_h { color: green !important; }
+
+.code-content {
+    background-color: #222;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+}
+
+.code-content.no-line-numbers ol, .code-content.no-line-numbers pre, .code-content.no-line-numbers ol li, .code-content.no-line-numbers pre span {
+    list-style: none !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+.code-content.no-line-numbers ol li::before, .code-content.no-line-numbers pre::before, .code-content.no-line-numbers pre span::before {
+    content: none !important;
+}
+
+.code-content-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1050;
+    margin: 0;
+    padding: 1rem;
+    background-color: #222;
+}
+
+.syntax-select {
+    width: 200px;
+}
+
+.cm-keyword { color: #ff79c6 !important; }
+.cm-string { color: #8be9fd !important; }
+.cm-comment { color: #6272a4 !important; }
+.cm-number { color: #f1fa8c !important; }
+.cm-variable { color: #50fa7b !important; }
+.cm-bracket { color: #ffffff !important; }
+.cm-operator { color: #ffb86c !important; }
+
+.input-group-text {
+    background-color: #333;
+    border-color: #444;
+}
+
+.guest-welcome {
+    padding: 2rem;
+}
+
+.guest-welcome i {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+}
+
+.notification {
+    position: relative;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #333;
+    color: #fff;
+    display: none;
+}
+
+.notification.error {
+    background-color: #f92672;
+}
+
+.notification.fade-out {
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.no-line-numbers ol, .no-line-numbers ol li.marker {
+    list-style: none !important;
+}

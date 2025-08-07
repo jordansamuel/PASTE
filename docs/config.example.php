@@ -1,55 +1,46 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in docs/GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
-$currentversion = 2.2;
 
-// Max paste size in MB. This value should always be below the value of
-// post_max_size in your PHP configuration settings (php.ini) or empty errors will occur.
-// The value we got on installation of Paste was: post_max_size = 8M
-// Otherwise, the maximum value that can be set is 4000 (4GB)
-$pastelimit = "0.5"; // 0.5 = 512 kilobytes, 1 = 1MB
- 
-// OAUTH (to enable, change to yes and edit)
+$currentversion = 3.0;
+$pastelimit = "10"; // 10 MB
+
+// OAuth settings (for signups)
 $enablefb = "no";
-$enablegoog = "no";
+$enablegoog = "no"; // Enable Google OAuth
 
-// "CHANGE THIS" = Replace with your details
-// Facebook
-define('FB_APP_ID', 'CHANGE THIS'); // Your application ID, see https://developers.facebook.com/docs/apps/register
-define('FB_APP_SECRET', 'CHANGE THIS');    // What's your Secret key
-
-// Google 
-define('G_Client_ID', 'CHANGE THIS'); // Get a Client ID from https://console.developers.google.com/projectselector/apis/library
-define('G_Client_Secret', 'CHANGE THIS'); // What's your Secret key
-define('G_Redirect_Uri', 'http://DOMAIN.TLD/oauth/google.php'); // Leave this as is
-define('G_Application_Name', 'Paste'); // Make sure this matches the name of your application
+define('FB_APP_ID', '');
+define('FB_APP_SECRET', '');
+define('G_CLIENT_ID', ''); // Replace with actual Client ID
+define('G_CLIENT_SECRET', ''); // Replace with actual Client Secret
+define('G_REDIRECT_URI', 'https://paste.boxlabs.uk/login.php'); // Unified redirect URI
+define('G_APPLICATION_NAME', 'Paste');
+define('G_SCOPES', [
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://mail.google.com/' // For SMTP
+]);
 
 // Database information
 $dbhost = "localhost";
-$dbuser = "DATABASEUSER";
-$dbpassword = "PASSWORD";
-$dbname = "DATABASENAME";
+$dbuser = "paste";
+$dbpassword = "password";
+$dbname = "paste";
 
-// Secret key for paste encryption (GENERATE KEYS FROM MKPASSWD.NET)
-$sec_key = '';
-define('SECRET',md5($sec_key));
+// Secret key for encryption
+$sec_key = "this is generated through the installer";
+define('SECRET', $sec_key);
 
-// Set to 1 to enable Apache's mod_rewrite
 $mod_rewrite = "0";
 
-// Available GeSHi formats
-$geshiformats =array(
+// GeSHi formats
+$geshiformats = [
     '4cs' => 'GADV 4CS',
     '6502acme' => 'ACME Cross Assembler',
     '6502kickass' => 'Kick Assembler',
@@ -282,25 +273,10 @@ $geshiformats =array(
     'yaml' => 'YAML',
     'z80' => 'ZiLOG Z80 Assembler',
     'zxbasic' => 'ZXBasic'
-);
+];
 
-// Popular formats that are listed first.
-$popular_formats=array(
-    'text',
-    'html4strict',
-    'html5',
-    'css',
-    'javascript',
-    'php',
-    'perl',
-    'python',
-    'postgresql',
-    'sql',
-    'xml',
-    'java',
-    'c',
-    'csharp',
-    'cpp',
-    'markdown'
-);
+$popular_formats = [
+    'text', 'html4strict', 'html5', 'css', 'javascript', 'php', 'perl',
+    'python', 'postgresql', 'sql', 'xml', 'java', 'c', 'csharp', 'cpp', 'markdown'
+];
 ?>

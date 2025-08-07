@@ -1,409 +1,411 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
+declare(strict_types=1);
 
-if (!function_exists('str_contains')) {
-    function str_contains($haystack, $needle, $ignoreCase = false)
-    {
-        if ($ignoreCase) {
-            $haystack = strtolower($haystack);
-            $needle   = strtolower($needle);
-        }
-        $needlePos = strpos($haystack, $needle);
-        return ($needlePos === false ? false : ($needlePos + 1));
-    }
+// Start database connection
+try {
+    $dsn = "mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4";
+    $pdo = new PDO($dsn, $dbuser, $dbpassword, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+} catch (PDOException $e) {
+    die("Unable to connect to database: " . $e->getMessage());
 }
 
-function encrypt($value)
+use PDOException;
+
+function str_contains_polyfill(string $haystack, string $needle, bool $ignoreCase = false): bool
 {
-    global $sec_key;
+    if (function_exists('str_contains')) {
+        return str_contains($haystack, $needle);
+    }
+    if ($ignoreCase) {
+        $haystack = strtolower($haystack);
+        $needle = strtolower($needle);
+    }
+    return strpos($haystack, $needle) !== false;
+}
 
-    $ivlen = openssl_cipher_iv_length($cipher = "AES-256-CBC");
-    $iv    = openssl_random_pseudo_bytes($ivlen);
-
+// Encrypt pastes with AES-256-CBC from our randomly generated $sec_key
+function encrypt(string $value, string $sec_key): string
+{
+    $cipher = "AES-256-CBC";
+    $ivlen = openssl_cipher_iv_length($cipher);
+    $iv = openssl_random_pseudo_bytes($ivlen);
     $encrypted = openssl_encrypt($value, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
-
+    if ($encrypted === false) {
+        throw new RuntimeException('Encryption failed.');
+    }
     $hmac = hash_hmac('sha256', $encrypted, $sec_key, true);
-
     return base64_encode($iv . $hmac . $encrypted);
 }
 
-function decrypt($value)
+function decrypt(string $value, string $sec_key): ?string
 {
-    global $sec_key;
-
-    $decoded = base64_decode($value);
-
-    $ivlen = openssl_cipher_iv_length($cipher = "AES-256-CBC");
-    $iv    = substr($decoded, 0, $ivlen);
-    $hmac  = substr($decoded, $ivlen, $sha256len = 32);
-
+    $decoded = base64_decode($value, true);
+    if ($decoded === false) {
+        return null;
+    }
+    $cipher = "AES-256-CBC";
+    $ivlen = openssl_cipher_iv_length($cipher);
+    $sha256len = 32;
+    if (strlen($decoded) < $ivlen + $sha256len) {
+        return null;
+    }
+    $iv = substr($decoded, 0, $ivlen);
+    $hmac = substr($decoded, $ivlen, $sha256len);
     $encrypted = substr($decoded, $ivlen + $sha256len);
-
+    $calculated_hmac = hash_hmac('sha256', $encrypted, $sec_key, true);
+    if (!hash_equals($hmac, $calculated_hmac)) {
+        return null;
+    }
     $decrypted = openssl_decrypt($encrypted, $cipher, $sec_key, OPENSSL_RAW_DATA, $iv);
-
-    if (hash_equals($hmac, hash_hmac('sha256', $encrypted, $sec_key, true))) {
-        return $decrypted;
-    }
-
-    return '';
+    return $decrypted !== false ? $decrypted : null;
 }
 
-function deleteMyPaste($con, $paste_id)
+function deleteMyPaste(PDO $pdo, int $paste_id): bool
 {
-    $query  = "DELETE FROM pastes where id='$paste_id'";
-    $result = mysqli_query($con, $query);
-}
-
-function getRecent($con, $count = 5)
-{
-    $limit  = $count ? "limit $count" : "";
-    $query  = "SELECT *
-FROM pastes where visible='0'
-ORDER BY id DESC
-LIMIT 0 , $count";
-    $result = mysqli_query($con, $query);
-    return $result;
-}
-
-function getUserRecent($con, $username, $count = 5)
-{
-    $limit  = $count ? "limit $count" : "";
-    $query  = "SELECT *
-FROM pastes where member='$username'
-ORDER BY id DESC
-LIMIT 0 , $count";
-    $result = mysqli_query($con, $query);
-    return $result;
-}
-
-function getUserPastes($con, $username)
-{
-    $query  = "SELECT * FROM pastes where member='$username' ORDER by id DESC";
-    $result = mysqli_query($con, $query);
-    return $result;
-}
-
-function getTotalPastes($con, $username)
-{
-    $query  = "SELECT * FROM pastes WHERE member='$username'";
-    $result = mysqli_query($con, $query);
-    $count  = 0;
-    while ($row = mysqli_fetch_array($result)) {
-        $count = $count + 1;
-    }
-    return $count;
-}
-
-function isValidUsername($str)
-{
-    return !preg_match('/[^A-Za-z0-9.#\\-$]/', $str);
-}
-
-function existingUser($con, $username)
-{
-    $query = "SELECT * FROM users WHERE username = '$username'";
-    $result = mysqli_query($con, $query);
-    $num_rows = mysqli_num_rows($result);
-    if ($num_rows == 0) {
-        // No records. User doesn't exist.
+    try {
+        $query = "DELETE FROM pastes WHERE id = :paste_id";
+        $stmt = $pdo->prepare($query);
+        return $stmt->execute(['paste_id' => $paste_id]);
+    } catch (PDOException $e) {
+        error_log("Failed to delete paste ID {$paste_id}: " . $e->getMessage());
         return false;
-    } else {
-        return true;
     }
 }
 
-function updateMyView($con, $paste_id)
-{
-    $query  = "SELECT * FROM pastes WHERE id=" . Trim($paste_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $p_view = Trim($row['views']);
+if (isset($_POST['delete']) && isset($_SESSION['username']) && isset($paste_id)) {
+    try {
+        // Verify ownership
+        $stmt = $pdo->prepare("SELECT member FROM pastes WHERE id = ?");
+        $stmt->execute([$paste_id]);
+        $paste = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($paste && $paste['member'] === $_SESSION['username']) {
+            if (deleteMyPaste($pdo, $paste_id)) {
+                header("Location: " . ($mod_rewrite ? $protocol . $baseurl . "/archive" : $protocol . $baseurl . "/archive.php"));
+                exit;
+            } else {
+                $error = "Failed to delete paste.";
+            }
+        } else {
+            $error = "You do not have permission to delete this paste.";
+        }
+    } catch (Exception $e) {
+        $error = "Error deleting paste: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     }
-    $p_view = $p_view + 1;
-    $query  = "UPDATE pastes SET views='$p_view' where id='$paste_id'";
-    $result = mysqli_query($con, $query);
 }
 
-/**
- * Convert seconds to a human readable string.
- *
- * @source https://stackoverflow.com/a/40777273/6158792 Written by Hans Henrik Bergan.
- * @param int $seconds
- *
- * @return string
- */
-function conTime($seconds)
+function getRecent(PDO $pdo, int $count = 5): array
 {
-    if (! \is_int($seconds)) {
-        throw new \InvalidArgumentException('Argument 1 passed to conTime() must be of the type int, ' . \gettype($seconds) . ' given');
+    try {
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, now_time, encrypt 
+                  FROM pastes WHERE visible = '0' ORDER BY id DESC LIMIT :count";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':count', $count, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            if ($row['encrypt'] == "1") {
+                $row['content'] = decrypt($row['content'], hex2bin(SECRET)) ?? '';
+                $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
+            }
+        }
+        unset($row);
+        return $rows;
+    } catch (PDOException $e) {
+        error_log("Failed to fetch recent pastes: " . $e->getMessage());
+        return [];
     }
+}
 
-    $now = new \DateTime('@0');
-    $then = new \DateTime("@$seconds");
-    $ret = '';
+function getUserRecent(PDO $pdo, string $username, int $count = 5): array
+{
+    try {
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, now_time, encrypt 
+                  FROM pastes WHERE member = :username ORDER BY id DESC LIMIT :count";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':username', $username, PDO::PARAM_STR);
+        $stmt->bindValue(':count', $count, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            if ($row['encrypt'] == "1") {
+                $row['content'] = decrypt($row['content'], hex2bin(SECRET)) ?? '';
+                $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
+            }
+        }
+        unset($row);
+        return $rows;
+    } catch (PDOException $e) {
+        error_log("Failed to fetch user recent pastes for {$username}: " . $e->getMessage());
+        return [];
+    }
+}
 
-    if ($seconds === 0)
+function getUserPastes(PDO $pdo, string $username): array
+{
+    try {
+        $query = "SELECT id, title, content, visible, code, password, member, date, now_time, encrypt, views, expiry 
+                  FROM pastes WHERE member = :username ORDER BY id DESC";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':username', $username, PDO::PARAM_STR);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            if ($row['encrypt'] == "1") {
+                $row['content'] = decrypt($row['content'], hex2bin(SECRET)) ?? '';
+                $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
+            }
+        }
+        unset($row);
+        return $rows;
+    } catch (PDOException $e) {
+        error_log("Failed to fetch user pastes for $username: " . $e->getMessage());
+        return [];
+    }
+}
+
+function getTotalPastes(PDO $pdo, string $username): int
+{
+    try {
+        $query = "SELECT COUNT(*) FROM pastes WHERE member = :username";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['username' => $username]);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Failed to count pastes for {$username}: " . $e->getMessage());
+        return 0;
+    }
+}
+
+function isValidUsername(string $str): bool
+{
+    return preg_match('/^[A-Za-z0-9.#\\-$]+$/', $str) === 1;
+}
+
+function existingUser(PDO $pdo, string $username): bool
+{
+    try {
+        $query = "SELECT COUNT(*) FROM users WHERE username = :username";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['username' => $username]);
+        return $stmt->fetchColumn() > 0;
+    } catch (PDOException $e) {
+        error_log("Failed to check existing user {$username}: " . $e->getMessage());
+        return false;
+    }
+}
+
+function updateMyView(PDO $pdo, int $paste_id): bool
+{
+    try {
+        $pdo->beginTransaction();
+        $query = "SELECT views FROM pastes WHERE id = :paste_id FOR UPDATE";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['paste_id' => $paste_id]);
+        $p_view = (int) ($stmt->fetchColumn() ?? 0);
+        $p_view++;
+        $query = "UPDATE pastes SET views = :views WHERE id = :paste_id";
+        $stmt = $pdo->prepare($query);
+        $success = $stmt->execute(['views' => $p_view, 'paste_id' => $paste_id]);
+        $pdo->commit();
+        return $success;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Failed to update view count for paste ID {$paste_id}: " . $e->getMessage());
+        return false;
+    }
+}
+
+function conTime(int $seconds): string
+{
+    if ($seconds === 0) {
         return '0 seconds';
-
+    }
+    $now = new DateTime('@0');
+    $then = new DateTime("@$seconds");
     $diff = $now->diff($then);
-
-    foreach (array(
+    $ret = '';
+    foreach ([
         'y' => 'year',
         'm' => 'month',
         'd' => 'day',
         'h' => 'hour',
         'i' => 'minute',
         's' => 'second'
-    ) as $time => $timename) {
+    ] as $time => $timename) {
         if ($diff->$time !== 0) {
             $ret .= $diff->$time . ' ' . $timename;
-            if ($diff->$time !== 1 && $diff->$time !== -1) {
+            if (abs($diff->$time) !== 1) {
                 $ret .= 's';
             }
             $ret .= ' ';
         }
     }
-
-    return substr($ret, 0, -1);
+    return trim($ret);
 }
 
-function truncate($input, $maxWords, $maxChars)
+function truncate(string $input, int $maxWords, int $maxChars): string
 {
-    $words = preg_split('/\s+/', $input);
+    $words = preg_split('/\s+/', trim($input), $maxWords + 1, PREG_SPLIT_NO_EMPTY);
     $words = array_slice($words, 0, $maxWords);
-    $words = array_reverse($words);
-
-    $chars     = 0;
-    $truncated = array();
-
-    while (count($words) > 0) {
-        $fragment = trim(array_pop($words));
-        $chars += strlen($fragment);
-
-        if ($chars > $maxChars)
+    $result = '';
+    $chars = 0;
+    foreach ($words as $word) {
+        $chars += strlen($word) + 1;
+        if ($chars > $maxChars) {
             break;
-
-        $truncated[] = $fragment;
-    }
-
-    $result = implode(' ', $truncated);
-
-    return $result . ($input == $result ? '' : '[...]');
-}
-
-function doDownload($paste_id, $p_title, $p_content, $p_code)
-{
-    $stats = false;
-    if ($p_code) {
-        // Figure out extensions.
-        $ext = "txt";
-        switch ($p_code) {
-            case 'bash':
-                $ext = 'sh';
-                break;
-            case 'actionscript':
-                $ext = 'html';
-                break;
-            case 'html4strict':
-                $ext = 'html';
-                break;
-            case 'javascript':
-                $ext = 'js';
-                break;
-            case 'perl':
-                $ext = 'pl';
-                break;
-            case 'csharp':
-                $ext = 'cs';
-                break;
-            case 'ruby':
-                $ext = 'rb';
-                break;
-            case 'python':
-                $ext = 'py';
-                break;
-            case 'sql':
-                $ext = 'sql';
-                break;
-            case 'php':
-                $ext = 'php';
-                break;
-            case 'c':
-                $ext = 'c';
-                break;
-            case 'cpp':
-                $ext = 'cpp';
-                break;
-            case 'css':
-                $ext = 'css';
-                break;
-            case 'xml':
-                $ext = 'xml';
-                break;
-            default:
-                $ext = 'txt';
-                break;
         }
+        $result .= $word . ' ';
+    }
+    $result = rtrim($result);
+    return $result === $input ? $result : $result . '[...]';
+}
 
-        // Download
-        header('Content-type: text/plain');
-        header('Content-Disposition: attachment; filename="' . $p_title . '.' . $ext . '"');
-        echo $p_content;
-        $stats = true;
-    } else {
-        // 404
+function doDownload(int $paste_id, string $p_title, string $p_content, string $p_code): bool
+{
+    if (!$p_code) {
         header('HTTP/1.1 404 Not Found');
+        return false;
     }
-    return $stats;
+    $ext = match ($p_code) {
+        'bash' => 'sh',
+        'actionscript', 'html4strict' => 'html',
+        'javascript' => 'js',
+        'perl' => 'pl',
+        'csharp' => 'cs',
+        'ruby' => 'rb',
+        'python' => 'py',
+        'sql' => 'sql',
+        'php' => 'php',
+        'c' => 'c',
+        'cpp' => 'cpp',
+        'css' => 'css',
+        'xml' => 'xml',
+        default => 'txt',
+    };
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . htmlspecialchars($p_title, ENT_QUOTES, 'UTF-8') . '.' . $ext . '"');
+    echo $p_content;
+    return true;
 }
 
-function rawView($paste_id, $p_title, $p_content, $p_code)
+function rawView(int $paste_id, string $p_title, string $p_content, string $p_code): bool
 {
-    $stats = false;
-    if ($p_code) {
-        // Raw
-        header('Content-type: text/plain');
-        echo $p_content;
-        $stats = true;
-    } else {
-        // 404
+    if (!$p_code) {
         header('HTTP/1.1 404 Not Found');
+        return false;
     }
-    return $stats;
+    header('Content-Type: text/plain; charset=utf-8');
+    echo $p_content;
+    return true;
 }
 
-function embedView($paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang)
+function embedView(int $paste_id, string $p_title, string $p_content, string $p_code, string $title, string $baseurl, string $ges_style, array $lang): bool
 {
-    $stats = false;
-    if ($p_content) {
-        // Build the output
-        $output = "<div class='paste_embed_container'>";
-        $output .= "<style>"; // Add our own styles
-        $output .= "
-            .paste_embed_container {
-                font-size: 12px;
-                color: #333;
-                text-align: left;
-                margin-bottom: 1em;
-                border: 1px solid #ddd;
-                background-color: #f7f7f7;
-                border-radius: 3px;
-            }
-            .paste_embed_container a {
-                font-weight: bold;
-                color: #666;
-                text-decoration: none;
-                border: 0;
-            }
-            .paste_embed_container ol {
-                color: white;
-                background-color: #f7f7f7;
-                border-right: 1px solid #ccc;
-				margin: 0;
-            }
-            .paste_embed_footer {
-                font-size:14px;
-                padding: 10px;
-                overflow: hidden;
-                color: #767676;
-                background-color: #f7f7f7;
-                border-radius: 0 0 2px 2px;
-                border-top: 1px solid #ccc;
-            }
-            .de1, .de2 {
-                -moz-user-select: text;
-                -khtml-user-select: text;
-                -webkit-user-select: text;
-                -ms-user-select: text;
-                user-select: text;
-                padding: 0 8px;
-                color: #000;
-                border-left: 1px solid #ddd;
-                background: #ffffff;
-                line-height:20px;
-            }";
-        $output .= "</style>";
-        $output .= "$ges_style"; // Dynamic GeSHI Style
-        $output .= $p_content; // Paste content
-        $output .= "<div class='paste_embed_footer'>";
-        $output .= "<a href='$baseurl/$paste_id'>$p_title</a> " . $lang['embed-hosted-by'] . " <a href='$baseurl'>$title</a> | <a href='$baseurl/raw/$paste_id'>" . strtolower($lang['view-raw']) . "</a>";
-        $output .= "</div>";
-        $output .= "</div>";
-
-        // Display embed content using json_encode since that escapes
-        // characters well enough to satisfy javascript. http://stackoverflow.com/a/169035
-        header('Content-type: text/javascript; charset=utf-8;');
-        echo 'document.write(' . json_encode($output) . ')';
-        $stats = true;
-    } else {
-        // 404
+    if (!$p_content) {
         header('HTTP/1.1 404 Not Found');
+        return false;
     }
-    return $stats;
-}
-
-function paste_protocol()
-{
-
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? 'https://' : 'http://';
-
-    return $protocol;
-}
-
-function addToSitemap($paste_id, $priority, $changefreq, $mod_rewrite)
-{
-    $c_date    = date('Y-m-d');
-    $site_data = file_get_contents("sitemap.xml");
-    $site_data = str_replace("</urlset>", "", $site_data);
-    // which protocol are we on
-    $protocol = paste_protocol();
-
-    if ($mod_rewrite == "1") {
-        $server_name = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/" . $paste_id;
-    } else {
-        $server_name = $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/paste.php?id=" . $paste_id;
-    }
-
-    $c_sitemap =
-        '	<url>
-		<loc>' . $server_name . '</loc>
-		<priority>' . $priority . '</priority>
-		<changefreq>' . $changefreq . '</changefreq>
-		<lastmod>' . $c_date . '</lastmod>
-	</url>
-</urlset>';
-
-    $full_map  = $site_data . $c_sitemap;
-    file_put_contents("sitemap.xml", $full_map);
-}
-
-function is_banned($con, $ip)
-{
-    $query  = "SELECT id FROM ban_user WHERE ip=?";
-    if ($stmt = mysqli_prepare($con, $query)) {
-        mysqli_stmt_bind_param($stmt, "s", $ip);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
-
-        if (mysqli_stmt_num_rows($stmt) > 0) {
-            mysqli_stmt_close($stmt);
-            return true;
-        } else {
-            mysqli_stmt_close($stmt);
-            return false;
+    $output = "<div class='paste_embed_container'>";
+    $output .= "<style>
+        .paste_embed_container {
+            font-size: 12px;
+            color: #333;
+            text-align: left;
+            margin-bottom: 1em;
+            border: 1px solid #ddd;
+            background-color: #f7f7f7;
+            border-radius: 3px;
         }
+        .paste_embed_container a {
+            font-weight: bold;
+            color: #666;
+            text-decoration: none;
+            border: 0;
+        }
+        .paste_embed_container ol {
+            color: white;
+            background-color: #f7f7f7;
+            border-right: 1px solid #ccc;
+            margin: 0;
+        }
+        .paste_embed_footer {
+            font-size: 14px;
+            padding: 10px;
+            overflow: hidden;
+            color: #767676;
+            background-color: #f7f7f7;
+            border-radius: 0 0 2px 2px;
+            border-top: 1px solid #ccc;
+        }
+        .de1, .de2 {
+            -moz-user-select: text;
+            -webkit-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+            padding: 0 8px;
+            color: #000;
+            border-left: 1px solid #ddd;
+            background: #ffffff;
+            line-height: 20px;
+        }
+    </style>";
+    $output .= $ges_style;
+    $output .= $p_content;
+    $output .= "<div class='paste_embed_footer'>";
+    $output .= "<a href='$baseurl/$paste_id'>" . htmlspecialchars($p_title, ENT_QUOTES, 'UTF-8') . "</a> " . htmlspecialchars($lang['embed-hosted-by'], ENT_QUOTES, 'UTF-8') . " <a href='$baseurl'>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</a> | <a href='$baseurl/raw/$paste_id'>" . htmlspecialchars(strtolower($lang['view-raw']), ENT_QUOTES, 'UTF-8') . "</a>";
+    $output .= "</div>";
+    $output .= "</div>";
+    header('Content-Type: text/javascript; charset=utf-8');
+    echo 'document.write(' . json_encode($output) . ')';
+    return true;
+}
+
+function paste_protocol(): string
+{
+    return isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+}
+
+function addToSitemap(PDO $pdo, int $paste_id, string $priority, string $changefreq, bool $mod_rewrite): bool
+{
+    try {
+        $c_date = date('Y-m-d');
+        $protocol = paste_protocol();
+        $server_name = $mod_rewrite
+            ? $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/" . $paste_id
+            : $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/paste.php?id=" . $paste_id;
+        $site_data = file_exists('sitemap.xml') ? file_get_contents('sitemap.xml') : '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $site_data = rtrim($site_data, "</urlset>");
+        $c_sitemap = "\t<url>\n\t\t<loc>" . htmlspecialchars($server_name, ENT_QUOTES, 'UTF-8') . "</loc>\n\t\t<priority>$priority</priority>\n\t\t<changefreq>$changefreq</changefreq>\n\t\t<lastmod>$c_date</lastmod>\n\t</url>\n</urlset>";
+        $full_map = $site_data . $c_sitemap;
+        return file_put_contents('sitemap.xml', $full_map) !== false;
+    } catch (Exception $e) {
+        error_log("Failed to update sitemap for paste ID {$paste_id}: " . $e->getMessage());
+        return false;
     }
 }
+
+function is_banned(PDO $pdo, string $ip): bool
+{
+    try {
+        $query = "SELECT COUNT(*) FROM ban_user WHERE ip = :ip";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['ip' => $ip]);
+        return $stmt->fetchColumn() > 0;
+    } catch (PDOException $e) {
+        error_log("Failed to check ban status for IP {$ip}: " . $e->getMessage());
+        return false;
+    }
+}
+?>

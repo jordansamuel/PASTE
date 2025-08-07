@@ -1,239 +1,165 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
- 
 session_start();
 
-if (isset($_SESSION['login'])) {
-// Do nothing	
-} else {
-    header("Location: .");
-    exit();
-}
-
-if (isset($_GET['logout'])) {
-    if (isset($_SESSION['login']))
-        unset($_SESSION['login']);
-    
-    session_destroy();
-    header("Location: .");
+// Check session and validate admin
+if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
+    error_log("admin.php: Session validation failed - admin_login or admin_id not set. Session: " . json_encode($_SESSION));
+    header("Location: ../index.php");
     exit();
 }
 
 $date = date('jS F Y');
-$ip   = $_SERVER['REMOTE_ADDR'];
+$ip = $_SERVER['REMOTE_ADDR'];
 require_once('../config.php');
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+require_once('../includes/functions.php');
 
-if (mysqli_connect_errno()) {
-    $sql_error = mysqli_connect_error();
-    die("Unable connect to database");
-}
+try {
+    // Get last admin history ID
+    $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM admin_history");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $last_id = $row['last_id'];
 
-$query = "SELECT @last_id := MAX(id) FROM admin_history";
-
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
+    if ($last_id) {
+        $stmt = $pdo->prepare("SELECT last_date, ip FROM admin_history WHERE id = :last_id");
+        $stmt->execute(['last_id' => $last_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $last_date = $row['last_date'];
-        $last_ip   = $row['ip'];
+        $last_ip = $row['ip'];
     }
-}
 
-if ($last_ip == $ip) {
-    if ($last_date == $date) {
-        
+    if ($last_ip == $ip && $last_date == $date) {
+        // No action needed
     } else {
-        $query = "INSERT INTO admin_history (last_date,ip) VALUES ('$date','$ip')";
-        mysqli_query($con, $query);
+        $stmt = $pdo->prepare("INSERT INTO admin_history (last_date, ip) VALUES (:date, :ip)");
+        $stmt->execute(['date' => $date, 'ip' => $ip]);
     }
-} else {
-    $query = "INSERT INTO admin_history (last_date,ip) VALUES ('$date','$ip')";
-    mysqli_query($con, $query);
-}
 
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
+    // Fetch ad settings
+    $stmt = $pdo->query("SELECT text_ads, ads_1, ads_2 FROM ads WHERE id = '1'");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $text_ads = trim($row['text_ads']);
+    $ads_1 = trim($row['ads_1']);
+    $ads_2 = trim($row['ads_2']);
+} catch (PDOException $e) {
+    die("Unable to connect to database: " . $e->getMessage());
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Paste - Ads</title>
-	<link rel="shortcut icon" href="favicon.ico">
+    <link rel="shortcut icon" href="favicon.ico">
     <link href="css/paste.css" rel="stylesheet" type="text/css" />
   </head>
   <body>
   
-	<div id="top" class="clearfix">
-		<!-- Start App Logo -->
-		<div class="applogo">
-		  <a href="../" class="logo">Paste</a>
-		</div>
-		<!-- End App Logo -->
+    <div id="top" class="clearfix">
+        <div class="applogo">
+          <a href="../" class="logo">Paste</a>
+        </div>
+        <ul class="top-right">
+            <li class="dropdown link">
+                <a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b><?php echo htmlspecialchars($_SESSION['admin_login']); ?></b><span class="caret"></span></a>
+                <ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
+                  <li><a href="admin.php">Settings</a></li>
+                  <li><a href="?logout">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
 
-		<!-- Start Top Right -->
-		<ul class="top-right">
-			<li class="dropdown link">
-				<a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b>Admin</b><span class="caret"></span></a>
-				<ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
-				  <li><a href="admin.php">Settings</a></li>
-				  <li><a href="?logout">Logout</a></li>
-				</ul>
-			</li>
-		</ul>
-		<!-- End Top Right -->
-	</div>
-	<!-- END TOP -->	
+    <div class="content">
+        <div class="container-widget">
+            <div class="row">
+                <div class="col-md-12">
+                  <ul class="panel quick-menu clearfix">
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="dashboard.php"><i class="fa fa-home"></i>Dashboard</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="configuration.php"><i class="fa fa-cogs"></i>Configuration</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="interface.php"><i class="fa fa-eye"></i>Interface</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="admin.php"><i class="fa fa-user"></i>Admin Account</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="pastes.php"><i class="fa fa-clipboard"></i>Pastes</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="users.php"><i class="fa fa-users"></i>Users</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="ipbans.php"><i class="fa fa-ban"></i>IP Bans</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="stats.php"><i class="fa fa-line-chart"></i>Statistics</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1 menu-active"><a href="ads.php"><i class="fa fa-gbp"></i>Ads</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="pages.php"><i class="fa fa-file"></i>Pages</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="sitemap.php"><i class="fa fa-map-signs"></i>Sitemap</a></li>
+                    <li class="col-xs-3 col-sm-2 col-md-1"><a href="tasks.php"><i class="fa fa-tasks"></i>Tasks</a></li>
+                  </ul>
+                </div>
+            </div>
 
-	<div class="content">
-		  <!-- START CONTAINER -->
-		<div class="container-widget">
-			<!-- Start Menu -->
-			<div class="row">
-				<div class="col-md-12">
-				  <ul class="panel quick-menu clearfix">
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="dashboard.php"><i class="fa fa-home"></i>Dashboard</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="configuration.php"><i class="fa fa-cogs"></i>Configuration</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="interface.php"><i class="fa fa-eye"></i>Interface</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="admin.php"><i class="fa fa-user"></i>Admin Account</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="pastes.php"><i class="fa fa-clipboard"></i>Pastes</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="users.php"><i class="fa fa-users"></i>Users</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="ipbans.php"><i class="fa fa-ban"></i>IP Bans</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="stats.php"><i class="fa fa-line-chart"></i>Statistics</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1 menu-active">
-					  <a href="ads.php"><i class="fa fa-gbp"></i>Ads</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="pages.php"><i class="fa fa-file"></i>Pages</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="sitemap.php"><i class="fa fa-map-signs"></i>Sitemap</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="tasks.php"><i class="fa fa-tasks"></i>Tasks</a>
-					</li>
-				  </ul>
-				</div>
-			</div>
-			<!-- End Menu -->
-			
-			<?php
-			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-				$ads_1    = Trim($_POST['ads_1']);
-				$ads_2    = Trim($_POST['ads_2']);
-				$text_ads = Trim($_POST['text_ads']);
-				
-				$query = "UPDATE ads SET text_ads='$text_ads', ads_1='$ads_1', ads_2='$ads_2' WHERE id='1'";
-				mysqli_query($con, $query);
-				
-				if (mysqli_errno($con)) {
-					$msg = '<div class="paste-alert alert6">
-				 ' . mysqli_error($con) . '
-				 </div>';
-					
-				} else {
-					$msg = '<div class="paste-alert alert3">
-					 Ads saved
-					 </div>';
-				}
-			}
-			?>  
-    
-			<!-- Start Ads -->
-			<div class="row">
-				<div class="col-md-12">
-					<div class="panel panel-widget">
-						<div class="panel-body">
-						 <div class="panel-title">Manage Ads</a></div>
-						<?php if (isset($msg)) echo $msg; ?>
-							<form method="POST" action="<?php echo $_SERVER['PHP_SELF']; ?>">
-								<div class="control-group">											
-									<label class="control-label" for="text_ads">Text Ads</label>
-									<div class="controls">
-										<textarea placeholder="Ad code" name="text_ads"  rows="3" class="span6"><?php echo $text_ads; ?></textarea>
-									</div>			
-								</div>
-								<div class="control-group">											
-									<label class="control-label" for="ads_1">Image Ad - (Sidebar)</label>
-									<div class="controls">
-										 <textarea placeholder="Ad code" name="ads_1" id="ads_1" rows="3" class="span6"><?php echo $ads_1; ?></textarea>
-									</div>			
-								</div>
-								
-								<div class="control-group">											
-									<label class="control-label" for="ads_2">Image Ad (Footer)</label>
-									<div class="controls">
-										<textarea placeholder="Ad code" name="ads_2" id="ads_2" rows="3" class="span6"><?php echo $ads_2; ?></textarea>
-									</div>
-								</div>
-								<button type="submit" class="btn btn-default">Save</button>
-							</form>
-						</div>
-					</div>
-				</div>
-			</div>
-			<!-- End Ads -->
-		</div>
-		<!-- END CONTAINER -->
+            <?php
+            if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                $ads_1 = trim($_POST['ads_1']);
+                $ads_2 = trim($_POST['ads_2']);
+                $text_ads = trim($_POST['text_ads']);
+                
+                try {
+                    $stmt = $pdo->prepare("UPDATE ads SET text_ads = :text_ads, ads_1 = :ads_1, ads_2 = :ads_2 WHERE id = '1'");
+                    $stmt->execute(['text_ads' => $text_ads, 'ads_1' => $ads_1, 'ads_2' => $ads_2]);
+                    $msg = '<div class="paste-alert alert3">Ads saved</div>';
+                } catch (PDOException $e) {
+                    $msg = '<div class="paste-alert alert6">' . htmlspecialchars($e->getMessage()) . '</div>';
+                }
+            }
+            ?>  
 
-		<!-- Start Footer -->
-		<div class="row footer">
-		  <div class="col-md-6 text-left">
-		   <a href="https://github.com/jordansamuel/PASTE" target="_blank">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues" target="_blank">Bugs</a>
-		  </div>
-		  <div class="col-md-6 text-right">
-			Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
-		  </div> 
-		</div>
-		<!-- End Footer -->
-	</div>
-	<!-- End content -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-widget">
+                        <div class="panel-body">
+                            <div class="panel-title">Manage Ads</div>
+                            <?php if (isset($msg)) echo $msg; ?>
+                            <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+                                <div class="control-group">                                            
+                                    <label class="control-label" for="text_ads">Text Ads</label>
+                                    <div class="controls">
+                                        <textarea placeholder="Ad code" name="text_ads" rows="3" class="span6"><?php echo htmlspecialchars($text_ads); ?></textarea>
+                                    </div>            
+                                </div>
+                                <div class="control-group">                                            
+                                    <label class="control-label" for="ads_1">Image Ad - (Sidebar)</label>
+                                    <div class="controls">
+                                        <textarea placeholder="Ad code" name="ads_1" id="ads_1" rows="3" class="span6"><?php echo htmlspecialchars($ads_1); ?></textarea>
+                                    </div>            
+                                </div>
+                                <div class="control-group">                                            
+                                    <label class="control-label" for="ads_2">Image Ad (Footer)</label>
+                                    <div class="controls">
+                                        <textarea placeholder="Ad code" name="ads_2" id="ads_2" rows="3" class="span6"><?php echo htmlspecialchars($ads_2); ?></textarea>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-default">Save</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-	<script type="text/javascript" src="js/jquery.min.js"></script>
-	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+        <div class="row footer">
+          <div class="col-md-6 text-left">
+           <a href="https://github.com/jordansamuel/PASTE" target="_blank">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues" target="_blank">Bugs</a>
+          </div>
+          <div class="col-md-6 text-right">
+            Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
+          </div> 
+        </div>
+    </div>
+
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
   </body>
 </html>

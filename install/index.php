@@ -19,6 +19,20 @@ header("X-XSS-Protection: 1; mode=block");
 // PHP version check
 $php_version = phpversion();
 $php_ok = version_compare($php_version, '7.0', '>=');
+<<<<<<< HEAD
+=======
+
+// Extension checks
+$required_extensions = ['pdo_mysql'];
+$optional_extensions = ['openssl', 'curl'];
+$extension_status = [];
+foreach ($required_extensions as $ext) {
+    $extension_status[$ext] = extension_loaded($ext) ? 'Enabled' : 'Missing';
+}
+foreach ($optional_extensions as $ext) {
+    $extension_status[$ext] = extension_loaded($ext) ? 'Enabled' : 'Missing (required for OAuth/SMTP)';
+}
+>>>>>>> a6163c96 (Paste 3.0)
 ?>
 
 <!DOCTYPE html>
@@ -59,6 +73,19 @@ $php_ok = version_compare($php_version, '7.0', '>=');
                                         <?php endif; ?>
                                     </td>
                                 </tr>
+<<<<<<< HEAD
+=======
+                                <?php foreach ($extension_status as $ext => $status): ?>
+                                    <tr>
+                                        <th><?php echo htmlspecialchars($ext); ?></th>
+                                        <td>
+                                            <span class="badge <?php echo strpos($status, 'Enabled') !== false ? 'bg-success' : 'bg-danger'; ?>">
+                                                <?php echo htmlspecialchars($status); ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+>>>>>>> a6163c96 (Paste 3.0)
                                 <tr>
                                     <th>File</th>
                                     <th>Status</th>
@@ -66,7 +93,11 @@ $php_ok = version_compare($php_version, '7.0', '>=');
                                 <?php
                                 $files = ['../config.php', '../tmp/temp.tdata', '../sitemap.xml'];
                                 foreach ($files as $filename) {
+<<<<<<< HEAD
                                     echo "<tr><td>" . basename($filename) . "</td>";
+=======
+                                    echo "<tr><td>" . htmlspecialchars(basename($filename)) . "</td>";
+>>>>>>> a6163c96 (Paste 3.0)
                                     if (is_writable($filename) || (!file_exists($filename) && is_writable(dirname($filename)))) {
                                         echo '<td><span class="badge bg-success">Writable</span></td>';
                                     } else {
@@ -84,14 +115,24 @@ $php_ok = version_compare($php_version, '7.0', '>=');
             <div class="col-md-8">
                 <div class="card mb-4">
                     <div class="card-body">
+<<<<<<< HEAD
                         <h5 class="card-title">Database Information</h5>
                         <div class="alert alert-danger" id="alertfailed" role="alert" style="display: none;">
                             Database connection failed. <span id="error-details"></span>
+=======
+                        <h5 class="card-title">Database and Configuration</h5>
+                        <div class="alert alert-danger" id="alertfailed" role="alert" style="display: none;">
+                            Configuration failed. <span id="error-details"></span>
+>>>>>>> a6163c96 (Paste 3.0)
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                         <form id="db-form" class="row g-3" <?php echo !$php_ok ? 'style="display: none;"' : ''; ?>>
                             <div class="col-md-6">
+<<<<<<< HEAD
                                 <label for="data_host" class="form-label">Hostname</label>
+=======
+                                <label for="data_host" class="form-label">Database Host</label>
+>>>>>>> a6163c96 (Paste 3.0)
                                 <input type="text" class="form-control" id="data_host" name="data_host" value="localhost" required>
                             </div>
                             <div class="col-md-6">
@@ -99,6 +140,7 @@ $php_ok = version_compare($php_version, '7.0', '>=');
                                 <input type="text" class="form-control" id="data_name" name="data_name" required>
                             </div>
                             <div class="col-md-6">
+<<<<<<< HEAD
                                 <label for="data_user" class="form-label">Username</label>
                                 <input type="text" class="form-control" id="data_user" name="data_user" required>
                             </div>
@@ -108,6 +150,41 @@ $php_ok = version_compare($php_version, '7.0', '>=');
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary w-100">Install</button>
+=======
+                                <label for="data_user" class="form-label">Database Username</label>
+                                <input type="text" class="form-control" id="data_user" name="data_user" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="data_pass" class="form-label">Database Password</label>
+                                <input type="password" class="form-control" id="data_pass" name="data_pass">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="enablegoog" class="form-label">Enable Google OAuth User Logins</label>
+                                <select class="form-select" id="enablegoog" name="enablegoog">
+                                    <option value="no">No</option>
+                                    <option value="yes" selected>Yes</option>
+                                </select>
+                                <small class="form-text text-muted">Enabling Google OAuth requires Google Cloud Console setup. HTTPS is recommended for security.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="enablefb" class="form-label">Enable Facebook OAuth User Logins</label>
+                                <select class="form-select" id="enablefb" name="enablefb">
+                                    <option value="no" selected>No</option>
+                                    <option value="yes">Yes</option>
+                                </select>
+                                <small class="form-text text-muted">Enabling Facebook OAuth requires Facebook Developer Portal setup. HTTPS is recommended for security.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="enablesmtp" class="form-label">Enable SMTP Email (Gmail)</label>
+                                <select class="form-select" id="enablesmtp" name="enablesmtp">
+                                    <option value="no" selected>No</option>
+                                    <option value="yes">Yes</option>
+                                </select>
+                                <small class="form-text text-muted">Enabling SMTP requires Gmail API setup or SMTP credentials.</small>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary w-100">Configure</button>
+>>>>>>> a6163c96 (Paste 3.0)
                             </div>
                         </form>
                         <?php if (!$php_ok): ?>
@@ -127,6 +204,13 @@ $php_ok = version_compare($php_version, '7.0', '>=');
                 <div class="card mb-4">
                     <div class="card-body">
                         <h5 class="card-title">Configure Admin Account</h5>
+<<<<<<< HEAD
+=======
+                        <div class="alert alert-danger" id="admin-alertfailed" role="alert" style="display: none;">
+                            Error admin setup failed. <span id="admin-error-details"></span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+>>>>>>> a6163c96 (Paste 3.0)
                         <form id="admin-form" class="row g-3">
                             <div class="col-md-6">
                                 <label for="admin_user" class="form-label">Username</label>

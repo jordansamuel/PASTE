@@ -1,77 +1,56 @@
 <?php
 /*
  * Paste <https://github.com/jordansamuel/PASTE> - Default theme
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * License: GNU General Public License v3 or later
  */
 ?>
+<!-- Footer -->
+<footer class="container-xl py-3 my-4 border-top">
+    <div class="row">
+        <div class="col-md-4 mb-0 text-muted">
+            Copyright &copy; <?php echo date("Y"); ?> <a href="/" class="text-decoration-none"><?php echo htmlspecialchars($site_name ?? 'Paste', ENT_QUOTES, 'UTF-8'); ?></a>. All rights reserved.
+        </div>
+        <div class="col-md-4 text-center">
+            <a href="/" class="d-inline-flex align-items-center text-decoration-none" aria-label="Paste Home">
+                <i class="bi bi-clipboard me-2" style="font-size: 1.5rem;"></i>
+            </a>
+        </div>
+        <div class="col-md-4 text-md-end text-muted">
+            Powered by <a href="https://phpaste.sourceforge.io/" target="_blank" class="text-decoration-none">Paste</a>
+        </div>
+    </div>
+</footer>
 
-</div>
-<!-- END CONTAINER -->
-
-<!-- Start Footer -->
-<div class="row footer">
-  <div class="col-md-6 text-left">
-  Copyright &copy; <?php echo date("Y");?> <a href="" target="_blank"><?php echo $site_name;?></a>. All rights reserved.
-  </div>
-  <div class="col-md-6 text-right">
-    Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste</a>
-  </div> 
-</div>
-<?php if (isset($_SESSION['username'])) { ?>
-<?php } else { ?>
-<div style="text-align:center;">
-<?php echo $ads_2; ?>
-</div>
-<?php } ?>
-<!-- End Footer -->
-
-</div>
-<!-- End content -->
-
-<!-- Google Analytics -->
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-  ga('create', '<?php echo $ga; ?>', 'auto');
-  ga('send', 'pageview');
-</script>
-
-<!-- Additional Scripts -->
-<?php echo $additional_scripts; ?>
+<?php if (!isset($_SESSION['username'])): ?>
+    <div class="text-center mb-4">
+        <?php echo htmlspecialchars($ads_2 ?? '', ENT_QUOTES, 'UTF-8'); ?>
+    </div>
+<?php endif; ?>
 
 <!-- Scripts -->
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/bootstrap.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/php/php.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/markdown/markdown.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/javascript/javascript.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/clike/clike.min.js"></script>
+<?php if (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha"): ?>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<?php endif; ?>
 <script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/paste.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/bootstrap-select.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/jquery-ui.min.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/datatables.min.js"></script>
-<script type="text/javascript" src="<?php echo '//' . $baseurl . '/theme/' . $default_theme; ?>/js/autosize.min.js"></script>
 
+<!-- Google Analytics -->
+<?php if (!empty($ga)): ?>
 <script>
-  autosize(document.getElementById("code"));
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', '<?php echo $ga; ?>', 'auto');
+ga('send', 'pageview');
 </script>
+<?php endif; ?>
 
-<script>
-$(document).ready(function() {
-	 //$('#archive').DataTable();
-     $('#archive').DataTable( {
-        "order": [[ 1, "desc" ]] // Paste Time
-    } );
-} );
-</script>
-
-</body>
-</html>
+<!-- Additional Scripts -->
+<?php echo $additional_scripts ?? ''; ?>

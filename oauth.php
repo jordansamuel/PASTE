@@ -1,107 +1,114 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste <https://github.com/boxlabss/PASTE>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License in GPL.txt for more details.
  */
-session_start();
+session_start([
+    'cookie_secure' => true,
+    'cookie_httponly' => true,
+    'use_strict_mode' => true,
+]);
 
 // Required functions
 require_once('config.php');
 require_once('includes/functions.php');
 
-// Current date & user IP
-$date = date('jS F Y');
-$ip   = $_SERVER['REMOTE_ADDR'];
+// Database Connection (using PDO from config.php)
+global $pdo;
 
-// Database Connection
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
-// Get site info
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
+try {
+    // Current date & user IP
+    $date = date('jS F Y');
+    $ip = $_SERVER['REMOTE_ADDR'];
 
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
+    // Get site info
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = 1");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        $title = trim($row['title']);
+        $des = trim($row['des']);
+        $baseurl = trim($row['baseurl']);
+        $keyword = trim($row['keyword']);
+        $site_name = trim($row['site_name']);
+        $email = trim($row['email']);
+        $twit = trim($row['twit']);
+        $face = trim($row['face']);
+        $gplus = trim($row['gplus']);
+        $ga = trim($row['ga']);
+        $additional_scripts = trim($row['additional_scripts']);
+    } else {
+        throw new Exception("Unable to fetch site info from database.");
+    }
 
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
+    // Set theme and language
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id = 1");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
+        $default_lang = trim($row['lang']);
+        $default_theme = trim($row['theme']);
+    } else {
+        throw new Exception("Unable to fetch interface settings from database.");
+    }
 
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
+    require_once("langs/$default_lang");
 
-require_once("langs/$default_lang");
+    // Page title
+    $p_title = $lang['login/register'];
 
-// Page title
-$p_title = $lang['login/register']; // "Login/Register";
+    // Check if user is logged in
+    $username = isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : null;
 
-if (isset($_GET['new_user'])) {
-    $new_user = 1;
-}
-
-$username = $_SESSION['username'];
-
-// POST Handler
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['user_change'])) {
-        $new_username = htmlentities(Trim($_POST['new_username']));
-        if ($new_username == "" || $new_username == null) {
-            $error = $lang['usernotvalid']; //"Username not vaild";
+    // POST Handler
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['user_change'])) {
+        $new_username = filter_var(trim($_POST['new_username'] ?? ''), FILTER_SANITIZE_STRING);
+        if (empty($new_username)) {
+            $error = $lang['usernotvalid'];
         } else {
-            $res = isValidUsername($new_username);
-            if ($res == '1') {
-                $query  = "SELECT * FROM users WHERE username='$new_username'";
-                $result = mysqli_query($con, $query);
-                if (mysqli_num_rows($result) > 0) {
-                    $error = $lang['userexists']; //"Username already taken";
+            if (!isValidUsername($new_username)) {
+                $error = $lang['usernotvalid'];
+            } else {
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+                $stmt->execute([$new_username]);
+                if ($stmt->fetchColumn() > 0) {
+                    $error = $lang['userexists'];
                 } else {
-                    $client_id = Trim($_SESSION['oauth_uid']);
-                    $query     = "UPDATE users SET username='$new_username' WHERE oauth_uid='$client_id'";
-                    mysqli_query($con, $query);
-                    if (mysqli_error($con)) {
-                        $error = $lang['databaseerror']; // "Unable to access database.";
+                    $client_id = trim($_SESSION['oauth_uid'] ?? '');
+                    if (empty($client_id)) {
+                        $error = $lang['sessionerror'] ?? 'Invalid session. Please log in again.';
                     } else {
-                        $success = $lang['userchanged']; //"Username changed successfully";
-                        unset($_SESSION['username']);
-                        $_SESSION['username'] = $new_username;
+                        $stmt = $pdo->prepare("UPDATE users SET username = ? WHERE oauth_uid = ?");
+                        $stmt->execute([$new_username, $client_id]);
+                        if ($stmt->rowCount() > 0) {
+                            $success = $lang['userchanged'];
+                            $_SESSION['username'] = $new_username;
+                        } else {
+                            $error = $lang['databaseerror'];
+                        }
                     }
                 }
-            } else {
-                $error    = $lang['usernotvalid']; //"Username not vaild";
-                $username = Trim($_SESSION['username']);
-                goto OutPut;
             }
         }
     }
-}
 
-OutPut:
-// Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/oauth.php');
-require_once('theme/' . $default_theme . '/footer.php');
+    // Theme
+    require_once("theme/$default_theme/header.php");
+    require_once("theme/$default_theme/oauth.php");
+    require_once("theme/$default_theme/footer.php");
+
+} catch (PDOException $e) {
+    error_log("Database error in oauth.php: " . $e->getMessage());
+    die("Unable to connect to database: " . htmlspecialchars($e->getMessage()));
+} catch (Exception $e) {
+    error_log("Error in oauth.php: " . $e->getMessage());
+    die("Error: " . htmlspecialchars($e->getMessage()));
+}
 ?>

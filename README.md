@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # Paste 3
+=======
+# Paste 3.0
+>>>>>>> a6163c96 (Paste 3.0)
 [![Download PASTE](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
@@ -20,6 +24,7 @@ Requirements
 * PHP 7 (or later) with pdo-mysql [PHP8.4 recommended]
 * MySQL 5.x+
 
+See docs/CHANGELOG
 ---
 
 Install
@@ -28,14 +33,6 @@ Install
 * Upload all files to a webfolder
 * Point your browser to http(s)://example.com/install
 * Input some settings, DELETE the install folder and you're ready to go.
-
-Manual install
-===
-Do the first two steps above and import the database schema using the CLI (or import via phpMyAdmin)
-```
-mysql -uuser -ppassword databasename < docs/paste.mysqlschema.sql
-```
-Move docs/config.example.php to config.php and edit
 
 Development setup
 ===
@@ -127,8 +124,7 @@ Credits
 * **[Viktoria Rei Bauer](https://github.com/ToeiRei)** for her contributions to the project.
 * Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
-The Paste theme was built using Bootstrap, jQuery and various jQuery plugins for
-present and future features, but we do try to keep it bloat free.
+The Paste theme was built using Bootstrap.
 Icons are provided by FontAwesome.
 
 Screenshots

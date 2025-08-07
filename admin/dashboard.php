@@ -1,131 +1,119 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
-
 session_start();
+require_once('../config.php'); // Moved to top to ensure DB variables are defined
 
-if (isset($_SESSION['login'])) {
-// Do nothing	
-} else {
-    header("Location: .");
+if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
+    error_log("dashboard.php: Session validation failed - admin_login or admin_id not set. Session: " . json_encode($_SESSION));
+    header("Location: index.php");
     exit();
+}
+
+// Debug database configuration
+if (!isset($dbhost) || !isset($dbname) || !isset($dbuser) || !isset($dbpassword)) {
+    error_log("dashboard.php: Database configuration variables missing - dbhost: " . (isset($dbhost) ? $dbhost : 'undefined') . 
+              ", dbname: " . (isset($dbname) ? $dbname : 'undefined') . 
+              ", dbuser: " . (isset($dbuser) ? $dbuser : 'undefined') . 
+              ", dbpassword: " . (isset($dbpassword) ? '[hidden]' : 'undefined'));
+    die("Unable to connect to database: Configuration variables missing");
+}
+
+try {
+    $pdo = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpassword);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Validate admin
+    $stmt = $pdo->prepare("SELECT id, user FROM admin WHERE id = ?");
+    $stmt->execute([$_SESSION['admin_id']]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || $row['user'] !== $_SESSION['admin_login']) {
+        error_log("dashboard.php: Admin validation failed - id: {$_SESSION['admin_id']}, user: {$_SESSION['admin_login']}, found: " . ($row ? json_encode($row) : 'null'));
+        unset($_SESSION['admin_login']);
+        unset($_SESSION['admin_id']);
+        header("Location: index.php");
+        exit();
+    }
+} catch (PDOException $e) {
+    error_log("dashboard.php: Database connection failed: " . $e->getMessage());
+    die("Unable to connect to database: " . htmlspecialchars($e->getMessage()));
 }
 
 if (isset($_GET['logout'])) {
-    if (isset($_SESSION['login']))
-        unset($_SESSION['login']);
-    
+    unset($_SESSION['admin_login']);
+    unset($_SESSION['admin_id']);
     session_destroy();
-    header("Location: .");
+    header("Location: index.php");
     exit();
 }
 
-$today_users_count  = 0;
-$today_pastes_count = 0;
-
 $date = date('jS F Y');
-$ip   = $_SERVER['REMOTE_ADDR'];
-require_once('../config.php');
+$ip = $_SERVER['REMOTE_ADDR'];
 require_once('../includes/functions.php');
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
 
-if (mysqli_connect_errno()) {
-    $sql_error = mysqli_connect_error();
-    die("Unable connect to database");
-}
-
-$query = "SELECT @last_id := MAX(id) FROM admin_history";
-
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
+// Log admin activity
+$stmt = $pdo->query("SELECT MAX(id) AS last_id FROM admin_history");
+$last_id = $stmt->fetch(PDO::FETCH_ASSOC)['last_id'] ?? null;
 
 if ($last_id) {
-    $query  = "SELECT * FROM admin_history WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['last_date'];
-        $last_ip   = $row['ip'];
-    }
+    $stmt = $pdo->prepare("SELECT last_date, ip FROM admin_history WHERE id = ?");
+    $stmt->execute([$last_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $last_date = $row['last_date'] ?? null;
+    $last_ip = $row['ip'] ?? null;
 }
 
-if ($last_ip == $ip) {
-    if ($last_date == $date) {
-
-    } else {
-        $query = "INSERT INTO admin_history (last_date,ip) VALUES ('$date','$ip')";
-        mysqli_query($con, $query);
-    }
-} else {
-    $query = "INSERT INTO admin_history (last_date,ip) VALUES ('$date','$ip')";
-    mysqli_query($con, $query);
+if ($last_ip !== $ip || $last_date !== $date) {
+    $stmt = $pdo->prepare("INSERT INTO admin_history (last_date, ip) VALUES (?, ?)");
+    $stmt->execute([$date, $ip]);
 }
 
-$query  = "SELECT * FROM page_view";
-$result = mysqli_query($con, $query);
+// Fetch page view statistics
+$stmt = $pdo->query("SELECT SUM(tpage) AS total_page, SUM(tvisit) AS total_visit FROM page_view");
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$total_page = $row['total_page'] ?? 0;
+$total_visit = $row['total_visit'] ?? 0;
 
-while ($row = mysqli_fetch_array($result)) {
-    $total_page  = isset($total_page) + Trim($row['tpage']);
-    $total_visit = isset($total_visit) + Trim($row['tvisit']);
+$stmt = $pdo->query("SELECT MAX(id) AS last_id FROM page_view");
+$page_last_id = $stmt->fetch(PDO::FETCH_ASSOC)['last_id'] ?? null;
+
+$today_page = 0;
+$today_visit = 0;
+if ($page_last_id) {
+    $stmt = $pdo->prepare("SELECT tpage, tvisit FROM page_view WHERE id = ?");
+    $stmt->execute([$page_last_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $today_page = $row['tpage'] ?? 0;
+    $today_visit = $row['tvisit'] ?? 0;
 }
 
-$query = "SELECT @last_id := MAX(id) FROM page_view";
-
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $page_last_id = $row['@last_id := MAX(id)'];
-}
-
-$query  = "SELECT * FROM page_view WHERE id=" . Trim($page_last_id);
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $today_page  = $row['tpage'];
-    $today_visit = $row['tvisit'];
-}
-
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $admin_email = Trim($row['email']);
-}
-
+// Count today's users
 $c_date = date('jS F Y');
-$query  = "SELECT * FROM users where date='$c_date'";
-$result = mysqli_query($con, $query);
+$stmt = $pdo->prepare("SELECT COUNT(id) AS count FROM users WHERE date = ?");
+$stmt->execute([$c_date]);
+$today_users_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
-while ($row = mysqli_fetch_array($result)) {
-    $today_users_count = $today_users_count + 1;
-}
+// Count today's pastes
+$stmt = $pdo->prepare("SELECT COUNT(id) AS count FROM pastes WHERE s_date = ?");
+$stmt->execute([$c_date]);
+$today_pastes_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
-$query  = "SELECT * FROM pastes where s_date='$c_date'";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $today_pastes_count = $today_pastes_count + 1;
-}
+// Fetch recent page views
+$ldate = [];
+$tpage = [];
+$tvisit = [];
 for ($loop = 0; $loop <= 6; $loop++) {
-    $myid   = $page_last_id - $loop;
-    $query  = "SELECT * FROM page_view WHERE id='$myid'";
-    $result = mysqli_query($con, $query);
-    
-    while ($row = mysqli_fetch_array($result)) {
+    $myid = $page_last_id - $loop;
+    $stmt = $pdo->prepare("SELECT date, tpage, tvisit FROM page_view WHERE id = ?");
+    $stmt->execute([$myid]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row) {
         $sdate = $row['date'];
         $sdate = str_replace(date('Y'), '', $sdate);
         $sdate = str_replace('January', 'Jan', $sdate);
@@ -137,9 +125,8 @@ for ($loop = 0; $loop <= 6; $loop++) {
         $sdate = str_replace('October', 'Oct', $sdate);
         $sdate = str_replace('November', 'Nov', $sdate);
         $sdate = str_replace('December', 'Dec', $sdate);
-        
-        $ldate[$loop]  = $sdate;
-        $tpage[$loop]  = $row['tpage'];
+        $ldate[$loop] = $sdate;
+        $tpage[$loop] = $row['tpage'];
         $tvisit[$loop] = $row['tvisit'];
     }
 }
@@ -147,313 +134,291 @@ for ($loop = 0; $loop <= 6; $loop++) {
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Paste - Dashboard</title>
-	<link rel="shortcut icon" href="favicon.ico">
+    <link rel="shortcut icon" href="favicon.ico">
     <link href="css/paste.css" rel="stylesheet" type="text/css" />
-  </head>
-  <body>
-  
-	<div id="top" class="clearfix">
-		<!-- Start App Logo -->
-		<div class="applogo">
-		  <a href="../" class="logo">Paste</a>
-		</div>
-		<!-- End App Logo -->
+</head>
+<body>
+    <div id="top" class="clearfix">
+        <div class="applogo">
+            <a href="../" class="logo">Paste</a>
+        </div>
+        <ul class="top-right">
+            <li class="dropdown link">
+                <a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b><?php echo htmlspecialchars($_SESSION['admin_login']); ?></b><span class="caret"></span></a>
+                <ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
+                    <li><a href="admin.php">Settings</a></li>
+                    <li><a href="?logout">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
 
-		<!-- Start Top Right -->
-		<ul class="top-right">
-			<li class="dropdown link">
-				<a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b>Admin</b><span class="caret"></span></a>
-				<ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
-				  <li><a href="admin.php">Settings</a></li>
-				  <li><a href="?logout">Logout</a></li>
-				</ul>
-			</li>
-		</ul>
-		<!-- End Top Right -->
-	</div>
-	<!-- END TOP -->	
+    <div class="content">
+        <div class="container-widget">
+            <div class="row">
+                <div class="col-md-12">
+                    <ul class="panel quick-menu clearfix">
+                        <li class="col-xs-3 col-sm-2 col-md-1 menu-active">
+                            <a href="dashboard.php"><i class="fa fa-home"></i>Dashboard</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="configuration.php"><i class="fa fa-cogs"></i>Configuration</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="interface.php"><i class="fa fa-eye"></i>Interface</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="admin.php"><i class="fa fa-user"></i>Admin Account</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="pastes.php"><i class="fa fa-clipboard"></i>Pastes</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="users.php"><i class="fa fa-users"></i>Users</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="ipbans.php"><i class="fa fa-ban"></i>IP Bans</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="stats.php"><i class="fa fa-line-chart"></i>Statistics</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="ads.php"><i class="fa fa-gbp"></i>Ads</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="pages.php"><i class="fa fa-file"></i>Pages</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="sitemap.php"><i class="fa fa-map-signs"></i>Sitemap</a>
+                        </li>
+                        <li class="col-xs-3 col-sm-2 col-md-1">
+                            <a href="tasks.php"><i class="fa fa-tasks"></i>Tasks</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
 
-	<div class="content">
-		  <!-- START CONTAINER -->
-		<div class="container-widget">
-			<!-- Start Menu -->
-			<div class="row">
-				<div class="col-md-12">
-				  <ul class="panel quick-menu clearfix">
-					<li class="col-xs-3 col-sm-2 col-md-1 menu-active">
-					  <a href="dashboard.php"><i class="fa fa-home"></i>Dashboard</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="configuration.php"><i class="fa fa-cogs"></i>Configuration</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="interface.php"><i class="fa fa-eye"></i>Interface</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="admin.php"><i class="fa fa-user"></i>Admin Account</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="pastes.php"><i class="fa fa-clipboard"></i>Pastes</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="users.php"><i class="fa fa-users"></i>Users</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="ipbans.php"><i class="fa fa-ban"></i>IP Bans</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="stats.php"><i class="fa fa-line-chart"></i>Statistics</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="ads.php"><i class="fa fa-gbp"></i>Ads</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="pages.php"><i class="fa fa-file"></i>Pages</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="sitemap.php"><i class="fa fa-map-signs"></i>Sitemap</a>
-					</li>
-					<li class="col-xs-3 col-sm-2 col-md-1">
-					  <a href="tasks.php"><i class="fa fa-tasks"></i>Tasks</a>
-					</li>
-				  </ul>
-				</div>
-			</div>
-			<!-- End Menu -->
-			
-			<!-- Start Stats -->
-			<div class="row">
-				<div class="col-md-12">
-				  <ul class="panel topstats clearfix">
-					<li class="col-xs-6 col-lg-3">
-					  <span class="title"><i class="fa fa-eye"></i> Views</span>
-					  <h3><?php echo $today_page; ?></h3>
-					  <span class="diff">Today</span>
-					</li>
-					<li class="col-xs-6 col-lg-3">
-					  <span class="title"><i class="fa fa-clipboard"></i> Pastes</span>
-					  <h3><?php echo $today_pastes_count; ?></h3>
-					  <span class="diff">Today</span>
-					</li>
-					<li class="col-xs-6 col-lg-3">
-					  <span class="title"><i class="fa fa-users"></i> Users</span>
-					  <h3><?php echo $today_users_count; ?></h3>
-					  <span class="diff">Today</span>
-					</li>
-					<li class="col-xs-6 col-lg-3">
-					  <span class="title"><i class="fa fa-users"></i> Unique Views</span>
-					  <h3><?php echo $today_visit; ?></h3>
-					  <span class="diff">Today</span>
-					</li>
-				  </ul>
-				</div>
-			</div>
-			<!-- End Stats -->
-		  
-			<div class="row">
-				<!-- Start Recent -->
-				<div class="col-md-12 col-lg-6">
-				  <div class="panel panel-widget">
-					<div class="panel-title">
-					  Recent Pastes
-					</div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-widget">
+                        <div class="panel-body">
+                            <h4>Overview</h4>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body text-center">
+                                            <h6><i class="fa fa-eye"></i> Views</h6>
+                                            <p><span class="badge"><?php echo $today_page; ?></span></p>
+                                            <small>Today</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body text-center">
+                                            <h6><i class="fa fa-clipboard"></i> Pastes</h6>
+                                            <p><span class="badge"><?php echo $today_pastes_count; ?></span></p>
+                                            <small>Today</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body text-center">
+                                            <h6><i class="fa fa-users"></i> Users</h6>
+                                            <p><span class="badge"><?php echo $today_users_count; ?></span></p>
+                                            <small>Today</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="panel panel-default">
+                                        <div class="panel-body text-center">
+                                            <h6><i class="fa fa-users"></i> Unique Views</h6>
+                                            <p><span class="badge"><?php echo $today_visit; ?></span></p>
+                                            <small>Today</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-					<div class="panel-body table-responsive">
+            <div class="row">
+                <div class="col-md-12 col-lg-6">
+                    <div class="panel panel-widget">
+                        <div class="panel-body">
+                            <h4>Recent Pastes</h4>
+                            <table class="table table-hover table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Date</th>
+                                        <th>IP</th>
+                                        <th>Views</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $stmt = $pdo->prepare("SELECT id, title, member, s_date, ip, views, now_time FROM pastes ORDER BY now_time DESC LIMIT 7");
+                                    $stmt->execute();
+                                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                        $title = trim($row['title']);
+                                        $p_id = trim($row['id']);
+                                        $p_date = trim($row['s_date']);
+                                        $p_ip = trim($row['ip']);
+                                        $p_member = trim($row['member']);
+                                        $p_view = trim($row['views']);
+                                        $p_time = trim($row['now_time']);
+                                        $nowtime = time();
+                                        $p_time = conTime($nowtime - $p_time);
+                                        $title = truncate($title, 5, 30);
+                                        echo "
+                                            <tr>
+                                                <td>$p_id</td>
+                                                <td>" . htmlspecialchars($p_member) . "</td>
+                                                <td>" . htmlspecialchars($p_date) . "</td>
+                                                <td><span class='badge'>" . htmlspecialchars($p_ip) . "</span></td>
+                                                <td>$p_view</td>
+                                            </tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-					  <table class="table table-hover">
-						<thead>
-						  <tr>
-							<td>ID</td>
-							<td>Username</td>
-							<td>Date</td>
-							<td>IP</td>
-							<td>Views</td>
-						  </tr>
-						</thead>
-						<tbody>
-						<?php
-						$res = getRecent($con, 7);
-						while ($row = mysqli_fetch_array($res)) {
-							$title    = Trim($row['title']);
-							$p_id     = Trim($row['id']);
-							$p_date   = Trim($row['s_date']);
-							$p_ip     = Trim($row['ip']);
-							$p_member = Trim($row['member']);
-							$p_view   = Trim($row['views']);
-							$p_time   = Trim($row['now_time']);
-							$nowtime  = time();
-							$oldtime  = $p_time;
-							$p_time   = conTime($nowtime - $oldtime);
-							$title    = truncate($title, 5, 30);
-							echo "
-										  <tr>
-											<td>$p_id</td>
-											<td>$p_member</td>
-											<td>$p_date</td>
-											<td><span class='label label-default'>$p_ip</span></td>
-											<td>$p_view</td>
-										  </tr> ";
-						}
-						?>
-						</tbody>
-					  </table>
+                <div class="col-md-12 col-lg-6">
+                    <div class="panel panel-widget">
+                        <div class="panel-body">
+                            <h4>Recent Users</h4>
+                            <table class="table table-hover table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Date</th>
+                                        <th>IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM users");
+                                    $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['last_id'] ?? null;
 
-					</div>
-				  </div>
-				</div>
-				<!-- End Recent -->
+                                    if ($last_id) {
+                                        for ($uloop = 0; $uloop <= 6; $uloop++) {
+                                            $r_my_id = $last_id - $uloop;
+                                            $stmt = $pdo->prepare("SELECT username, date, ip FROM users WHERE id = ?");
+                                            $stmt->execute([$r_my_id]);
+                                            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                                            if ($row) {
+                                                $u_date = $row['date'];
+                                                $ip = $row['ip'];
+                                                $username = htmlspecialchars($row['username']);
+                                                echo "
+                                                    <tr>
+                                                        <td>$r_my_id</td>
+                                                        <td>$username</td>
+                                                        <td>" . htmlspecialchars($u_date) . "</td>
+                                                        <td><span class='badge'>" . htmlspecialchars($ip) . "</span></td>
+                                                    </tr>";
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-				<!-- Start Recent Users -->
-				<div class="col-md-12 col-lg-6">
-				  <div class="panel panel-widget">
-					<div class="panel-title">
-					  Recent Users
-					</div>
+            <div class="row">
+                <div class="col-md-12 col-lg-6">
+                    <div class="panel panel-widget">
+                        <div class="panel-body">
+                            <h4>Admin History</h4>
+                            <table class="table table-hover table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Last Login Date</th>
+                                        <th>IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM admin_history");
+                                    $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['last_id'] ?? null;
 
-					<div class="panel-body table-responsive">
+                                    if ($last_id) {
+                                        for ($cloop = 0; $cloop <= 6; $cloop++) {
+                                            $c_my_id = $last_id - $cloop;
+                                            $stmt = $pdo->prepare("SELECT last_date, ip FROM admin_history WHERE id = ?");
+                                            $stmt->execute([$c_my_id]);
+                                            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                                            if ($row) {
+                                                $last_date = $row['last_date'];
+                                                $ip = htmlspecialchars($row['ip']);
+                                                echo "
+                                                    <tr>
+                                                        <td>$c_my_id</td>
+                                                        <td>" . htmlspecialchars($last_date) . "</td>
+                                                        <td><span class='badge'>$ip</span></td>
+                                                    </tr>";
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-					  <table class="table table-hover">
-						<thead>
-						  <tr>
-							<td>ID</td>
-							<td>Username</td>
-							<td>Date</td>
-							<td>IP</td>
-						  </tr>
-						</thead>
-						<tbody>
-						<?php
-						$query = "SELECT @last_id := MAX(id) FROM users";
-						$result = mysqli_query($con, $query);
+                <div class="col-md-12 col-lg-6">
+                    <div class="panel panel-widget">
+                        <div class="panel-body">
+                            <h4>Version Information</h4>
+                            <p>
+                                <?php
+                                $latestversion = @file_get_contents('https://raw.githubusercontent.com/boxlabss/PASTE/releases/version');
+                                echo "Latest version: " . htmlspecialchars($latestversion) . "&mdash; Installed version: " . htmlspecialchars($currentversion);
+                                if ($currentversion == $latestversion) {
+                                    echo '<br>You have the latest version';
+                                } else {
+                                    echo '<br>Your Paste installation is outdated. Get the latest version from <a href="https://sourceforge.net/projects/phpaste/files/latest/download">SourceForge</a>';
+                                }
+                                ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-						if($result) {
-							while ($row = mysqli_fetch_array($result)) {
-								$last_id = $row['@last_id := MAX(id)'];
-							}
-						}
-	
-						if ($last_id) {
-							for ($uloop = 0; $uloop <= 6; $uloop++) {
-								$r_my_id = $last_id - $uloop;
-								$query   = "SELECT * FROM users WHERE id='$r_my_id'";
-								$result  = mysqli_query($con, $query);
-								
-								while ($row = mysqli_fetch_array($result)) {
-									$u_date   = $row['date'];
-									$ip       = $row['ip'];
-									$username = $row['username'];
-								}
-								echo "
-											  <tr>
-												<td>$r_my_id</td>
-												<td>$username</td>
-												<td>$u_date</td>
-												<td><span class='label label-default'>$ip</span></td>
-											  </tr> ";
-							}
-						}
+        <div class="row footer">
+            <div class="col-md-6 text-left">
+                <a href="https://github.com/jordansamuel/PASTE" target="_blank">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues" target="_blank">Bugs</a>
+            </div>
+            <div class="col-md-6 text-right">
+                Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
+            </div>
+        </div>
+    </div>
 
-						?>
-						</tbody>
-					  </table>
-
-					</div>
-				  </div>
-				</div>
-			<!-- End Recent Users -->
-			</div>
-			
-			<div class="row">
-				<!-- Start Admin History -->
-				<div class="col-md-12 col-lg-6">
-				  <div class="panel panel-widget">
-					<div class="panel-title">
-					  Admin History
-					</div>
-
-					<div class="panel-body table-responsive">
-
-					  <table class="table table-hover">
-						<thead>
-						  <tr>
-							<td>ID</td>
-							<td>Last Login Date</td>
-							<td>IP</td>
-						  </tr>
-						</thead>
-						<tbody>
-						<?php
-						$query = "SELECT @last_id := MAX(id) FROM admin_history";
-						$result = mysqli_query($con, $query);
-						
-						while ($row = mysqli_fetch_array($result)) {		
-							$last_id = $row['@last_id := MAX(id)'];		
-						}
-
-						for ($cloop = 0; $cloop <= 6; $cloop++) {
-							$c_my_id = $last_id - $cloop;
-							$query   = "SELECT * FROM admin_history WHERE id='$c_my_id'";
-							$result  = mysqli_query($con, $query);
-							
-							while ($row = mysqli_fetch_array($result)) {
-								$last_date = $row['last_date'];
-								$ip        = $row['ip'];
-							}
-							echo "
-										  <tr>
-											<td>$c_my_id</td>
-											<td>$last_date</td>
-											<td><span class='label label-default'>$ip</span></td>
-										  </tr> ";
-						}
-
-						?>
-						</tbody>
-					  </table>
-
-					</div>
-				  </div>
-				</div>
-				<!-- End Admin History -->
-	  
-				<div class="col-md-12 col-lg-6">
-				  <div class="panel panel-widget">
-					<div class="panel-title">
-					</div>
-					<p style="height: auto;">
-					<?php
-					$latestversion = file_get_contents('https://raw.githubusercontent.com/jordansamuel/PASTE/releases/version');
-					echo "Latest version: " . $latestversion . "&mdash; Installed version: " . $currentversion;
-					if ($currentversion == $latestversion) { echo '<br />You have the latest version'; } else { echo '<br />Your Paste installation is outdated. Get the latest version from <a href="https://sourceforge.net/projects/phpaste/files/latest/download">SourceForge</a>'; }
-					?>
-					
-					</p>
-				  </div>
-				</div>
-			</div>
-		</div>
-		<!-- END CONTAINER -->
-
-		<!-- Start Footer -->
-		<div class="row footer">
-		  <div class="col-md-6 text-left">
-		   <a href="https://github.com/jordansamuel/PASTE" target="_blank">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues" target="_blank">Bugs</a>
-		  </div>
-		  <div class="col-md-6 text-right">
-			Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
-		  </div> 
-		</div>
-		<!-- End Footer -->
-
-	</div>
-	<!-- End content -->
-
-
-	<script type="text/javascript" src="js/jquery.min.js"></script>
-	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap-select.js"></script>
 </body>
 </html>
+<?php $pdo = null; ?>

@@ -1,412 +1,288 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
-
-// PHP <5.5 compatibility
-require_once('includes/password.php'); 
- 
+require_once('includes/password.php');
 session_start();
 
-// UTF-8
-header('Content-Type: text/html; charset=utf-8');
-
-// Required functions
 require_once('config.php');
 require_once('includes/geshi.php');
 require_once('includes/functions.php');
 
-// Path of GeSHi object
 $path = 'includes/geshi/';
-
-// Path of Parsedown object
 $parsedown_path = 'includes/Parsedown/Parsedown.php';
+$ges_style = '';
 
-// GET Paste ID
-if (isset($_GET['id'])) {
-    $paste_id = Trim(htmlspecialchars($_GET['id']));
-} elseif (isset($_POST['id'])) {
-    $paste_id = Trim(htmlspecialchars($_POST['id']));
-}
+// Initialize variables
+$p_password = ''; // Default to empty string to avoid undefined warning
 
-// Prevent SQLInjection
-settype($paste_id, 'integer');
+$paste_id = isset($_GET['id']) ? (int) trim(htmlspecialchars($_GET['id'] ?? '')) : (isset($_POST['id']) ? (int) trim(htmlspecialchars($_POST['id'] ?? '')) : null);
 
-// Database Connection
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
+try {
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = '1'");
+    $row = $stmt->fetch();
+    $title = trim($row['title'] ?? '');
+    $des = trim($row['des'] ?? '');
+    $baseurl = trim($row['baseurl'] ?? '');
+    $keyword = trim($row['keyword'] ?? '');
+    $site_name = trim($row['site_name'] ?? '');
+    $email = trim($row['email'] ?? '');
+    $twit = trim($row['twit'] ?? '');
+    $face = trim($row['face'] ?? '');
+    $gplus = trim($row['gplus'] ?? '');
+    $ga = trim($row['ga'] ?? '');
+    $additional_scripts = trim($row['additional_scripts'] ?? '');
 
-// Get site info
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id = '1'");
+    $row = $stmt->fetch();
+    $default_lang = trim($row['lang'] ?? 'en.php');
+    $default_theme = trim($row['theme'] ?? 'default');
+    require_once("langs/$default_lang");
 
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
+    $ip = $_SERVER['REMOTE_ADDR'];
+    if (is_banned($pdo, $ip)) die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
 
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
+    $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id = '1'");
+    $row = $stmt->fetch();
+    $disableguest = trim($row['disableguest'] ?? 'off');
+    $siteprivate = trim($row['siteprivate'] ?? 'off');
 
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
-require_once("langs/$default_lang");
-
-// Check if IP is banned
-$ip = $_SERVER['REMOTE_ADDR'];
-if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
-
-// Site permissions
-$query  = "SELECT * FROM site_permissions where id='1'";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $disableguest   = Trim($row['disableguest']);
-	$siteprivate	= Trim($row['siteprivate']);
-}
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-} else {
-	if ($siteprivate =="on") {
-		$privatesite = "on";
+    if ($_SERVER['REQUEST_METHOD'] != 'POST' && $siteprivate == "on") {
+        $privatesite = "on";
     }
-}
 
-// Current date & user IP
-$date    = date('jS F Y');
-$data_ip = file_get_contents('tmp/temp.tdata');
+    $date = date('jS F Y');
+    $data_ip = file_get_contents('tmp/temp.tdata');
 
-// Ads
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
+    $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
+    $row = $stmt->fetch();
+    $text_ads = trim($row['text_ads'] ?? '');
+    $ads_1 = trim($row['ads_1'] ?? '');
+    $ads_2 = trim($row['ads_2'] ?? '');
 
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-}
+    if (isset($_GET['logout'])) {
+        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        unset($_SESSION['token']);
+        unset($_SESSION['oauth_uid']);
+        unset($_SESSION['username']);
+        session_destroy();
+    }
 
-// Logout
-if (isset($_GET['logout'])) {
-	header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
-}
-
-// Escape from quotes
-if (function_exists('get_magic_quotes_gpc')) {
-    function callback_stripslashes(&$val, $name)
-    {
-        if (get_magic_quotes_gpc())
+    if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
+        $callback_stripslashes = function (&$val) {
             $val = stripslashes($val);
+        };
+        array_walk($_GET, $callback_stripslashes);
+        array_walk($_POST, $callback_stripslashes);
+        array_walk($_COOKIE, $callback_stripslashes);
     }
-    if (count($_GET))
-        array_walk($_GET, 'callback_stripslashes');
-    if (count($_POST))
-        array_walk($_POST, 'callback_stripslashes');
-    if (count($_COOKIE))
-        array_walk($_COOKIE, 'callback_stripslashes');
-}
 
-// Page views
-$query = "SELECT @last_id := MAX(id) FROM page_view";
+    $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM page_view");
+    $row = $stmt->fetch();
+    $last_id = $row['last_id'] ?? null;
 
-$result = mysqli_query($con, $query);
+    if ($last_id) {
+        $stmt = $pdo->prepare("SELECT * FROM page_view WHERE id = ?");
+        $stmt->execute([$last_id]);
+        $row = $stmt->fetch();
+        $last_date = $row['date'] ?? '';
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['date'];
-    }
-}
-
-if ($last_date == $date) {
-    if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
+        if ($last_date == $date) {
+            if (str_contains_polyfill($data_ip, $ip)) {
+                $stmt = $pdo->prepare("SELECT tpage FROM page_view WHERE id = ?");
+                $stmt->execute([$last_id]);
+                $last_tpage = trim($stmt->fetchColumn()) + 1;
+                $stmt = $pdo->prepare("UPDATE page_view SET tpage = ? WHERE id = ?");
+                $stmt->execute([$last_tpage, $last_id]);
+            } else {
+                $stmt = $pdo->prepare("SELECT tpage, tvisit FROM page_view WHERE id = ?");
+                $stmt->execute([$last_id]);
+                $row = $stmt->fetch();
+                $last_tpage = trim($row['tpage']) + 1;
+                $last_tvisit = trim($row['tvisit']) + 1;
+                $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+                $stmt->execute([$last_tpage, $last_tvisit, $last_id]);
+                file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+            }
+        } else {
+            unlink("tmp/temp.tdata");
+            $data_ip = "";
+            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
+            $stmt->execute([$date]);
+            file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
         }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP exists, so update page views
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
     } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
-        }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
+        unlink("tmp/temp.tdata");
+        $data_ip = "";
+        $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
+        $stmt->execute([$date]);
         file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
     }
-} else {
-    // Delete the file and clear data_ip
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    
-    // New date is created
-    $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
-    // Update the IP
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
-}
 
-$query  = "SELECT * FROM pastes WHERE id='$paste_id'";
-$result = mysqli_query($con, $query);
-if (mysqli_num_rows($result) > 0) {
-    $query  = "SELECT * FROM pastes WHERE id='$paste_id'";
-    $result = mysqli_query($con, $query);
-    while ($row = mysqli_fetch_array($result)) {
-        $p_title    = $row['title'];
-        $p_content  = $row['content'];
-        $p_visible  = $row['visible'];
-        $p_code     = $row['code'];
-        $p_expiry   = Trim($row['expiry']);
-        $p_password = $row['password'];
-        $p_member   = $row['member'];
-        $p_date     = $row['date'];
-        $p_encrypt  = $row['encrypt'];
-        $p_views    = $row['views'];
-    }
-    
     $p_private_error = '0';
-    if ($p_visible == "2") {
-        if (isset($_SESSION['username'])) {
-            if ($p_member == Trim($_SESSION['username'])) {
+    $stmt = $pdo->prepare("SELECT * FROM pastes WHERE id = ?");
+    $stmt->execute([$paste_id]);
+    if ($stmt->rowCount() > 0) {
+        $row = $stmt->fetch();
+        $p_title = (string) ($row['title'] ?? '');
+        $p_content = (string) ($row['content'] ?? '');
+        $p_visible = $row['visible'] ?? '0';
+        $p_code = (string) ($row['code'] ?? 'text');
+        $p_expiry = trim($row['expiry'] ?? 'NULL');
+        $p_password = (string) ($row['password'] ?? 'NONE'); // Ensure this is set
+        $p_member = (string) ($row['member'] ?? '');
+        $p_date = (string) ($row['date'] ?? '');
+        $p_encrypt = $row['encrypt'] ?? '0';
+        $p_views = (int) ($row['views'] ?? 0);
+
+        if ($p_visible == "2") {
+            if (isset($_SESSION['username']) && $p_member == (string) ($_SESSION['username'] ?? '')) {
+                // Authorized
             } else {
-                $notfound           = $lang['privatepaste']; //" This is a private paste.";
+                $notfound = $lang['privatepaste'] ?? 'This is a private paste.';
                 $p_private_error = '1';
                 goto Not_Valid_Paste;
             }
-        } else {
-            $notfound           = $lang['privatepaste']; //" This is a private paste. If you created this paste, please login to view it.";
-            $p_private_error = '1';
-            goto Not_Valid_Paste;
         }
-    }
-    if ($p_expiry == "NULL" || $p_expiry == "SELF") {
-    } else {
-        $input_time   = $p_expiry;
-        $current_time = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
-        if ($input_time < $current_time) {
-            $notfound       = $lang['expired'];
-            $p_private_error = 1;
-            goto Not_Valid_Paste;
-        }
-    }
-    if ($p_encrypt == "" || $p_encrypt == null || $p_encrypt == '0') {
-    } else {
-        $p_content = decrypt($p_content);
-    }
-    $op_content = Trim(htmlspecialchars_decode($p_content));
-    
-    // Download the paste   
-    if (isset($_GET['download'])) {
-        if ($p_password == "NONE") {
-            doDownload($paste_id, $p_title, $op_content, $p_code);
-            exit();
-        } else {
-            if (isset($_GET['password'])) {
-                if (password_verify($_GET['password'],$p_password)) {
-                    doDownload($paste_id, $p_title, $op_content, $p_code);
-                    exit();
-                } else {
-                    $error = $lang['wrongpassword']; // 'Wrong password';
-                }
-            } else {
-                $error = $lang['pwdprotected']; // 'Password protected paste';
+        if ($p_expiry != "NULL" && $p_expiry != "SELF") {
+            $input_time = (int) $p_expiry;
+            $current_time = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
+            if ($input_time < $current_time) {
+                $notfound = $lang['expired'] ?? 'This paste has expired.';
+                $p_private_error = '1';
+                goto Not_Valid_Paste;
             }
         }
-    }
-	
-    // Raw view   
-    if (isset($_GET['raw'])) {
-        if ($p_password == "NONE") {
-            rawView($paste_id, $p_title, $op_content, $p_code);
-            exit();
-        } else {
-            if (isset($_GET['password'])) {
-                if (password_verify($_GET['password'],$p_password)) {
-                    rawView($paste_id, $p_title, $op_content, $p_code);
-                    exit();
-                } else {
-                    $error = $lang['wrongpassword']; // 'Wrong password';
-                }
-            } else {
-                $error = $lang['pwdprotected']; // 'Password protected paste';
+        if ($p_encrypt == "1") {
+            $p_content = decrypt($p_content, hex2bin(SECRET)) ?? '';
+            if ($p_content === '') {
+                $error = ($lang['error'] ?? 'Error') . ': Decryption failed.';
+                goto Not_Valid_Paste;
             }
         }
-    } 
-    
-    // Preprocess
-    $highlight   = array();
-    $prefix_size = strlen('!highlight!');
-    if ($prefix_size) {
-        $lines     = explode("\n", $p_content);
-        $p_content = "";
-        foreach ($lines as $idx => $line) {
-            if (substr($line, 0, $prefix_size) == '!highlight!') {
-                $highlight[] = $idx + 1;
-                $line        = substr($line, $prefix_size);
-            }
-            $p_content .= $line . "\n";
-        }
-        $p_content = rtrim($p_content);
-    }
-    
-    // Apply syntax highlight
-    $p_content = htmlspecialchars_decode($p_content);
-    if ( $p_code == "markdown" ) {
-        include( $parsedown_path );
-        $Parsedown = new Parsedown();
-        $p_content = $Parsedown->text( $p_content );
-    } else {
-        $geshi     = new GeSHi($p_content, $p_code, $path);
-        $geshi->enable_classes();
-        $geshi->set_header_type(GESHI_HEADER_DIV);
-        $geshi->set_line_style('color: #aaaaaa; width:auto;');
-        $geshi->set_code_style('color: #757584;');
-        if (count($highlight)) {
-            $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-            $geshi->highlight_lines_extra($highlight);
-            $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
-        } else {
-            $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
-        }
-        $p_content = $geshi->parse_code();
-        $style     = $geshi->get_stylesheet();
-        $ges_style = '<style>' . $style . '</style>';
-    }
-    
-    // Embed view after GeSHI is applied so that $p_code is syntax highlighted as it should be. 
-    if (isset($_GET['embed'])) {
-        if ( $p_password == "NONE" ) {
-            embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang );
-            exit();
-        } else {
-            if ( isset( $_GET['password'] ) ) {
-                if ( password_verify( $_GET['password'], $p_password ) ) {
-                    embedView( $paste_id, $p_title, $p_content, $p_code, $title, $p_baseurl, $ges_style, $lang );
-                    exit();
-                } else {
-                    $error = $lang['wrongpassword']; // 'Wrong password';
-                }
-            } else {
-                $error = $lang['pwdprotected']; // 'Password protected paste';
-            }
-        }
-    } 
-} else {
-	header("HTTP/1.1 404 Not Found");
-    $notfound = $lang['notfound']; // "Not found";
-}
+        $op_content = trim(htmlspecialchars_decode($p_content));
 
-require_once('theme/' . $default_theme . '/header.php');
-if ($p_password == "NONE") {
-    
-    // No password & diplay the paste
-    
-    // Set download URL
-	if ($mod_rewrite == '1') {
-		$p_download = "download/$paste_id";
-	} else {
-		$p_download = "paste.php?download&id=$paste_id";
-	}
-	
-	// Set raw URL
-	if ($mod_rewrite == '1') {
-		$p_raw = "raw/$paste_id";
-	} else {
-		$p_raw = "paste.php?raw&id=$paste_id";
-	}
-
-	// Set embed URL
-	if ( $mod_rewrite == '1' ) {
-		$p_embed = "embed/$paste_id";
-	} else {
-		$p_embed = "paste.php?embed&id=$paste_id";
-	}
-    
-    // Theme
-    require_once('theme/' . $default_theme . '/view.php');
-    updateMyView($con, $paste_id);
-    if ($p_expiry == "SELF") {
-        deleteMyPaste($con, $paste_id);
-    }
-} else {
-    $p_download = "paste.php?download&id=$paste_id&password=" . password_hash(isset($_POST['mypass']), PASSWORD_DEFAULT);
-    $p_raw = "paste.php?raw&id=$paste_id&password=" . password_hash(isset($_POST['mypass']), PASSWORD_DEFAULT);
-    // Check password
-    if (isset($_POST['mypass'])) {
-        if (password_verify($_POST['mypass'], $p_password)) {
-            // Theme
-            require_once('theme/' . $default_theme . '/view.php');
-            updateMyView($con, $paste_id);
-            if ($p_expiry == "SELF") {
-                deleteMyPaste($con, $paste_id);
+        if (isset($_GET['download'])) {
+            if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
+                doDownload($paste_id, $p_title, $op_content, $p_code);
+                exit();
+            } else {
+                $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
             }
+        }
+
+        if (isset($_GET['raw'])) {
+            if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
+                rawView($paste_id, $p_title, $op_content, $p_code);
+                exit();
+            } else {
+                $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+            }
+        }
+
+        $highlight = [];
+        $prefix_size = strlen('!highlight!');
+        if ($prefix_size) {
+            $lines = explode("\n", $p_content);
+            $p_content = "";
+            foreach ($lines as $idx => $line) {
+                if (substr($line, 0, $prefix_size) == '!highlight!') {
+                    $highlight[] = $idx + 1;
+                    $line = substr($line, $prefix_size);
+                }
+                $p_content .= $line . "\n";
+            }
+            $p_content = rtrim($p_content);
+        }
+
+        $p_content = htmlspecialchars_decode($p_content);
+        if ($p_code == "markdown") {
+            include($parsedown_path);
+            $Parsedown = new Parsedown();
+            $p_content = $Parsedown->text($p_content);
         } else {
-            $error = $lang['wrongpwd']; //"Password is wrong";
-            require_once('theme/' . $default_theme . '/errors.php');
+            $geshi = new GeSHi($p_content, $p_code, $path);
+            $geshi->enable_classes();
+            $geshi->set_header_type(GESHI_HEADER_DIV);
+            $geshi->set_line_style('color: #aaaaaa; width:auto;');
+            $geshi->set_code_style('color: #757584;');
+            if (count($highlight)) {
+                $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+                $geshi->highlight_lines_extra($highlight);
+                $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+            } else {
+                $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
+            }
+            $p_content = $geshi->parse_code();
+            $ges_style = '<style>' . $geshi->get_stylesheet() . '</style>';
+        }
+
+        if (isset($_GET['embed'])) {
+            if ($p_password == "NONE" || (isset($_GET['password']) && password_verify($_GET['password'], $p_password))) {
+                embedView($paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang);
+                exit();
+            } else {
+                $error = isset($_GET['password']) ? ($lang['wrongpassword'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+            }
         }
     } else {
-        // Display errors
-        require_once('theme/' . $default_theme . '/errors.php');
+        header("HTTP/1.1 404 Not Found");
+        $notfound = $lang['notfound'] ?? 'Paste not found.';
     }
-}
+
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
+    if ($p_password == "NONE") {
+        updateMyView($pdo, $paste_id); // Increment view count first
+        $p_download = $mod_rewrite == '1' ? "download/$paste_id" : "paste.php?download&id=$paste_id";
+        $p_raw = $mod_rewrite == '1' ? "raw/$paste_id" : "paste.php?raw&id=$paste_id";
+        $p_embed = $mod_rewrite == '1' ? "embed/$paste_id" : "paste.php?embed&id=$paste_id";
+        require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/view.php');
+        // Check views after increment
+        $stmt = $pdo->prepare("SELECT views FROM pastes WHERE id = ?");
+        $stmt->execute([$paste_id]);
+        $current_views = (int) $stmt->fetchColumn();
+        if ($p_expiry == "SELF" && $current_views == 2) {
+            deleteMyPaste($pdo, $paste_id);
+        }
+    } else {
+        // Initialize $p_password from POST or session if not already set
+        $p_password = $p_password ?? (isset($_POST['mypass']) ? trim($_POST['mypass']) : (isset($_SESSION['p_password']) ? $_SESSION['p_password'] : ''));
+        $p_download = "paste.php?download&id=$paste_id&password=" . htmlspecialchars($p_password, ENT_QUOTES, 'UTF-8');
+        $p_raw = "paste.php?raw&id=$paste_id&password=" . htmlspecialchars($p_password, ENT_QUOTES, 'UTF-8');
+        if (isset($_POST['mypass']) && password_verify($_POST['mypass'], $p_password)) {
+            updateMyView($pdo, $paste_id); // Increment view count first
+            require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/view.php');
+            // Check views after increment
+            $stmt = $pdo->prepare("SELECT views FROM pastes WHERE id = ?");
+            $stmt->execute([$paste_id]);
+            $current_views = (int) $stmt->fetchColumn();
+            if ($p_expiry == "SELF" && $current_views == 2) {
+                deleteMyPaste($pdo, $paste_id);
+            }
+        } else {
+            $error = isset($_POST['mypass']) ? ($lang['wrongpwd'] ?? 'Incorrect password.') : ($lang['pwdprotected'] ?? 'This paste is password-protected.');
+            $_SESSION['p_password'] = $p_password; // Persist for retry
+            $paste_id = $paste_id; // Ensure paste_id is available
+            require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/errors.php');
+        }
+    }
 
 Not_Valid_Paste:
-// Private paste not valid
-if ($p_private_error == '1') {
-    // Display errors
-    require_once('theme/' . $default_theme . '/header.php');
-    require_once('theme/' . $default_theme . '/errors.php');
-}
+    if ($p_private_error == '1') {
+        require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
+        require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/errors.php');
+    }
 
-// Footer
-require_once('theme/' . $default_theme . '/footer.php');
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/footer.php');
+} catch (PDOException $e) {
+    $error = ($lang['error'] ?? 'Database error.') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/errors.php');
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/footer.php');
+}
 ?>

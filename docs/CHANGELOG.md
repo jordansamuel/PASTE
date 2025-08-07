@@ -1,4 +1,17 @@
-# Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 14/12/2016)
+# Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 07/08/2025)
+New version - 3.0
+* PHP 8.4> compatibility
+* Replace mysqli with pdo
+* New default theme, upgrade paste2 theme from bootstrap 3 to 5
+* Dark mode
+* Admin panel changes
+* Google OAuth2 SMTP/User accounts
+* Security and bug fixes 
+* Improved installer, checks for existing database and updates schema as appropriate.
+* Improved database schema
+* Update Parsedown for Markdown
+* All pastes encrypted in the database with AES-256 by default
+
 
 New version - 2.2
 -

@@ -1,58 +1,53 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE> - Default theme
+ * Paste 3 default theme <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
 ?>
 
 <div class="content">
   <!-- START CONTAINER -->
-  <div class="container-padding">
+  <div class="container-xl my-4">
     <!-- Start Row -->
     <div class="row">
-      <!-- Start Panel -->
-		<div class="col-md-9 col-lg-10">
-			<div class="panel panel-default" style="padding-bottom: 100px;">
-			<?php if (isset($notfound)) { ?>
-				<div class="error-pages">
-					<i class="fa fa-minus-circle fa-5x" aria-hidden="true"></i>
-					<h1><?php echo $notfound; ?></h1>
-
-					<div class="bottom-links">
-					  <a href="./" class="btn btn-default">New Paste</a>
-					</div>
-				</div>
-				<?php } else { ?>
-				<div class="panel-title" style="text-align:center;">
-					<h6><?php echo $lang['pwdprotected']; ?></h6>
-				</div>
-				<div class="login-form" style="padding-top: 0px;">
-				<?php if (isset($error)) { ?>
-						<div class="paste-alert alert6" style="text-align:center;">
-							<?php echo $error;?>
-						</div>
-				<?php } ?>
-					  <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post">
-						<div class="form-area">
-						  <div class="group">
-							<input type="hidden" name="id" value="<?php echo $paste_id; ?>">
-							<input type="text" class="form-control" name="mypass" placeholder="<?php echo $lang['enterpwd']; ?>">
-							<i class="fa fa-unlock" aria-hidden="true"></i>
-						  </div>
-						  <button type="submit" name="submit" class="btn btn-default btn-block">Submit</button>
-						</div>
-					  </form>
-				</div>
-			<?php } ?>
-			</div>
-		</div>
-<?php require_once('theme/'.$default_theme.'/sidebar.php'); ?>
+      <!-- Start Card -->
+      <div class="col-lg-10">
+        <div class="card">
+          <?php if (isset($notfound)): ?>
+            <div class="card-body text-center">
+              <i class="bi bi-exclamation-circle" style="font-size: 5rem; color: #f92672;"></i>
+              <h1 class="mt-3"><?php echo htmlspecialchars($notfound); ?></h1>
+              <div class="mt-4">
+                <a href="./" class="btn btn-primary">New Paste</a>
+              </div>
+            </div>
+          <?php else: ?>
+            <div class="card-header text-center">
+              <h6><?php echo htmlspecialchars($lang['pwdprotected'] ?? 'Password Protected'); ?></h6>
+            </div>
+            <div class="card-body">
+              <?php if (isset($error)): ?>
+                <div class="alert alert-danger text-center mb-3">
+                  <?php echo htmlspecialchars($error); ?>
+                </div>
+              <?php endif; ?>
+              <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post" class="text-center">
+                <div class="form-group mb-3">
+                  <input type="hidden" name="id" value="<?php echo htmlspecialchars($paste_id); ?>">
+                  <input type="text" class="form-control w-50 mx-auto" name="mypass" placeholder="<?php echo htmlspecialchars($lang['enterpwd'] ?? 'Enter Password'); ?>">
+                  <i class="bi bi-unlock" style="position: absolute; right: 25%; top: 50%; transform: translateY(-50%); color: #666;"></i>
+                </div>
+                <button type="submit" name="submit" class="btn btn-primary">Submit</button>
+              </form>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php require_once('theme/' . $default_theme . '/sidebar.php'); ?>
+    </div>
+  </div>
+</div>

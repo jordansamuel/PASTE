@@ -1,78 +1,67 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE> - Default theme
+ * Paste 3 default theme <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
 ?>
 
 <div class="content">
   <!-- START CONTAINER -->
-  <div class="container-padding">
+  <div class="container-xl my-4">
     <!-- Start Row -->
     <div class="row">
-      <!-- Start Panel -->
-		<div class="col-md-9 col-lg-10">
-		  <div class="panel panel-default">
-			<?php 
-			// Logged in
-			if (isset($success)) {
-					echo '<div class="paste-alert alert3" style="text-align: center;">
-							' . $success . ' <br /> ' . $lang['49'] . '
-						</div>'; 
-				echo '<meta http-equiv="refresh" content="2;url=./">'; 
-			}
-			
-			// Errors
-			elseif (isset($error)) {
-				echo '<div class="paste-alert alert5" style="text-align: center;">
-						' . $error . '
-					</div>'; 
-			}
-			
-			if (isset($old_user)) {
-					echo '<div class="paste-alert alert3" style="text-align: center;">
-							' . $success . ' <br /> ' . $lang['50'] . '
-						</div>'; 
-				echo '<meta http-equiv="refresh" content="1;url=./">'; 
-			}
-			else {
-			?>
-			
-			<div class="panel-title" style="text-align:center;">
-			<?php echo $lang['almostthere']; ?>
-			</div>			
-			<div class="login-form" style="padding-top: 0px;">
-			  <form action="oauth.php?newuser" method="post">
-				<div class="form-area">
-				  <div class="group">
-					<input readonly="" type="text" class="form-control" name="autoname" value="<?php echo $username; ?>">
-					<i class="fa fa-user"></i>
-				  </div>
-				  
-				  <div class="group">
-					<input type="text" class="form-control" name="new_username" placeholder="<?php echo $lang['setuser']; ?>">
-					<i class="fa fa-user"></i>
-				  </div>
-
-				  <input type="hidden" name="user_change" value="<?php echo md5($date.$ip); ?>" />
-				  <button type="submit" name="submit" class="btn btn-default btn-block">Submit</button>
-				  <a href="." class="btn btn-primary btn-block"><?php echo $lang['keepuser']; ?></a>	
-				</div>
-			  </form>
-			</div>
-		<?php } ?>
-	</div>
+      <!-- Start Card -->
+      <div class="col-lg-10">
+        <div class="card">
+          <?php 
+          // Success message for returning users
+          if (isset($success) && isset($old_user)) {
+            echo '<div class="alert alert-success text-center">' . htmlspecialchars($success) . ' <br /> ' . htmlspecialchars($lang['50'] ?? 'Logged in successfully.') . '</div>'; 
+            echo '<meta http-equiv="refresh" content="2;url=./">';
+          }
+          // Success message for new users
+          elseif (isset($success)) {
+            echo '<div class="alert alert-success text-center">' . htmlspecialchars($success) . ' <br /> ' . htmlspecialchars($lang['49'] ?? 'Account created successfully.') . '</div>'; 
+          }
+          // Error message
+          elseif (isset($error)) {
+            echo '<div class="alert alert-danger text-center">' . htmlspecialchars($error) . '</div>'; 
+          }
+          
+          // Username customization form for new OAuth users
+          if (isset($_GET['new_user']) && !isset($old_user)) {
+          ?>
+            <div class="card-header text-center">
+              <?php echo htmlspecialchars($lang['almostthere'] ?? 'Almost There'); ?>
+            </div>          
+            <div class="card-body mt-0">
+              <form action="oauth.php?newuser" method="post" class="text-center">
+                <div class="form-group mb-3 position-relative">
+                  <input readonly type="text" class="form-control w-50 mx-auto" name="autoname" value="<?php echo htmlspecialchars($username ?? ''); ?>">
+                  <i class="bi bi-person" style="position: absolute; right: 25%; top: 50%; transform: translateY(-50%); color: #666;"></i>
+                </div>
+                <div class="form-group mb-3 position-relative">
+                  <input type="text" class="form-control w-50 mx-auto" name="new_username" placeholder="<?php echo htmlspecialchars($lang['setuser'] ?? 'Set Username'); ?>">
+                  <i class="bi bi-person" style="position: absolute; right: 25%; top: 50%; transform: translateY(-50%); color: #666;"></i>
+                </div>
+                <input type="hidden" name="user_change" value="1">
+                <button type="submit" name="submit" class="btn btn-primary w-50 mx-auto">Submit</button>
+                <a href="." class="btn btn-outline-primary w-50 mx-auto mt-2"><?php echo htmlspecialchars($lang['keepuser'] ?? 'Keep Username'); ?></a>  
+              </form>
+            </div>
+          <?php } else { ?>
+            <!-- Redirect for returning users or after username submission -->
+            <meta http-equiv="refresh" content="2;url=./">
+          <?php } ?>
+        </div>
+      </div>
+      
+      <?php require_once('theme/' . $default_theme . '/sidebar.php'); ?>
+      <?php echo htmlspecialchars($ads_2 ?? '', ENT_QUOTES, 'UTF-8'); ?>
+    </div>
+  </div>
 </div>
-
-<?php require_once('theme/'.$default_theme.'/sidebar.php'); ?>
-
-<?php echo $ads_2; ?>

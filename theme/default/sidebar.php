@@ -1,142 +1,136 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE> - Default theme
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
- // which protocol are we on
-$protocol = paste_protocol();
-?>
+   declare(strict_types=1);
 
-    <div class="col-md-3 col-lg-2">
-
-<?php
-if(isset($_SESSION['token'])) {
-?>
-	<!-- My Pastes -->
-		<div class="panel panel-default">
-			<div class="panel-title">
-				<h6>Hello <?php echo ($_SESSION['username']);?>
-					<small>
-						<?php if ( $mod_rewrite == '1' ) {
-							echo '<a href="' . $protocol . $baseurl . '/user/' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>';
-							} else {
-							echo '<a href="' . $protocol . $baseurl . '/user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>'; }
-						?>
-					</small>
-				</h6>
-			</div>
-				
-			<div class="panel-body">
-				<div class="list-widget pagination-content">				
-					<?php         
-						   $user_username = Trim($_SESSION['username']);     
-						   $res = getUserRecent($con, $user_username, 10);
-						   while($row = mysqli_fetch_array($res)) {
-							$title =  Trim($row['title']);
-							$p_id =  Trim($row['id']);
-							$p_date = Trim($row['date']);
-							$p_time = Trim($row['now_time']);
-							$nowtime = time();
-							$oldtime = $p_time;
-							$p_time = conTime($nowtime-$oldtime);
-							$title = truncate($title, 6, 15);
-                            $p_delete_link = ( $mod_rewrite == '1' )?"user.php?del&user=$user_username&id=$p_id":"user.php?del&user=$user_username&id=$p_id";
-					?>
-					<p class="no-margin">
-					<?php 
-                    if ($mod_rewrite == '1') {
-                        echo '<a href="' . $protocol . $baseurl . '/'.$p_id.'" title="' . $title . '">' . ucfirst($title) . '</a>
-							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; 
-                      } else {
-						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>
-							  <a class="icon" href="' . $protocol . $baseurl . '/'.$p_delete_link.'" title="' . $title . '"><i class="fa fa-trash-o fa-lg" aria-hidden="true"></i></a>'; }
-					?>
-						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
-						 <i class="fa fa-clock-o fa-lg" aria-hidden="true"></i>
-						</button>
-					<?php }
-					// Display a message if the pastebin is empty
-					$query  = "SELECT count(*) as count FROM pastes";
-					$result = mysqli_query( $con, $query );
-					while ($row = mysqli_fetch_array($result)) {
-						$totalpastes = $row['count'];
-					}
-					
-					if ($totalpastes == '0') { echo $lang['emptypastebin']; } ?>
-					</p>
-				</div>
-			</div>
-		</div>
-
-<?php } if (isset($_SESSION['username'])) { ?>
-	<?php } else { ?>
-	<!-- Guest message -->
-			<div class="widget guestmsg" style="background:#399bff;">				
-			<p class="text"><?php echo $lang['guestmsgtitle'];?></p>
-			<p class="text-body"><?php echo $lang['guestmsgbody'];?></p>
-			</div>
-    <!-- End message -->	
-<?php } 
-	if ( isset($privatesite) && $privatesite == "on") { // Remove 'recent pastes' if site is private
-	} else { ?>
-		<!-- Recent Public Pastes -->
-		<div class="panel panel-default">
-		  <div class="panel-title"><?php echo $lang['recentpastes'];?></div>
-			<div class="panel-body">
-				<div class="list-widget pagination-content">
-					<?php          
-							$res = getRecent($con,10);
-							while($row = mysqli_fetch_array($res)) {
-							$title =  Trim($row['title']);
-							$p_id =  Trim($row['id']);
-							$p_date = Trim($row['date']);
-							$p_time = Trim($row['now_time']);
-							$nowtime = time();
-							$oldtime = $p_time;
-							$p_time = conTime($nowtime-$oldtime);
-							$title = truncate($title, 6, 15);
-					?>
-
-					<p class="no-margin">
-					<?php
-					if ($mod_rewrite == '1') {
-						echo '<a href="' . $protocol . $baseurl . '/' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; 
-                    } else {
-						echo '<a href="' . $protocol . $baseurl . '/paste.php?id=' . $p_id . '" title="' . $title . '">' . ucfirst($title) . '</a>'; 
-                    }
-					?>
-						<button type="button" class="btn-light pull-right" data-container="body" data-toggle="popover" data-placement="left" data-trigger="focus" data-content="<?php echo $p_time;?>" data-original-title="" title="">
-						 <i class="fa fa-clock-o fa-lg" aria-hidden="true"></i>
-						</button>
-					<?php }
-					// Display a message if the pastebin is empty
-					$query  = "SELECT count(*) as count FROM pastes";
-					$result = mysqli_query( $con, $query );
-					while ($row = mysqli_fetch_array($result)) {
-						$totalpastes = $row['count'];
-					}
-					
-					if ($totalpastes == '0') { echo $lang['emptypastebin']; } ?>
-					</p>
-				</div>
-			</div>
-		</div>
-<?php } ?>
-	</div>
-	<!-- End Panel -->
-	
-	<?php if (isset($_SESSION['username'])) { ?>
-	<?php } else { ?>
-	<div style="text-align:center;">
-	<?php echo $ads_1; ?>
-	</div>
-	<?php } ?>
+   // Protocol detection (assumes paste_protocol() is defined)
+   $protocol = paste_protocol();
+   ?>
+   <!-- Sidebar -->
+   <div class="col-lg-2 mt-4 mt-lg-0">
+       <?php if (isset($_SESSION['username'])): ?>
+           <!-- My Pastes -->
+           <div class="card mt-3">
+               <div class="card-header">
+                   <h6>Hello <?php echo htmlspecialchars((string) ($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                       <small>
+                           <a href="<?php echo htmlspecialchars(
+                               $protocol . $baseurl . ($mod_rewrite ? '/user/' . urlencode((string) ($_SESSION['username'] ?? '')) : '/user.php?user=' . urlencode((string) ($_SESSION['username'] ?? ''))),
+                               ENT_QUOTES,
+                               'UTF-8'
+                           ); ?>" target="_self"><?php echo htmlspecialchars($lang['mypastes'] ?? 'My Pastes', ENT_QUOTES, 'UTF-8'); ?></a>
+                       </small>
+                   </h6>
+               </div>
+               <div class="card-body">
+                   <div class="list-group list-group-flush">
+                       <?php
+                       $username = (string) ($_SESSION['username'] ?? '');
+                       if ($username === '') {
+                           echo '<p>Error: User not logged in.</p>';
+                       } else {
+                           try {
+                               $pastes = getUserRecent($pdo, $username, 10);
+                               if (empty($pastes)) {
+                                   echo '<p>No pastes yet. Create one!</p>';
+                               } else {
+                                   foreach ($pastes as $row) {
+                                       $title = (string) ($row['title'] ?? 'Untitled');
+                                       $p_id = (string) ($row['id'] ?? '');
+                                       $p_date = (string) ($row['date'] ?? '');
+                                       $p_time = (int) ($row['now_time'] ?? 0);
+                                       $p_time_ago = conTime(time() - $p_time);
+                                       $title = truncate($title, 6, 15);
+                                       $p_delete_link = $mod_rewrite ? "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id)
+                                                                   : "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id);
+                                       ?>
+                                       <p class="mb-0">
+                                           <a href="<?php echo htmlspecialchars(
+                                               $protocol . $baseurl . ($mod_rewrite ? '/' . $p_id : '/paste.php?id=' . $p_id),
+                                               ENT_QUOTES,
+                                               'UTF-8'
+                                           ); ?>" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
+                                               <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
+                                           </a>
+                                           <a class="delete-paste icon" href="<?php echo htmlspecialchars($protocol . $baseurl . '/' . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>" data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>" title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
+                                               <i class="bi bi-trash" aria-hidden="true"></i>
+                                           </a>
+                                           <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="hover focus" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted">
+                                               <i class="bi bi-clock"></i>
+                                           </button>
+                                       </p>
+                                       <?php
+                                   }
+                               }
+                           } catch (Exception $e) {
+                               echo '<p>Error fetching pastes: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
+                           }
+                       }
+                       ?>
+                   </div>
+               </div>
+           </div>
+       <?php else: ?>
+           <!-- Guest message -->
+           <div class="card mt-3" style="background:#399bff;">
+               <div class="card-body">
+                   <p class="text"><?php echo htmlspecialchars($lang['guestmsgtitle'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></p>
+                   <p class="text-body"><?php echo $lang['guestmsgbody']; ?></p>
+               </div>
+           </div>
+       <?php endif; ?>
+       <?php if (!isset($privatesite) || $privatesite !== 'on'): ?>
+           <!-- Recent Public Pastes -->
+           <div class="card mt-3">
+               <div class="card-header"><?php echo htmlspecialchars($lang['recentpastes'] ?? 'Recent Pastes', ENT_QUOTES, 'UTF-8'); ?></div>
+               <div class="card-body">
+                   <div class="list-group list-group-flush">
+                       <?php
+                       try {
+                           $pastes = getRecent($pdo, 10);
+                           if (empty($pastes)) {
+                               echo htmlspecialchars($lang['emptypastebin'] ?? 'No pastes found', ENT_QUOTES, 'UTF-8');
+                           } else {
+                               foreach ($pastes as $row) {
+                                   $title = (string) ($row['title'] ?? 'Untitled');
+                                   $p_id = (string) ($row['id'] ?? '');
+                                   $p_date = (string) ($row['date'] ?? '');
+                                   $p_time = (int) ($row['now_time'] ?? 0);
+                                   $p_time_ago = conTime(time() - $p_time);
+                                   $title = truncate($title, 6, 15);
+                                   ?>
+                                   <p class="mb-0">
+                                       <a href="<?php echo htmlspecialchars(
+                                           $protocol . $baseurl . ($mod_rewrite ? '/' . $p_id : '/paste.php?id=' . $p_id),
+                                           ENT_QUOTES,
+                                           'UTF-8'
+                                       ); ?>" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
+                                           <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
+                                       </a>
+                                       <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="hover focus" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
+                                           <i class="bi bi-clock"></i>
+                                       </button>
+                                   </p>
+                                   <?php
+                               }
+                           }
+                       } catch (Exception $e) {
+                           echo '<p>Error fetching recent pastes: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
+                       }
+                       ?>
+                   </div>
+               </div>
+           </div>
+       <?php endif; ?>
+       <?php if (!isset($_SESSION['username'])): ?>
+           <div class="text-center">
+               <?php echo htmlspecialchars($ads_1 ?? '', ENT_QUOTES, 'UTF-8'); ?>
+           </div>
+       <?php endif; ?>
+   </div>

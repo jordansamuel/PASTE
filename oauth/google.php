@@ -1,133 +1,127 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste <https://github.com/boxlabss/PASTE>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License in GPL.txt for more details.
-*/
-session_start();
+ */
+session_start([
+    'cookie_secure' => true,
+    'cookie_httponly' => true,
+    'use_strict_mode' => true,
+]);
 
-error_reporting(1);
+// Required functions and config
+require_once('../config.php');
+require_once('../includes/functions.php');
+require_once('../oauth/vendor/autoload.php');
 
-// required functions
-require_once ('../config.php');
-require_once ('../includes/functions.php');
-require_once 'Google/Client.php';
+use Google_Client;
+use Google_Service_Oauth2;
 
 // Current Date & User IP
 $date = date('jS F Y');
 $ip = $_SERVER['REMOTE_ADDR'];
 
+try {
+    // Use existing PDO connection from config.php
+    global $pdo;
+    if (!$pdo) {
+        throw new Exception("PDO connection not found. Check config.php.");
+    }
 
-// Database Connection
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-if (mysqli_connect_errno())
-{
-    die("Unable connect to database");
-}
+    // Initialize Google Client
+    $client = new Google_Client();
+    $client->setApplicationName(G_APPLICATION_NAME);
+    $client->setClientId(G_CLIENT_ID);
+    $client->setClientSecret(G_CLIENT_SECRET);
+    $client->setRedirectUri(G_REDIRECT_URI);
+    foreach (G_SCOPES as $scope) {
+        $client->addScope($scope);
+    }
 
-$client = new Google_Client();
-$client->setScopes(array(
-    "https://www.googleapis.com/auth/userinfo.profile",
-    "https://www.googleapis.com/auth/userinfo.email"
-));
+    // Handle OAuth callback
+    if (isset($_GET['code'])) {
+        $client->authenticate($_GET['code']);
+        $access_token = $client->getAccessToken();
+        $_SESSION['access_token'] = $access_token;
+        $refresh_token = $access_token['refresh_token'] ?? null;
 
+        // Get user info
+        $oauth2 = new Google_Service_Oauth2($client);
+        $user = $oauth2->userinfo->get();
+        $client_email = filter_var($user->email, FILTER_SANITIZE_EMAIL);
+        $client_name = filter_var($user->name, FILTER_SANITIZE_STRING);
+        $client_id = filter_var($user->id, FILTER_SANITIZE_STRING);
+        $client_pic = $user->picture;
 
-if (isset($_GET['code'])) {
-  $client->authenticate($_GET['code']);
-  $_SESSION['access_token'] = $client->getAccessToken();
-  $redirect = 'http://' . $_SERVER['HTTP_HOST'];
-  header('Location: ' . filter_var($redirect, FILTER_SANITIZE_URL));
-}
+        // Check if user exists
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE oauth_uid = ?");
+        $stmt->execute([$client_id]);
+        if ($stmt->rowCount() > 0) {
+            $row = $stmt->fetch();
+            $user_username = $row['username'];
+            $db_verified = $row['verified'];
 
-if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
-  $client->setAccessToken($_SESSION['access_token']);
-  $access_token = json_decode($_SESSION['access_token'], 1);
-  $access_token = $access_token['access_token'];
-  $resp = file_get_contents('https://www.googleapis.com/oauth2/v1/userinfo?access_token='.$access_token);
-  $user = json_decode($resp, 1);  
-  $client_email = filter_var($user['email'], FILTER_SANITIZE_EMAIL);
-  $client_name = filter_var($user['name'], FILTER_SANITIZE_STRING);
-  $client_id = filter_var($user['id']);
-  $client_plat = "Google";
-  $client_pic = $user['picture'];
-  $content = $user;
-  $token = $client->getAccessToken();
-} else {
-  $authUrl = $client->createAuthUrl();
-}
-if ($client->getAccessToken() && isset($_GET['url'])) {
+            if ($db_verified == "2") {
+                throw new Exception($lang['banned'] ?? "Your account has been suspended.");
+            }
 
-  $_SESSION['access_token'] = $client->getAccessToken();
-}
+            $_SESSION['username'] = $user_username;
+            $_SESSION['token'] = md5($row['id'] . $user_username);
+            $_SESSION['oauth_uid'] = $client_id;
+            $_SESSION['pic'] = $client_pic;
 
-if (isset($client_email))
-{
-$query = mysqli_query($con,"SELECT * FROM users WHERE oauth_uid='$client_id'");
-if(mysqli_num_rows($query) > 0){
-$query =  "SELECT * FROM users WHERE oauth_uid='$client_id'";
-  $result = mysqli_query($con,$query);
-  while($row = mysqli_fetch_array($result)) {
-  $user_username  = $row['username'];
-  $db_verified  = $row['verified'];
-  }
-    if ($db_verified == "2")
-  {
-    die("Your account has been suspended.");
-  }
-  else
-  {    
-  $_SESSION['username'] = $user_username;
-  $_SESSION['token'] = $token;
-  $_SESSION['oauth_uid'] = $client_id;
-  $_SESSION['pic'] = $client_pic;
-  
-  $old_user =1;
-  header("Location: ../");
-  exit();
-  }
+            // Update refresh token if available
+            if ($refresh_token) {
+                $stmt = $pdo->prepare("UPDATE users SET refresh_token = ? WHERE oauth_uid = ?");
+                $stmt->execute([$refresh_token, $client_id]);
+            }
 
-} else {
-   $new_user= 1;
-  #user not present.
-  $query =  "SELECT @last_id := MAX(id) FROM users";
-  $result = mysqli_query($con,$query);
-  while($row = mysqli_fetch_array($result)) {
-  $last_id =  $row['@last_id := MAX(id)'];
-  }
-  if ($last_id== "" || $last_id==null)
-  {
-      $username = "User1";
-  }
-  else
-  {
-      $last_id = $last_id+1;  
-      $username = "User$last_id";
-  }
-  $_SESSION['username'] = $username;
-  $_SESSION['token'] = $token;
-  $_SESSION['oauth_uid'] = $client_id;
-  $_SESSION['pic'] = $client_pic;
-  $query = "INSERT INTO users (oauth_uid,username,email_id,full_name,platform,password,verified,picture,date,ip) VALUES ('$client_id','$username','$client_email','$client_name','$client_plat','$password','1','$client_pic','$date','$ip')"; 
-  mysqli_query($con,$query); 
-  header("Location: ../oauth.php?new_user");
-  exit();
-}
+            header("Location: ../");
+            exit;
+        } else {
+            // Generate unique username
+            $username_base = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($client_name));
+            $username = $username_base;
+            $counter = 1;
+            while ($pdo->query("SELECT COUNT(*) FROM users WHERE username = '$username'")->fetchColumn() > 0) {
+                $username = $username_base . $counter++;
+            }
 
-}
-else
-{
-if(isset($_GET['login']))
-{
-header("Location: $authUrl");
-exit();
-}
+            $_SESSION['username'] = $username;
+            $_SESSION['token'] = md5(uniqid($client_id, true));
+            $_SESSION['oauth_uid'] = $client_id;
+            $_SESSION['pic'] = $client_pic;
+
+            // Insert new user
+            $stmt = $pdo->prepare("INSERT INTO users (oauth_uid, username, email_id, full_name, platform, password, verified, picture, date, ip, refresh_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$client_id, $username, $client_email, $client_name, 'Google', '', '1', $client_pic, $date, $ip, $refresh_token]);
+
+            header("Location: ../oauth.php?new_user=1");
+            exit;
+        }
+    } elseif (isset($_GET['login'])) {
+        header("Location: " . $client->createAuthUrl());
+        exit;
+    } else {
+        throw new Exception("Invalid OAuth request.");
+    }
+
+} catch (Google_Service_Exception $e) {
+    error_log("Google OAuth error in oauth/google.php: " . $e->getMessage());
+    header("Location: ../oauth.php?error=" . urlencode($lang['oauth_error'] ?? "OAuth authentication failed: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')));
+    exit;
+} catch (Exception $e) {
+    error_log("Error in oauth/google.php: " . $e->getMessage());
+    header("Location: ../oauth.php?error=" . urlencode($lang['oauth_error'] ?? "Error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')));
+    exit;
 }
 ?>
