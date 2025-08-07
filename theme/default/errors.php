@@ -19,7 +19,7 @@
         <div class="card">
           <?php if (isset($notfound)): ?>
             <div class="card-body text-center">
-              <i class="bi bi-exclamation-circle" style="font-size: 5rem; color: #f92672;"></i>
+              <i class="bi bi-exclamation-circle" style="font-size: 5rem; color: #0d6efd;"></i>
               <h1 class="mt-3"><?php echo htmlspecialchars($notfound); ?></h1>
               <div class="mt-4">
                 <a href="./" class="btn btn-primary">New Paste</a>
