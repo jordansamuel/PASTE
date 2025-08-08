@@ -13,10 +13,10 @@
         <div class="col-md-6">
             <h2 class="text-center mb-4"><?php echo htmlspecialchars($lang['login/register'] ?? 'Login / Register', ENT_QUOTES, 'UTF-8'); ?></h2>
             <?php if (isset($error)): ?>
-                <div class="alert alert-danger"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="alert alert-danger"><?php echo htmlspecialchars($error ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
             <?php if (isset($success)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="alert alert-success"><?php echo htmlspecialchars($success ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
 
             <?php if (isset($_GET['action']) && $_GET['action'] === 'reset' && isset($_GET['username']) && isset($_GET['code'])): ?>
@@ -25,7 +25,7 @@
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($lang['reset_password'] ?? 'Reset Password', ENT_QUOTES, 'UTF-8'); ?></h5>
                         <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=reset&username=' . urlencode($_GET['username']) . '&code=' . urlencode($_GET['code']), ENT_QUOTES, 'UTF-8'); ?>">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <div class="mb-3">
                                 <label for="password" class="form-label"><?php echo htmlspecialchars($lang['new_password'] ?? 'New Password', ENT_QUOTES, 'UTF-8'); ?></label>
                                 <input type="password" class="form-control" id="password" name="password" required>
@@ -40,7 +40,7 @@
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($lang['forgot_password'] ?? 'Forgot Password', ENT_QUOTES, 'UTF-8'); ?></h5>
                         <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=forgot', ENT_QUOTES, 'UTF-8'); ?>">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <div class="mb-3">
                                 <label for="email" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
                                 <input type="email" class="form-control" id="email" name="email" required>
@@ -55,7 +55,7 @@
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($lang['resend_verification'] ?? 'Resend Verification Email', ENT_QUOTES, 'UTF-8'); ?></h5>
                         <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=resend', ENT_QUOTES, 'UTF-8'); ?>">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <div class="mb-3">
                                 <label for="email" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
                                 <input type="email" class="form-control" id="email" name="email" required>
@@ -70,7 +70,7 @@
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8'); ?></h5>
                         <form action="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>" method="post">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signup" value="1">
                             <div class="mb-3">
                                 <label for="signupUsername" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
@@ -98,7 +98,7 @@
                     <div class="card-body">
                         <h5 class="card-title"><?php echo htmlspecialchars($lang['login'] ?? 'Login', ENT_QUOTES, 'UTF-8'); ?></h5>
                         <form action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>" method="post">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signin" value="1">
                             <div class="mb-3">
                                 <label for="username" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
