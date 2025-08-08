@@ -39,10 +39,10 @@ try {
     exit;
 }
 
-// Check Composer dependencies and critical files
+// Check critical files and Composer autoload
 $required_files = [
-    '../oauth/vendor/autoload.php' => ['google/apiclient:^2.12', 'league/oauth2-client'],
-    '../mail/vendor/autoload.php' => ['phpmailer/phpmailer'],
+    '../oauth/vendor/autoload.php' => ['google/apiclient:^2.12', 'league/oauth2-client:^2.6'],
+    '../mail/vendor/autoload.php' => ['phpmailer/phpmailer:^6.9'],
     '../theme/default/login.php' => [],
     '../oauth/google.php' => [],
     '../oauth/google_smtp.php' => [],
@@ -121,7 +121,7 @@ function ensureColumn($pdo, $table, $column, $expected_def, &$output, &$errors) 
             $errors[] = "Failed to add column $column to $table: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
             error_log("install.php: Failed to add column $column to $table: " . $e->getMessage());
         }
-    } elseif (strtolower($current_def['Type']) !== strtolower($expected_def)) {
+    } elseif (strtolower($current_def['Type']) !== strtolower(preg_replace('/^[^ ]+/', '', $expected_def))) {
         try {
             $pdo->exec("ALTER TABLE `$table` MODIFY COLUMN $column $expected_def");
             $output[] = "Modified column $column in $table to match expected definition.";
@@ -317,7 +317,6 @@ try {
 
     // Users table
     if (!tableExists($pdo, 'users')) {
-        $refresh_token_column = ($enablegoog === 'yes' || $enablefb === 'yes') ? ", refresh_token VARCHAR(255) DEFAULT NULL" : "";
         $pdo->exec("CREATE TABLE users (
             id INT NOT NULL AUTO_INCREMENT,
             oauth_uid VARCHAR(255),
@@ -329,8 +328,9 @@ try {
             verified ENUM('0', '1', '2') NOT NULL DEFAULT '0',
             picture VARCHAR(255) DEFAULT 'NONE',
             date DATETIME NOT NULL,
-            ip VARCHAR(45) NOT NULL
-            $refresh_token_column,
+            ip VARCHAR(45) NOT NULL,
+            refresh_token VARCHAR(255) DEFAULT NULL,
+            token VARCHAR(512) DEFAULT NULL,
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "users table created.";
@@ -346,9 +346,8 @@ try {
         ensureColumn($pdo, 'users', 'picture', 'VARCHAR(255) DEFAULT \'NONE\'', $output, $errors);
         ensureColumn($pdo, 'users', 'date', 'DATETIME NOT NULL', $output, $errors);
         ensureColumn($pdo, 'users', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
-        if ($enablegoog === 'yes' || $enablefb === 'yes') {
-            ensureColumn($pdo, 'users', 'refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
-        }
+        ensureColumn($pdo, 'users', 'refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'token', 'VARCHAR(512) DEFAULT NULL', $output, $errors);
     }
 
     // Ban user table
@@ -510,12 +509,14 @@ try {
     // Prepare post-installation message
     $post_install_message = 'Installation and schema update completed successfully. ';
     if ($enablegoog === 'yes') {
-        $post_install_message .= "Configure Google OAuth at <a href=\"https://console.developers.google.com\" target=\"_blank\">Google Cloud Console</a> with redirect URI: {$baseurl}oauth/google.php and scopes: userinfo.profile, userinfo.email. Update G_CLIENT_ID and G_CLIENT_SECRET in config.php. ";
+        $post_install_message .= "Configure Google OAuth at <a href=\"https://console.developers.google.com\" target=\"_blank\">Google Cloud Console</a> with redirect URI: {$baseurl}oauth/google.php and scopes: openid, userinfo.profile, userinfo.email. Update G_CLIENT_ID and G_CLIENT_SECRET in config.php. ";
     }
     if ($enablefb === 'yes') {
         $post_install_message .= "Configure Facebook OAuth at <a href=\"https://developers.facebook.com\" target=\"_blank\">Facebook Developer Portal</a> with redirect URI: {$baseurl}oauth/facebook.php. Update FB_APP_ID and FB_APP_SECRET in config.php. ";
     }
-    $post_install_message .= "Configure Gmail SMTP OAuth at <a href=\"https://console.developers.google.com\" target=\"_blank\">Google Cloud Console</a> with redirect URI: {$baseurl}oauth/google_smtp.php and scope: gmail.send. Set credentials in admin/configuration.php. ";
+    if ($enablesmtp === 'yes') {
+        $post_install_message .= "Configure Gmail SMTP OAuth at <a href=\"https://console.developers.google.com\" target=\"_blank\">Google Cloud Console</a> with redirect URI: {$baseurl}oauth/google_smtp.php and scope: gmail.send. Set credentials in admin/configuration.php. ";
+    }
     $post_install_message .= 'Remove the /install directory and set secure permissions on config.php (chmod 600 config.php). Proceed to the <a href="../" class="btn btn-primary">main site</a> or your <a href="../admin" class="btn btn-primary">dashboard</a>.';
 
     // Include any non-critical errors in the message
@@ -536,5 +537,7 @@ try {
     ob_end_clean();
     error_log("install.php: Unexpected error: " . $e->getMessage());
     echo json_encode(['status' => 'error', 'message' => 'Unexpected error: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')]);
+} finally {
+    $pdo = null;
 }
 ?>
