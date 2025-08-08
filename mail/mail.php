@@ -51,8 +51,8 @@ require_once __DIR__ . '/../oauth/vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\OAuth;
-use Google_Client;
-use Google_Service_Gmail;
+use Google\Client as Google_Client;
+use Google\Service\Gmail as Google_Service_Gmail;
 
 function send_mail(string $to, string $subject, string $message, string $name, string $csrf_token): array
 {

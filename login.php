@@ -47,7 +47,9 @@ $required_classes = [
 foreach ($required_classes as $class => $packages) {
     if (!class_exists($class)) {
         error_log("login.php: $class not found. Run: cd oauth && composer require $packages");
-        $error = $generic_error ?: "OAuth configuration error. Please contact the administrator.";
+        ob_end_clean();
+        header('Content-Type: text/html; charset=utf-8');
+        die($generic_error ?: "OAuth configuration error. Please contact the administrator.");
     }
 }
 
@@ -62,33 +64,36 @@ try {
 } catch (PDOException $e) {
     error_log("login.php: Database connection failed: " . $e->getMessage());
     ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
     die($generic_error ?: "Unable to connect to database: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 
-// Get site info (moved before logout block)
+// Get site info
 try {
     $stmt = $pdo->query("SELECT * FROM site_info WHERE id = 1");
     $site_info = $stmt->fetch();
     if ($site_info) {
-        $title = trim($site_info['title']);
-        $des = trim($site_info['des']);
-        $baseurl = trim($site_info['baseurl']);
-        $keyword = trim($site_info['keyword']);
-        $site_name = trim($site_info['site_name']);
-        $email = trim($site_info['email']);
-        $twit = trim($site_info['twit']);
-        $face = trim($site_info['face']);
-        $gplus = trim($site_info['gplus']);
-        $ga = trim($site_info['ga']);
-        $additional_scripts = trim($site_info['additional_scripts']);
+        $title = trim($site_info['title'] ?? '');
+        $des = trim($site_info['des'] ?? '');
+        $baseurl = trim($site_info['baseurl'] ?? '');
+        $keyword = trim($site_info['keyword'] ?? '');
+        $site_name = trim($site_info['site_name'] ?? '');
+        $email = trim($site_info['email'] ?? '');
+        $twit = trim($site_info['twit'] ?? '');
+        $face = trim($site_info['face'] ?? '');
+        $gplus = trim($site_info['gplus'] ?? '');
+        $ga = trim($site_info['ga'] ?? '');
+        $additional_scripts = trim($site_info['additional_scripts'] ?? '');
     } else {
         error_log("login.php: Site info not found");
         ob_end_clean();
+        header('Content-Type: text/html; charset=utf-8');
         die($generic_error ?: "Site info not found.");
     }
 } catch (PDOException $e) {
     error_log("login.php: Failed to fetch site info: " . $e->getMessage());
     ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
     die($generic_error ?: "Failed to fetch site info: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 $admin_mail = $email;
@@ -145,25 +150,37 @@ try {
     $stmt = $pdo->query("SELECT * FROM mail WHERE id = 1");
     $mail = $stmt->fetch();
     if ($mail) {
-        $verification = trim($mail['verification']);
-        $smtp_host = trim($mail['smtp_host']);
-        $smtp_user = trim($mail['smtp_username']);
-        $smtp_pass = trim($mail['smtp_password']);
-        $smtp_port = trim($mail['smtp_port']);
-        $smtp_protocol = trim($mail['protocol']);
-        $smtp_auth = trim($mail['auth']);
-        $smtp_sec = trim($mail['socket']);
-        $oauth_client_id = trim($mail['oauth_client_id']);
-        $oauth_client_secret = trim($mail['oauth_client_secret']);
-        $oauth_refresh_token = trim($mail['oauth_refresh_token']);
+        $required_fields = ['verification', 'smtp_host', 'smtp_username', 'smtp_password', 'smtp_port', 'protocol', 'auth', 'socket', 'oauth_client_id', 'oauth_client_secret', 'oauth_refresh_token'];
+        foreach ($required_fields as $field) {
+            if (!array_key_exists($field, $mail)) {
+                error_log("login.php: Missing required field '$field' in mail table");
+                ob_end_clean();
+                header('Content-Type: text/html; charset=utf-8');
+                die($generic_error ?: "Mail settings incomplete: Missing field '$field'. Please update the mail table.");
+            }
+        }
+        $verification = trim($mail['verification'] ?? '');
+        $smtp_host = trim($mail['smtp_host'] ?? '');
+        $smtp_user = trim($mail['smtp_username'] ?? '');
+        $smtp_pass = trim($mail['smtp_password'] ?? '');
+        $smtp_port = trim($mail['smtp_port'] ?? '');
+        $smtp_protocol = trim($mail['protocol'] ?? ''); // Fixed with null coalescing
+        $smtp_auth = trim($mail['auth'] ?? '');
+        $smtp_sec = trim($mail['socket'] ?? '');
+        $oauth_client_id = trim($mail['oauth_client_id'] ?? '');
+        $oauth_client_secret = trim($mail['oauth_client_secret'] ?? '');
+        $oauth_refresh_token = trim($mail['oauth_refresh_token'] ?? '');
+        $mail_type = $smtp_protocol; // Use protocol from mail table
     } else {
         error_log("login.php: Mail settings not found");
         ob_end_clean();
+        header('Content-Type: text/html; charset=utf-8');
         die($generic_error ?: "Mail settings not found.");
     }
 } catch (PDOException $e) {
     error_log("login.php: Failed to fetch mail settings: " . $e->getMessage());
     ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
     die($generic_error ?: "Failed to fetch mail settings: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 
@@ -172,16 +189,18 @@ try {
     $stmt = $pdo->query("SELECT * FROM interface WHERE id = 1");
     $interface = $stmt->fetch();
     if ($interface) {
-        $default_lang = trim($interface['lang']);
-        $default_theme = trim($interface['theme']);
+        $default_lang = trim($interface['lang'] ?? '');
+        $default_theme = trim($interface['theme'] ?? '');
     } else {
         error_log("login.php: Interface settings not found");
         ob_end_clean();
+        header('Content-Type: text/html; charset=utf-8');
         die($generic_error ?: "Interface settings not found.");
     }
 } catch (PDOException $e) {
     error_log("login.php: Failed to fetch interface settings: " . $e->getMessage());
     ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
     die($generic_error ?: "Failed to fetch interface settings: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 require_once("langs/$default_lang");
@@ -193,9 +212,9 @@ $p_title = $lang['login/register'] ?? 'Login / Register';
 try {
     $stmt = $pdo->query("SELECT * FROM ads WHERE id = 1");
     $ads = $stmt->fetch();
-    $text_ads = $ads ? trim($ads['text_ads']) : '';
-    $ads_1 = $ads ? trim($ads['ads_1']) : '';
-    $ads_2 = $ads ? trim($ads['ads_2']) : '';
+    $text_ads = $ads ? trim($ads['text_ads'] ?? '') : '';
+    $ads_1 = $ads ? trim($ads['ads_1'] ?? '') : '';
+    $ads_2 = $ads ? trim($ads['ads_2'] ?? '') : '';
 } catch (PDOException $e) {
     error_log("login.php: Failed to fetch ads: " . $e->getMessage());
     $text_ads = $ads_1 = $ads_2 = '';
@@ -204,6 +223,7 @@ try {
 // Check if IP is banned
 if (is_banned($pdo, $ip)) {
     ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
     die($lang['banned'] ?? 'You are banned.');
 }
 
@@ -306,7 +326,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'resend' && isset($_POST['emai
                     <a href='$verify_url' target='_self'>$verify_url</a> <br /><br />
                     After confirming your account, you can log in using your <b>$username</b> and the password you used when signing up.
                 ";
-                $mail_result = send_mail($email, $subject, $body, $admin_mail, $admin_name, $csrf_token);
+                $mail_result = send_mail($email, $subject, $body, $admin_name, $csrf_token);
                 if ($mail_result['status'] === 'success') {
                     $success = $lang['mail_suc'] ?? 'Verification email sent.';
                 } else {
@@ -348,7 +368,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'forgot' && isset($_POST['emai
                 <a href='$reset_url' target='_self'>$reset_url</a> <br /><br />
                 This link will expire in 1 hour.
             ";
-            $mail_result = send_mail($email, $subject, $body, $admin_mail, $admin_name, $csrf_token);
+            $mail_result = send_mail($email, $subject, $body, $admin_name, $csrf_token);
             if ($mail_result['status'] === 'success') {
                 $success = $lang['pass_change'] ?? 'Password reset link sent. Check your email.';
             } else {
@@ -469,7 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token']) && $_PO
                                     <a href='$verify_url' target='_self'>$verify_url</a> <br /><br />
                                     After confirming your account, you can log in using your <b>$username</b> and the password you used when signing up.
                                 ";
-                                $mail_result = send_mail($email, $subject, $body, $admin_mail, $admin_name, $csrf_token);
+                                $mail_result = send_mail($email, $subject, $body, $admin_name, $csrf_token);
                                 if ($mail_result['status'] !== 'success') {
                                     $error = $lang['mail_error'] ?? 'Failed to send verification email: ' . htmlspecialchars($mail_result['message'], ENT_QUOTES, 'UTF-8');
                                 }
@@ -521,6 +541,7 @@ if (isset($_GET['login']) && ($enablegoog === 'yes' || $enablefb === 'yes')) {
 
 // Theme
 ob_end_clean();
+header('Content-Type: text/html; charset=utf-8');
 require_once("theme/$default_theme/header.php");
 require_once("theme/$default_theme/login.php");
 require_once("theme/$default_theme/footer.php");
