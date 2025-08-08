@@ -1,11 +1,11 @@
 <?php
 /*
- * Paste <//github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
 ?>
 <div class="container mt-5">
@@ -19,60 +19,121 @@
                 <div class="alert alert-success"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
 
-            <?php if (isset($_GET['signup'])): ?>
+            <?php if (isset($_GET['action']) && $_GET['action'] === 'reset' && isset($_GET['username']) && isset($_GET['code'])): ?>
+                <!-- Password Reset Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo htmlspecialchars($lang['reset_password'] ?? 'Reset Password', ENT_QUOTES, 'UTF-8'); ?></h5>
+                        <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=reset&username=' . urlencode($_GET['username']) . '&code=' . urlencode($_GET['code']), ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <div class="mb-3">
+                                <label for="password" class="form-label"><?php echo htmlspecialchars($lang['new_password'] ?? 'New Password', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold w-100"><?php echo htmlspecialchars($lang['reset_password'] ?? 'Reset Password', ENT_QUOTES, 'UTF-8'); ?></button>
+                        </form>
+                    </div>
+                </div>
+            <?php elseif (isset($_GET['action']) && $_GET['action'] === 'forgot'): ?>
+                <!-- Forgot Password Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo htmlspecialchars($lang['forgot_password'] ?? 'Forgot Password', ENT_QUOTES, 'UTF-8'); ?></h5>
+                        <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=forgot', ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <div class="mb-3">
+                                <label for="email" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold w-100"><?php echo htmlspecialchars($lang['send_reset_link'] ?? 'Send Reset Link', ENT_QUOTES, 'UTF-8'); ?></button>
+                        </form>
+                    </div>
+                </div>
+            <?php elseif (isset($_GET['action']) && $_GET['action'] === 'resend'): ?>
+                <!-- Resend Verification Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo htmlspecialchars($lang['resend_verification'] ?? 'Resend Verification Email', ENT_QUOTES, 'UTF-8'); ?></h5>
+                        <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=resend', ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <div class="mb-3">
+                                <label for="email" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold w-100"><?php echo htmlspecialchars($lang['resend_verification'] ?? 'Resend Verification Email', ENT_QUOTES, 'UTF-8'); ?></button>
+                        </form>
+                    </div>
+                </div>
+            <?php elseif (isset($_GET['action']) && $_GET['action'] === 'signup'): ?>
                 <!-- Signup Form -->
-                <form action="login.php?signup" method="post">
-                    <div class="mb-3">
-                        <label for="signupUsername" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
-                        <input type="text" class="form-control" id="signupUsername" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8'); ?></h5>
+                        <form action="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="signup" value="1">
+                            <div class="mb-3">
+                                <label for="signupUsername" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="text" class="form-control" id="signupUsername" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="signupEmail" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="email" class="form-control" id="signupEmail" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="signupFullname" class="form-label"><?php echo htmlspecialchars($lang['full_name'] ?? 'Full Name', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="text" class="form-control" id="signupFullname" name="full" value="<?php echo htmlspecialchars($_POST['full'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="signupPassword" class="form-label"><?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="password" class="form-control" id="signupPassword" name="password" required>
+                            </div>
+                            <button type="submit" name="signup" class="btn btn-primary btn-lg fw-bold w-100"><?php echo htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8'); ?></button>
+                        </form>
                     </div>
-                    <div class="mb-3">
-                        <label for="signupEmail" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
-                        <input type="email" class="form-control" id="signupEmail" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="signupFullname" class="form-label"><?php echo htmlspecialchars($lang['full_name'] ?? 'Full Name', ENT_QUOTES, 'UTF-8'); ?></label>
-                        <input type="text" class="form-control" id="signupFullname" name="full" value="<?php echo htmlspecialchars($_POST['full'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="signupPassword" class="form-label"><?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?></label>
-                        <input type="password" class="form-control" id="signupPassword" name="password" required>
-                    </div>
-                    <button type="submit" name="signup" class="btn btn-primary btn-lg fw-bold btn-perky w-100"><?php echo htmlspecialchars($lang['signup'] ?? 'Sign Up', ENT_QUOTES, 'UTF-8'); ?></button>
-                </form>
+                </div>
             <?php else: ?>
                 <!-- Login Form -->
-                <form action="login.php" method="post">
-                    <div class="mb-3">
-                        <label for="username" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
-                        <input type="text" class="form-control" id="username" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo htmlspecialchars($lang['login'] ?? 'Login', ENT_QUOTES, 'UTF-8'); ?></h5>
+                        <form action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="signin" value="1">
+                            <div class="mb-3">
+                                <label for="username" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="text" class="form-control" id="username" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label"><?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?></label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <button type="submit" name="signin" class="btn btn-primary btn-lg fw-bold w-100"><?php echo htmlspecialchars($lang['login'] ?? 'Login', ENT_QUOTES, 'UTF-8'); ?></button>
+                        </form>
+                        <div class="mt-3 text-center">
+                            <a href="<?php echo htmlspecialchars($baseurl . 'login.php?action=forgot', ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lang['forgot_password'] ?? 'Forgot Password', ENT_QUOTES, 'UTF-8'); ?></a> |
+                            <a href="<?php echo htmlspecialchars($baseurl . 'login.php?action=resend', ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lang['resend_verification'] ?? 'Resend Verification', ENT_QUOTES, 'UTF-8'); ?></a> |
+                            <a href="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8'); ?></a>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label"><?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?></label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <button type="submit" name="signin" class="btn btn-primary btn-lg fw-bold btn-perky w-100"><?php echo htmlspecialchars($lang['login'] ?? 'Login', ENT_QUOTES, 'UTF-8'); ?></button>
-                </form>
-                <div class="mt-3 text-center">
-                    <a href="login.php?forgot"><?php echo htmlspecialchars($lang['forgot'] ?? 'Forgot Password', ENT_QUOTES, 'UTF-8'); ?></a> |
-                    <a href="login.php?resend"><?php echo htmlspecialchars($lang['resend'] ?? 'Resend Verification', ENT_QUOTES, 'UTF-8'); ?></a> |
-                    <a href="login.php?signup"><?php echo htmlspecialchars($lang['signup'] ?? 'Sign Up', ENT_QUOTES, 'UTF-8'); ?></a>
                 </div>
             <?php endif; ?>
 
             <?php if ($enablegoog == 'yes' || $enablefb == 'yes'): ?>
-                <div class="mt-3 text-center">
-                    <p><?php echo htmlspecialchars($lang['or_login_with'] ?? 'Or login with', ENT_QUOTES, 'UTF-8'); ?></p>
-                    <?php if ($enablegoog == 'yes'): ?>
-                        <a href="login.php?login=google" class="btn btn-danger btn-lg fw-bold btn-perky w-100 mb-2">
-                            <i class="bi bi-google"></i> <?php echo htmlspecialchars($lang['login_with_google'] ?? 'Login with Google', ENT_QUOTES, 'UTF-8'); ?>
-                        </a>
-                    <?php endif; ?>
-                    <?php if ($enablefb == 'yes'): ?>
-                        <a href="login.php?login=facebook" class="btn btn-primary btn-lg fw-bold btn-perky w-100">
-                            <i class="bi bi-facebook"></i> <?php echo htmlspecialchars($lang['login_with_facebook'] ?? 'Login with Facebook', ENT_QUOTES, 'UTF-8'); ?>
-                        </a>
-                    <?php endif; ?>
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <p><?php echo htmlspecialchars($lang['or_login_with'] ?? 'Or login with', ENT_QUOTES, 'UTF-8'); ?></p>
+                        <?php if ($enablegoog == 'yes'): ?>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'login.php?login=google', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-danger btn-lg fw-bold w-100 mb-2">
+                                <i class="bi bi-google"></i> <?php echo htmlspecialchars($lang['login_with_google'] ?? 'Login with Google', ENT_QUOTES, 'UTF-8'); ?>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($enablefb == 'yes'): ?>
+                            <a href="<?php echo htmlspecialchars($baseurl . 'login.php?login=facebook', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary btn-lg fw-bold w-100">
+                                <i class="bi bi-facebook"></i> <?php echo htmlspecialchars($lang['login_with_facebook'] ?? 'Login with Facebook', ENT_QUOTES, 'UTF-8'); ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
         </div>
@@ -98,5 +159,9 @@
     .alert {
         border-radius: 0.25rem;
     }
+    .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

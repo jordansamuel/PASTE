@@ -18,9 +18,10 @@ https://github.com/boxlabss/PASTE/issues/new
 
 Requirements
 ===
-* Apache 2.X / Nginx
-* PHP 7 (or later) with pdo-mysql [PHP8.4 recommended]
-* MySQL 5.x+
+ - PHP 7.4 or higher with `pdo_mysql`, `openssl`, and `curl` extensions
+  - MySQL or MariaDB
+  - Composer for dependency management
+  - Web server (e.g., Apache) with HTTPS enabled
 
 See docs/CHANGELOG
 ---
@@ -31,6 +32,36 @@ Install
 * Upload all files to a webfolder
 * Point your browser to http(s)://example.com/install
 * Input some settings, DELETE the install folder and you're ready to go.
+* To configure OAuth, first you need to use composer to install phpmailer and google api/oauth2 client
+  - Install Composer dependencies:
+    ```bash
+    cd /oauth
+    composer require google/apiclient:^2.12 league/oauth2-client:^2.7
+    cd /mail
+    composer require phpmailer/phpmailer:^6.9
+    ```
+   - Enter database details (host, name, user, password) and OAuth settings (enable or disable Google/Facebook).
+   - This generates `config.php` with dynamic `G_REDIRECT_URI` based on your domain.
+   
+ **Set Up Google OAuth for User Logins**:
+   - Go to [Google Cloud Console](https://console.developers.google.com).
+   - Create a project and enable the Google+ API.
+   - Create OAuth 2.0 credentials (Web application).
+   - Set the Authorized Redirect URI to: `<baseurl>oauth/google.php` (e.g., `https://yourdomain.com/oauth/google.php`), where `<baseurl>` is from `site_info.baseurl`.
+   - Update `config.php` with:
+     ```php
+     define('G_CLIENT_ID', 'your_client_id');
+     define('G_CLIENT_SECRET', 'your_client_secret');
+     ```
+   - Ensure `enablegoog` is set to `yes` in `config.php`.
+ **Set Up Gmail SMTP with OAuth2**:
+   - In [Google Cloud Console](https://console.developers.google.com), enable the Gmail API.
+   - Create or reuse OAuth 2.0 credentials.
+   - Set the Authorized Redirect URI to: `<baseurl>oauth/google_smtp.php` (e.g., `https://yourdomain.com/oauth/google_smtp.php`), where `<baseurl>` is from `site_info.baseurl`.
+   - Log in to `/admin/configuration.php` as an admin.
+   - Enter the Client ID and Client Secret under "Google OAuth 2.0 Setup for Gmail SMTP".
+   - Click "Authorize Gmail SMTP" to authenticate and save the refresh token in the `mail` table.
+   - Configure SMTP settings (host: `smtp.gmail.com`, port: `587`, socket: `tls`, auth: `true`, protocol: `2`).
 
 Development setup
 ===
