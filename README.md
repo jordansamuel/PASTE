@@ -21,7 +21,7 @@ Requirements
  - PHP 7.4 or higher with `pdo_mysql`, `openssl`, and `curl` extensions
   - MySQL or MariaDB
   - Composer for dependency management
-  - Web server (e.g., Apache) with HTTPS enabled
+  - Web server (e.g., Apache/Nginx) with HTTPS enabled (if OAuth enabled as below)
 
 See docs/CHANGELOG
 ---
@@ -104,12 +104,12 @@ Set mod_rewrite in config.php to 1
 
 For Apache, just use .htaccess
 
-For Nginx, use the example config in **[docs/nginx.example.conf](https://github.com/jordansamuel/PASTE/blob/HEAD/docs/nginx.example.conf)**
+For Nginx, use the example config in **[docs/nginx.example.conf](https://github.com/boxlabss/PASTE/blob/HEAD/docs/nginx.example.conf)**
 
 ---
 Changelog
 ===
-See **[docs/CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/HEAD/docs/CHANGELOG.md)**
+See **[docs/CHANGELOG.md](https://github.com/boxlabss/PASTE/blob/HEAD/docs/CHANGELOG.md)**
 
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
@@ -122,25 +122,6 @@ However, this relies on the value of post_max_size in your PHP configuration fil
 // The value we got on installation of Paste was: post_max_size = 1G
 // Otherwise, the maximum value that can be set is 4000 (4GB)
 $pastelimit = "1"; // 0.5 = 512 kilobytes, 1 = 1MB
-```
-
-To enable registration with OAUTH see this block in config.php
-
-```php
-// OAUTH (to enable, change to yes and edit)
-$enablefb = "no";
-$enablegoog = "no";
-
-// "CHANGE THIS" = Replace with your details
-// Facebook
-define('FB_APP_ID', 'CHANGE THIS'); // Your application ID, see https://developers.facebook.com/docs/apps/register
-define('FB_APP_SECRET', 'CHANGE THIS');    // What's your Secret key
-
-// Google 
-define('G_Client_ID', 'CHANGE THIS'); // Get a Client ID from https://console.developers.google.com/projectselector/apis/library
-define('G_Client_Secret', 'CHANGE THIS'); // What's your Secret ID
-define('G_Redirect_Uri', 'http://urltoyour/installation/oauth/google.php'); // Leave this as is
-define('G_Application_Name', 'Paste'); // Make sure this matches the name of your application
 ```
 
 Everything else can be configured using the admin panel.

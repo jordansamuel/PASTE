@@ -142,8 +142,8 @@ if (!is_dir($tmp_dir)) {
                             <div class="col-md-6">
                                 <label for="enablegoog" class="form-label">Enable Google OAuth User Logins</label>
                                 <select class="form-select" id="enablegoog" name="enablegoog">
-                                    <option value="no">No</option>
-                                    <option value="yes" selected>Yes</option>
+                                    <option value="no" selected>No</option>
+                                    <option value="yes">Yes</option>
                                 </select>
                                 <small class="form-text text-muted">Enabling Google OAuth requires Google Cloud Console setup. HTTPS is recommended for security.</small>
                             </div>
