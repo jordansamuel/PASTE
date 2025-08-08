@@ -19,33 +19,34 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
 // Check required PHP extensions
-$required_extensions = ['pdo_mysql'];
-$optional_extensions = ['openssl', 'curl'];
+$required_extensions = ['pdo_mysql', 'openssl', 'curl'];
 $missing_required = array_filter($required_extensions, fn($ext) => !extension_loaded($ext));
 if (!empty($missing_required)) {
     ob_end_clean();
     error_log("configure.php: Missing required PHP extensions: " . implode(', ', $missing_required));
     echo json_encode([
         'status' => 'error',
-        'message' => 'Missing required PHP extensions: ' . implode(', ', $missing_required) . '. Please enable them in php.ini.'
+        'message' => 'Missing required PHP extensions: ' . implode(', ', $missing_required) . '. Enable them in php.ini.'
     ]);
     exit;
 }
 
-// Check optional extensions for OAuth/SMTP
-$missing_optional = array_filter($optional_extensions, fn($ext) => !extension_loaded($ext));
-$optional_warning = !empty($missing_optional) ? 'Warning: Missing optional extensions (' . implode(', ', $missing_optional) . ') required for OAuth/SMTP.' : '';
-
-// Get and sanitize POST data
-$dbhost = isset($_POST['data_host']) ? htmlspecialchars(trim($_POST['data_host']), ENT_QUOTES, 'UTF-8') : '';
-$dbname = isset($_POST['data_name']) ? htmlspecialchars(trim($_POST['data_name']), ENT_QUOTES, 'UTF-8') : '';
-$dbuser = isset($_POST['data_user']) ? htmlspecialchars(trim($_POST['data_user']), ENT_QUOTES, 'UTF-8') : '';
-$dbpassword = isset($_POST['data_pass']) ? htmlspecialchars($_POST['data_pass'], ENT_QUOTES, 'UTF-8') : '';
+// Sanitize and validate POST data
+$dbhost = isset($_POST['data_host']) ? filter_var(trim($_POST['data_host']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
+$dbname = isset($_POST['data_name']) ? filter_var(trim($_POST['data_name']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
+$dbuser = isset($_POST['data_user']) ? filter_var(trim($_POST['data_user']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
+$dbpassword = isset($_POST['data_pass']) ? $_POST['data_pass'] : ''; // Password may contain special chars
 $enablegoog = isset($_POST['enablegoog']) && $_POST['enablegoog'] === 'yes' ? 'yes' : 'no';
 $enablefb = isset($_POST['enablefb']) && $_POST['enablefb'] === 'yes' ? 'yes' : 'no';
 $enablesmtp = isset($_POST['enablesmtp']) && $_POST['enablesmtp'] === 'yes' ? 'yes' : 'no';
 
-error_log("configure.php: Received POST data - dbhost: $dbhost, dbname: $dbname, dbuser: $dbuser, enablegoog: $enablegoog, enablefb: $enablefb, enablesmtp: $enablesmtp");
+// Validate database name (alphanumeric and underscore only)
+if (!preg_match('/^[a-zA-Z0-9_]+$/', $dbname)) {
+    ob_end_clean();
+    error_log("configure.php: Invalid database name: $dbname");
+    echo json_encode(['status' => 'error', 'message' => 'Database name must be alphanumeric with underscores only.']);
+    exit;
+}
 
 if (empty($dbhost) || empty($dbname) || empty($dbuser)) {
     ob_end_clean();
@@ -79,16 +80,35 @@ try {
     exit;
 }
 
-// Calculate redirect URI
+// Calculate redirect URI for OAuth
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-$redirect_uri = $protocol . $_SERVER['SERVER_NAME'] . $base_path . '/login.php';
+$base_path = rtrim(dirname($_SERVER['SCRIPT_NAME'], 2), '/\\'); // Adjust for /install directory
+$baseurl = $protocol . $_SERVER['SERVER_NAME'] . $base_path . '/';
+$redirect_uri = $baseurl . 'oauth/google.php';
 $https_warning = ($enablegoog === 'yes' || $enablefb === 'yes') && $protocol === 'http://' ? 'Warning: OAuth is enabled without HTTPS. This is insecure and may cause issues with OAuth providers.' : '';
 
 // Check permissions
 $config_file = '../config.php';
 $parent_dir = dirname($config_file);
+$tmp_dir = '../tmp';
 $current_user = posix_getpwuid(posix_geteuid())['name'] ?? 'unknown';
+$web_user = $_SERVER['USER'] ?? 'www-data'; // Default to common web server user
+
+// Ensure tmp directory exists
+if (!is_dir($tmp_dir)) {
+    if (!mkdir($tmp_dir, 0775, true)) {
+        ob_end_clean();
+        error_log("configure.php: Failed to create tmp directory: $tmp_dir");
+        echo json_encode([
+            'status' => 'error',
+            'message' => "Failed to create tmp directory: $tmp_dir. Run: <code>mkdir -p " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chmod 775 " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . "</code>"
+        ]);
+        exit;
+    }
+    error_log("configure.php: Created tmp directory: $tmp_dir");
+}
+
+// Check parent directory permissions
 $dir_stat = stat($parent_dir);
 $dir_owner = posix_getpwuid($dir_stat['uid'])['name'] ?? 'unknown';
 $dir_group = posix_getgrgid($dir_stat['gid'])['name'] ?? 'unknown';
@@ -99,7 +119,7 @@ if (!is_writable($parent_dir)) {
     error_log("configure.php: Parent directory is not writable: $parent_dir (owner: $dir_owner, group: $dir_group, permissions: $dir_perms, current user: $current_user)");
     echo json_encode([
         'status' => 'error',
-        'message' => 'Parent directory is not writable. Ensure write permissions (e.g., chmod 775 ' . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . ').'
+        'message' => "Parent directory is not writable: $parent_dir. Run: <code>chmod 775 " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code>"
     ]);
     exit;
 }
@@ -113,7 +133,7 @@ if (file_exists($config_file) && !is_writable($config_file)) {
     error_log("configure.php: config.php exists but is not writable (owner: $file_owner, group: $file_group, permissions: $file_perms, current user: $current_user)");
     echo json_encode([
         'status' => 'error',
-        'message' => 'config.php exists but is not writable. Check permissions (e.g., chmod 644 config.php).'
+        'message' => "config.php exists but is not writable. Run: <code>chmod 644 " . htmlspecialchars($config_file, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($config_file, ENT_QUOTES, 'UTF-8') . "</code>"
     ]);
     exit;
 }
@@ -130,46 +150,26 @@ $config_content = <<<EOD
  * See LICENCE for details.
  */
 
-\$currentversion = 2.2;
+\$currentversion = 3.0;
 \$pastelimit = "10"; // 10 MB
 
 // OAuth settings (for signups)
 \$enablefb = "$enablefb";
 \$enablegoog = "$enablegoog";
-EOD;
+\$enablesmtp = "$enablesmtp";
 
-if ($enablefb === 'yes') {
-    $config_content .= <<<EOD
-
-define('FB_APP_ID', '');
-define('FB_APP_SECRET', '');
 EOD;
-}
 
 if ($enablegoog === 'yes') {
     $config_content .= <<<EOD
-
 define('G_CLIENT_ID', '');
 define('G_CLIENT_SECRET', '');
 define('G_REDIRECT_URI', '$redirect_uri');
 define('G_APPLICATION_NAME', 'Paste');
 define('G_SCOPES', [
     'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://mail.google.com/'
+    'https://www.googleapis.com/auth/userinfo.email'
 ]);
-EOD;
-}
-
-// SMTP settings
-$config_content .= "\n\n// SMTP settings\n";
-$config_content .= "\$enablesmtp = \"$enablesmtp\";\n";
-if ($enablesmtp === 'yes') {
-    $config_content .= <<<EOD
-define('SMTP_HOST', 'smtp.gmail.com');
-define('SMTP_PORT', '587');
-define('SMTP_AUTH', 'true');
-define('SMTP_SOCKET', 'tls');
 EOD;
 }
 
@@ -187,6 +187,9 @@ $config_content .= <<<EOD
 define('SECRET', \$sec_key);
 
 \$mod_rewrite = "0";
+
+// Optional: Enable SMTP debug logging
+// define('SMTP_DEBUG', true);
 
 // GeSHi formats
 \$geshiformats = [
@@ -434,31 +437,27 @@ EOD;
 if (file_put_contents($config_file, $config_content, LOCK_EX) === false) {
     ob_end_clean();
     error_log("configure.php: Failed to write config.php");
-    echo json_encode(['status' => 'error', 'message' => 'Failed to write config.php. Check directory and file permissions.']);
+    echo json_encode(['status' => 'error', 'message' => "Failed to write config.php. Run: <code>chmod 775 " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code>"]);
     exit;
 }
 
+// Set config.php permissions
+chmod($config_file, 0600);
 error_log("configure.php: Successfully wrote config.php");
 
 // Prepare success message
-$success_message = 'Configuration saved successfully.';
-if ($enablegoog === 'yes' || $enablefb === 'yes' || $enablesmtp === 'yes') {
-    $success_message .= ' Install required Composer dependencies:<br><code>';
-    if ($enablegoog === 'yes' || $enablefb === 'yes') {
-        $success_message .= 'cd oauth && composer require google/apiclient:^2.12 league/oauth2-client';
-    }
-    if ($enablesmtp === 'yes') {
-        $success_message .= ($enablegoog === 'yes' || $enablefb === 'yes' ? ' && ' : '') . 'cd mail && composer require phpmailer/phpmailer';
-    }
-    $success_message .= '</code><br>';
+$success_message = 'Configuration saved successfully. Proceed above with your admin account and click submit to install the database.<br>';
+if ($enablegoog === 'yes' || $enablefb === 'yes') {
+    $success_message .= 'Install OAuth dependencies: <code>cd oauth && composer require google/apiclient:^2.12 league/oauth2-client</code><br>';
 }
-if ($optional_warning) {
-    $success_message .= $optional_warning . '<br>';
+$success_message .= 'Install SMTP dependencies: <code>cd mail && composer require phpmailer/phpmailer</code><br>';
+if ($enablesmtp === 'yes') {
+    $success_message .= 'SMTP enabled. Configure SMTP settings in admin panel after installation.<br>';
 }
 if ($https_warning) {
     $success_message .= $https_warning . '<br>';
 }
-$success_message .= 'Proceed to configure the admin account.';
+$success_message .= 'Ensure HTTPS is enabled for secure OAuth redirects.';
 
 // Clean output buffer and send success response
 ob_end_clean();

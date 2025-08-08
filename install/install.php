@@ -39,34 +39,37 @@ try {
     exit;
 }
 
-// Check Composer dependencies if OAuth or SMTP is enabled
-$required_packages = [];
-if ($enablegoog === 'yes' || $enablefb === 'yes') {
-    $required_packages['../oauth/vendor/autoload.php'] = ['google/apiclient:^2.12', 'league/oauth2-client'];
-}
-if ($enablesmtp === 'yes') {
-    $required_packages['../mail/vendor/autoload.php'] = ['phpmailer/phpmailer'];
-}
-foreach ($required_packages as $autoload_file => $packages) {
-    if (!file_exists($autoload_file)) {
+// Check Composer dependencies and critical files
+$required_files = [
+    '../oauth/vendor/autoload.php' => ['google/apiclient:^2.12', 'league/oauth2-client'],
+    '../mail/vendor/autoload.php' => ['phpmailer/phpmailer'],
+    '../theme/default/login.php' => [],
+    '../oauth/google.php' => [],
+    '../oauth/google_smtp.php' => [],
+    '../mail/mail.php' => []
+];
+foreach ($required_files as $file => $packages) {
+    if (!file_exists($file)) {
         ob_end_clean();
-        error_log("install.php: Missing Composer dependencies in " . dirname($autoload_file));
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'Missing Composer dependencies. Run: <code>cd ' . dirname($autoload_file) . ' && composer require ' . implode(' ', $packages) . '</code>'
-        ]);
+        $message = empty($packages) ? "Missing required file: $file" : "Missing Composer dependencies in " . dirname($file) . ". Run: <code>cd " . dirname($file) . " && composer require " . implode(' ', $packages) . "</code>";
+        error_log("install.php: $message");
+        echo json_encode(['status' => 'error', 'message' => $message]);
         exit;
     }
 }
 
-function sanitizeInput($input) {
-    return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
-}
-
 // Sanitize input
-$admin_user = isset($_POST['admin_user']) ? sanitizeInput($_POST['admin_user']) : '';
+$admin_user = isset($_POST['admin_user']) ? filter_var(trim($_POST['admin_user']), FILTER_SANITIZE_STRING) : '';
 $admin_pass = isset($_POST['admin_pass']) ? password_hash($_POST['admin_pass'], PASSWORD_DEFAULT) : '';
 $date = date('Y-m-d H:i:s');
+
+// Validate admin credentials
+if (empty($admin_user) || empty($_POST['admin_pass'])) {
+    ob_end_clean();
+    error_log("install.php: Missing admin user or password");
+    echo json_encode(['status' => 'error', 'message' => 'Please provide both admin username and password.']);
+    exit;
+}
 
 // Connect to database using PDO
 try {
@@ -138,35 +141,31 @@ try {
     if (!tableExists($pdo, 'admin')) {
         $pdo->exec("CREATE TABLE admin (
             id INT NOT NULL AUTO_INCREMENT,
-            user VARCHAR(250) NOT NULL,
+            user VARCHAR(250) NOT NULL UNIQUE,
             pass VARCHAR(250) NOT NULL,
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "admin table created.";
     } else {
         ensureColumn($pdo, 'admin', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
-        ensureColumn($pdo, 'admin', 'user', 'VARCHAR(250) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'admin', 'user', 'VARCHAR(250) NOT NULL UNIQUE', $output, $errors);
         ensureColumn($pdo, 'admin', 'pass', 'VARCHAR(250) NOT NULL', $output, $errors);
     }
     
     // Check and insert admin user
-    if ($admin_user && $admin_pass) {
-        try {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM admin WHERE user = :user");
-            $stmt->execute(['user' => $admin_user]);
-            if ($stmt->fetchColumn() == 0) {
-                $stmt = $pdo->prepare("INSERT INTO admin (user, pass) VALUES (:user, :pass)");
-                $stmt->execute(['user' => $admin_user, 'pass' => $admin_pass]);
-                $output[] = "Admin user inserted.";
-            } else {
-                $output[] = "Admin user already exists, skipping insertion.";
-            }
-        } catch (PDOException $e) {
-            $errors[] = "Failed to insert admin user: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-            error_log("install.php: Admin user insertion failed: " . $e->getMessage());
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM admin WHERE user = :user");
+        $stmt->execute(['user' => $admin_user]);
+        if ($stmt->fetchColumn() == 0) {
+            $stmt = $pdo->prepare("INSERT INTO admin (user, pass) VALUES (:user, :pass)");
+            $stmt->execute(['user' => $admin_user, 'pass' => $admin_pass]);
+            $output[] = "Admin user inserted.";
+        } else {
+            $output[] = "Admin user already exists, skipping insertion.";
         }
-    } else {
-        $errors[] = "No admin user or password provided, skipping admin insertion.";
+    } catch (PDOException $e) {
+        $errors[] = "Failed to insert admin user: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        error_log("install.php: Admin user insertion failed: " . $e->getMessage());
     }
 
     // Admin history table
@@ -207,10 +206,10 @@ try {
             VALUES (:title, :des, :keyword, :site_name, :email, :twit, :face, :gplus, :ga, :additional_scripts, :baseurl)");
         $stmt->execute([
             'title' => 'Paste',
-            'des' => 'Paste can store text, source code or sensitive data for a set period of time.',
+            'des' => 'Paste can store text, source code, or sensitive data for a set period of time.',
             'keyword' => 'paste,pastebin.com,pastebin,text,paste,online paste',
             'site_name' => 'Paste',
-            'email' => '',
+            'email' => 'admin@yourdomain.com',
             'twit' => 'https://twitter.com/',
             'face' => 'https://www.facebook.com/',
             'gplus' => 'https://plus.google.com/',
@@ -233,11 +232,10 @@ try {
         ensureColumn($pdo, 'site_info', 'additional_scripts', 'TEXT', $output, $errors);
         ensureColumn($pdo, 'site_info', 'baseurl', 'TEXT NOT NULL', $output, $errors);
 
-        // Update existing baseurl to include trailing slash
         try {
             $stmt = $pdo->prepare("UPDATE site_info SET baseurl = :baseurl WHERE id = 1");
             $stmt->execute(['baseurl' => $baseurl]);
-            $output[] = "Updated baseurl in site_info to include trailing slash.";
+            $output[] = "Updated baseurl in site_info.";
         } catch (PDOException $e) {
             $errors[] = "Failed to update baseurl in site_info: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
             error_log("install.php: Failed to update baseurl in site_info: " . $e->getMessage());
@@ -260,14 +258,6 @@ try {
         ensureColumn($pdo, 'site_permissions', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
         ensureColumn($pdo, 'site_permissions', 'disableguest', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
         ensureColumn($pdo, 'site_permissions', 'siteprivate', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
-
-        $stmt = $pdo->query("SELECT COUNT(*) FROM site_permissions WHERE id = 1");
-        if ($stmt->fetchColumn() == 0) {
-            $pdo->exec("INSERT INTO site_permissions (id, disableguest, siteprivate) VALUES (1, 'off', 'off')");
-            $output[] = "Site permissions inserted.";
-        } else {
-            $output[] = "Site permissions already exist, skipping insertion.";
-        }
     }
 
     // Interface table
@@ -331,13 +321,13 @@ try {
         $pdo->exec("CREATE TABLE users (
             id INT NOT NULL AUTO_INCREMENT,
             oauth_uid VARCHAR(255),
-            username VARCHAR(255) NOT NULL,
-            email_id VARCHAR(255),
-            full_name VARCHAR(255),
-            platform VARCHAR(50),
-            password VARCHAR(255),
-            verified VARCHAR(10) NOT NULL DEFAULT '0',
-            picture TEXT,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            email_id VARCHAR(255) NOT NULL,
+            full_name VARCHAR(255) NOT NULL,
+            platform VARCHAR(50) NOT NULL,
+            password VARCHAR(255) DEFAULT '',
+            verified ENUM('0', '1', '2') NOT NULL DEFAULT '0',
+            picture VARCHAR(255) DEFAULT 'NONE',
             date DATETIME NOT NULL,
             ip VARCHAR(45) NOT NULL
             $refresh_token_column,
@@ -347,13 +337,13 @@ try {
     } else {
         ensureColumn($pdo, 'users', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
         ensureColumn($pdo, 'users', 'oauth_uid', 'VARCHAR(255)', $output, $errors);
-        ensureColumn($pdo, 'users', 'username', 'VARCHAR(255) NOT NULL', $output, $errors);
-        ensureColumn($pdo, 'users', 'email_id', 'VARCHAR(255)', $output, $errors);
-        ensureColumn($pdo, 'users', 'full_name', 'VARCHAR(255)', $output, $errors);
-        ensureColumn($pdo, 'users', 'platform', 'VARCHAR(50)', $output, $errors);
-        ensureColumn($pdo, 'users', 'password', 'VARCHAR(255)', $output, $errors);
-        ensureColumn($pdo, 'users', 'verified', 'VARCHAR(10) NOT NULL DEFAULT \'0\'', $output, $errors);
-        ensureColumn($pdo, 'users', 'picture', 'TEXT', $output, $errors);
+        ensureColumn($pdo, 'users', 'username', 'VARCHAR(50) NOT NULL UNIQUE', $output, $errors);
+        ensureColumn($pdo, 'users', 'email_id', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'full_name', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'platform', 'VARCHAR(50) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'password', 'VARCHAR(255) DEFAULT \'\'', $output, $errors);
+        ensureColumn($pdo, 'users', 'verified', 'ENUM(\'0\', \'1\', \'2\') NOT NULL DEFAULT \'0\'', $output, $errors);
+        ensureColumn($pdo, 'users', 'picture', 'VARCHAR(255) DEFAULT \'NONE\'', $output, $errors);
         ensureColumn($pdo, 'users', 'date', 'DATETIME NOT NULL', $output, $errors);
         ensureColumn($pdo, 'users', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
         if ($enablegoog === 'yes' || $enablefb === 'yes') {
@@ -381,39 +371,37 @@ try {
         $pdo->exec("CREATE TABLE mail (
             id INT NOT NULL AUTO_INCREMENT,
             verification VARCHAR(20) NOT NULL DEFAULT 'enabled',
-            smtp_host VARCHAR(255)" . ($enablesmtp === 'yes' ? " DEFAULT 'smtp.gmail.com'" : "") . ",
+            smtp_host VARCHAR(255) DEFAULT '',
             smtp_username VARCHAR(255) DEFAULT '',
             smtp_password VARCHAR(255) DEFAULT '',
-            smtp_port VARCHAR(10)" . ($enablesmtp === 'yes' ? " DEFAULT '587'" : "") . ",
+            smtp_port VARCHAR(10) DEFAULT '',
             protocol VARCHAR(20) NOT NULL DEFAULT '2',
             auth VARCHAR(20) NOT NULL DEFAULT 'true',
             socket VARCHAR(20) NOT NULL DEFAULT 'tls',
-            oauth_client_id VARCHAR(255) NOT NULL DEFAULT '',
-            oauth_client_secret VARCHAR(255) NOT NULL DEFAULT '',
-            oauth_refresh_token VARCHAR(255) NOT NULL DEFAULT '',
+            oauth_client_id VARCHAR(255) DEFAULT NULL,
+            oauth_client_secret VARCHAR(255) DEFAULT NULL,
+            oauth_refresh_token VARCHAR(255) DEFAULT NULL,
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "mail table created.";
 
-        $smtp_values = $enablesmtp === 'yes'
-            ? "'enabled', 'smtp.gmail.com', '', '', '587', '2', 'true', 'tls', '', '', ''"
-            : "'enabled', '', '', '', '', '2', 'true', 'tls', '', '', ''";
+        $smtp_values = "'enabled', 'smtp.gmail.com', '', '', '587', '2', 'true', 'tls', NULL, NULL, NULL";
         $pdo->exec("INSERT INTO mail (verification, smtp_host, smtp_username, smtp_password, smtp_port, protocol, auth, socket, oauth_client_id, oauth_client_secret, oauth_refresh_token) 
             VALUES ($smtp_values)");
-        $output[] = "Mail settings inserted" . ($enablesmtp === 'yes' ? " with Gmail SMTP defaults." : ".");
+        $output[] = "Mail settings inserted with Gmail SMTP defaults.";
     } else {
         ensureColumn($pdo, 'mail', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
         ensureColumn($pdo, 'mail', 'verification', 'VARCHAR(20) NOT NULL DEFAULT \'enabled\'', $output, $errors);
-        ensureColumn($pdo, 'mail', 'smtp_host', 'VARCHAR(255)' . ($enablesmtp === 'yes' ? " DEFAULT 'smtp.gmail.com'" : ""), $output, $errors);
+        ensureColumn($pdo, 'mail', 'smtp_host', 'VARCHAR(255) DEFAULT \'\'', $output, $errors);
         ensureColumn($pdo, 'mail', 'smtp_username', 'VARCHAR(255) DEFAULT \'\'', $output, $errors);
         ensureColumn($pdo, 'mail', 'smtp_password', 'VARCHAR(255) DEFAULT \'\'', $output, $errors);
-        ensureColumn($pdo, 'mail', 'smtp_port', 'VARCHAR(10)' . ($enablesmtp === 'yes' ? " DEFAULT '587'" : ""), $output, $errors);
+        ensureColumn($pdo, 'mail', 'smtp_port', 'VARCHAR(10) DEFAULT \'\'', $output, $errors);
         ensureColumn($pdo, 'mail', 'protocol', 'VARCHAR(20) NOT NULL DEFAULT \'2\'', $output, $errors);
         ensureColumn($pdo, 'mail', 'auth', 'VARCHAR(20) NOT NULL DEFAULT \'true\'', $output, $errors);
         ensureColumn($pdo, 'mail', 'socket', 'VARCHAR(20) NOT NULL DEFAULT \'tls\'', $output, $errors);
-        ensureColumn($pdo, 'mail', 'oauth_client_id', 'VARCHAR(255) NOT NULL DEFAULT \'\'', $output, $errors);
-        ensureColumn($pdo, 'mail', 'oauth_client_secret', 'VARCHAR(255) NOT NULL DEFAULT \'\'', $output, $errors);
-        ensureColumn($pdo, 'mail', 'oauth_refresh_token', 'VARCHAR(255) NOT NULL DEFAULT \'\'', $output, $errors);
+        ensureColumn($pdo, 'mail', 'oauth_client_id', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
+        ensureColumn($pdo, 'mail', 'oauth_client_secret', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
+        ensureColumn($pdo, 'mail', 'oauth_refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
     }
 
     // Pages table
@@ -522,15 +510,13 @@ try {
     // Prepare post-installation message
     $post_install_message = 'Installation and schema update completed successfully. ';
     if ($enablegoog === 'yes') {
-        $post_install_message .= 'Configure Google OAuth at <a href="https://console.developers.google.com" target="_blank">Google Cloud Console</a> with redirect URI: ' . htmlspecialchars($redirect_uri, ENT_QUOTES, 'UTF-8') . ' and scopes: userinfo.profile, userinfo.email, mail.google.com. Update G_CLIENT_ID and G_CLIENT_SECRET in config.php. ';
+        $post_install_message .= "Configure Google OAuth at <a href=\"https://console.developers.google.com\" target=\"_blank\">Google Cloud Console</a> with redirect URI: {$baseurl}oauth/google.php and scopes: userinfo.profile, userinfo.email. Update G_CLIENT_ID and G_CLIENT_SECRET in config.php. ";
     }
     if ($enablefb === 'yes') {
-        $post_install_message .= 'Configure Facebook OAuth at <a href="https://developers.facebook.com" target="_blank">Facebook Developer Portal</a> with redirect URI: ' . htmlspecialchars($redirect_uri, ENT_QUOTES, 'UTF-8') . '. Update FB_APP_ID and FB_APP_SECRET in config.php. ';
+        $post_install_message .= "Configure Facebook OAuth at <a href=\"https://developers.facebook.com\" target=\"_blank\">Facebook Developer Portal</a> with redirect URI: {$baseurl}oauth/facebook.php. Update FB_APP_ID and FB_APP_SECRET in config.php. ";
     }
-    if ($enablesmtp === 'yes') {
-        $post_install_message .= 'Configure SMTP settings in admin/configuration.php. ';
-    }
-    $post_install_message .= 'Remove the /install directory and set secure permissions on config.php (e.g., chmod 600 config.php). Proceed to the <a href="../" class="btn btn-primary">main site</a> or your <a href="../admin" class="btn btn-primary">dashboard</a>.';
+    $post_install_message .= "Configure Gmail SMTP OAuth at <a href=\"https://console.developers.google.com\" target=\"_blank\">Google Cloud Console</a> with redirect URI: {$baseurl}oauth/google_smtp.php and scope: gmail.send. Set credentials in admin/configuration.php. ";
+    $post_install_message .= 'Remove the /install directory and set secure permissions on config.php (chmod 600 config.php). Proceed to the <a href="../" class="btn btn-primary">main site</a> or your <a href="../admin" class="btn btn-primary">dashboard</a>.';
 
     // Include any non-critical errors in the message
     if (!empty($errors)) {

@@ -30,6 +30,15 @@ foreach ($required_extensions as $ext) {
 foreach ($optional_extensions as $ext) {
     $extension_status[$ext] = extension_loaded($ext) ? 'Enabled' : 'Missing (required for OAuth/SMTP)';
 }
+
+// Ensure tmp directory exists
+$tmp_dir = '../tmp';
+$web_user = $_SERVER['USER'] ?? 'www-data';
+if (!is_dir($tmp_dir)) {
+    if (!mkdir($tmp_dir, 0775, true)) {
+        die("Failed to create tmp directory: $tmp_dir. Run: <code>mkdir -p " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chmod 775 " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . "</code>");
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -62,7 +71,7 @@ foreach ($optional_extensions as $ext) {
                                     <th>PHP Version</th>
                                     <td>
                                         <span class="badge <?php echo $php_ok ? 'bg-success' : 'bg-danger'; ?>">
-                                            <?php echo $php_version; ?>
+                                            <?php echo htmlspecialchars($php_version); ?>
                                         </span>
                                         <?php if (!$php_ok): ?>
                                             <br><small class="text-danger">PHP 7.0 or higher is required. Please upgrade your PHP version.</small>
@@ -81,17 +90,20 @@ foreach ($optional_extensions as $ext) {
                                     </tr>
                                 <?php endforeach; ?>
                                 <tr>
-                                    <th>File</th>
+                                    <th>File/Directory</th>
                                     <th>Status</th>
                                 </tr>
                                 <?php
                                 $files = ['../config.php', '../tmp/temp.tdata', '../sitemap.xml'];
                                 foreach ($files as $filename) {
                                     echo "<tr><td>" . htmlspecialchars(basename($filename)) . "</td>";
-                                    if (is_writable($filename) || (!file_exists($filename) && is_writable(dirname($filename)))) {
+                                    $dir = dirname($filename);
+                                    if (!is_dir($dir)) {
+                                        echo '<td><span class="badge bg-danger">Directory Missing</span> Run: <code>mkdir -p ' . htmlspecialchars($dir, ENT_QUOTES, 'UTF-8') . ' && chmod 775 ' . htmlspecialchars($dir, ENT_QUOTES, 'UTF-8') . ' && chown ' . htmlspecialchars($web_user, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($dir, ENT_QUOTES, 'UTF-8') . '</code></td>';
+                                    } elseif (is_writable($filename) || (!file_exists($filename) && is_writable($dir))) {
                                         echo '<td><span class="badge bg-success">Writable</span></td>';
                                     } else {
-                                        echo '<td><span class="badge bg-danger">Not Writable</span></td>';
+                                        echo '<td><span class="badge bg-danger">Not Writable</span> Run: <code>chmod 644 ' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . ' && chown ' . htmlspecialchars($web_user, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '</code></td>';
                                     }
                                     echo "</tr>";
                                 }
@@ -149,7 +161,7 @@ foreach ($optional_extensions as $ext) {
                                     <option value="no" selected>No</option>
                                     <option value="yes">Yes</option>
                                 </select>
-                                <small class="form-text text-muted">Enabling SMTP requires Gmail API setup or SMTP credentials.</small>
+                                <small class="form-text text-muted">Enabling SMTP requires Gmail API setup or SMTP credentials. Configure in admin panel after installation.</small>
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary w-100">Configure</button>
@@ -157,7 +169,7 @@ foreach ($optional_extensions as $ext) {
                         </form>
                         <?php if (!$php_ok): ?>
                             <div class="alert alert-warning">
-                                Installation is disabled because your PHP version (<?php echo $php_version; ?>) is too low. Please upgrade to PHP 7.0 or higher.
+                                Installation is disabled because your PHP version (<?php echo htmlspecialchars($php_version); ?>) is too low. Please upgrade to PHP 7.0 or higher.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -216,7 +228,7 @@ foreach ($optional_extensions as $ext) {
 
     <div class="row footer">
         <div class="col-md-6 text-start">
-            <a href="https://github.com/jordansamuel/PASTE">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues">Bugs</a>
+            <a href="https://github.com/boxlabss/PASTE">Updates</a> &mdash; <a href="https://github.com/boxlabss/PASTE/issues">Bugs</a>
         </div>
         <div class="col-md-6 text-end">
             Powered by <a href="https://phpaste.sourceforge.io/" target="_blank">Paste 3</a>

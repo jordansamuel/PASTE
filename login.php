@@ -1,31 +1,55 @@
 <?php
-/*
- * Paste <//github.com/jordansamuel/PASTE>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
- */
 declare(strict_types=1);
-
+/*
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
+ *
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
+ */
 ob_start(); // Start output buffering
+
 session_start([
-    'cookie_secure' => true,
+    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
     'cookie_httponly' => true,
     'use_strict_mode' => true,
 ]);
+
+// Production settings
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+define('PRODUCTION', false); // Toggle for production mode
+$generic_error = PRODUCTION ? "Server error. Please try again later." : null;
 
 // Required functions
 require_once('config.php');
 require_once('includes/password.php');
 require_once('includes/functions.php');
 require_once('mail/mail.php');
+
+// Check OAuth dependencies
+$oauth_autoloader = __DIR__ . '/oauth/vendor/autoload.php';
+if (!file_exists($oauth_autoloader)) {
+    $message = "OAuth autoloader not found. Run: <code>cd oauth && composer require google/apiclient:^2.12 league/oauth2-client:^2.7 league/oauth2-google:^4.0</code>";
+    error_log("login.php: $message");
+    ob_end_clean();
+    header('Content-Type: text/html; charset=utf-8');
+    die($generic_error ?: $message);
+}
+require_once $oauth_autoloader;
+
+// Verify required OAuth classes
+$required_classes = [
+    'Google_Client' => 'google/apiclient:^2.12',
+    'League\OAuth2\Client\Provider\Google' => 'league/oauth2-client:^2.7 league/oauth2-google:^4.0'
+];
+foreach ($required_classes as $class => $packages) {
+    if (!class_exists($class)) {
+        error_log("login.php: $class not found. Run: cd oauth && composer require $packages");
+        $error = $generic_error ?: "OAuth configuration error. Please contact the administrator.";
+    }
+}
 
 // Start database connection
 try {
@@ -36,27 +60,12 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
-    error_log("Database connection failed: " . $e->getMessage());
-    die("Unable to connect to database: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    error_log("login.php: Database connection failed: " . $e->getMessage());
+    ob_end_clean();
+    die($generic_error ?: "Unable to connect to database: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 
-// Current Date & User IP
-$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
-$ip = $_SERVER['REMOTE_ADDR'];
-$tmp_dir = 'tmp';
-$tmp_file = "$tmp_dir/temp.tdata";
-if (!is_dir($tmp_dir) && !mkdir($tmp_dir, 0755, true)) {
-    error_log("Failed to create tmp directory");
-}
-$data_ip = file_exists($tmp_file) ? file_get_contents($tmp_file) : '';
-
-// Check if already logged in
-if (isset($_SESSION['token'])) {
-    header("Location: ./");
-    exit;
-}
-
-// Get site info
+// Get site info (moved before logout block)
 try {
     $stmt = $pdo->query("SELECT * FROM site_info WHERE id = 1");
     $site_info = $stmt->fetch();
@@ -73,15 +82,63 @@ try {
         $ga = trim($site_info['ga']);
         $additional_scripts = trim($site_info['additional_scripts']);
     } else {
-        error_log("Site info not found");
-        die("Site info not found.");
+        error_log("login.php: Site info not found");
+        ob_end_clean();
+        die($generic_error ?: "Site info not found.");
     }
 } catch (PDOException $e) {
-    error_log("Failed to fetch site info: " . $e->getMessage());
-    die("Failed to fetch site info: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    error_log("login.php: Failed to fetch site info: " . $e->getMessage());
+    ob_end_clean();
+    die($generic_error ?: "Failed to fetch site info: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 $admin_mail = $email;
 $admin_name = $site_name;
+
+// Current Date & User IP
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
+$ip = $_SERVER['REMOTE_ADDR'];
+$tmp_dir = 'tmp';
+$tmp_file = "$tmp_dir/temp.tdata";
+if (!is_dir($tmp_dir) && !mkdir($tmp_dir, 0755, true)) {
+    error_log("login.php: Failed to create tmp directory");
+}
+
+// Generate or verify CSRF token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
+
+// Logout
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    error_log("login.php: Pre-logout session: " . json_encode($_SESSION));
+    if (ob_get_length() > 0) {
+        error_log("login.php: Output buffer content before logout redirect: " . ob_get_contents());
+    }
+    $_SESSION = [];
+    unset($_SESSION['token']);
+    unset($_SESSION['oauth_uid']);
+    unset($_SESSION['username']);
+    unset($_SESSION['platform']);
+    unset($_SESSION['id']);
+    unset($_SESSION['oauth2state']);
+    session_regenerate_id(true);
+    session_destroy();
+    ob_end_clean();
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('Location: ' . $baseurl);
+    error_log("login.php: Redirecting to $baseurl after logout");
+    exit;
+}
+
+// Check if already logged in (skip for logout action)
+if (isset($_SESSION['token']) && !(isset($_GET['action']) && $_GET['action'] === 'logout')) {
+    ob_end_clean();
+    header("Location: ./");
+    exit;
+}
 
 // Email information
 try {
@@ -96,14 +153,18 @@ try {
         $smtp_protocol = trim($mail['protocol']);
         $smtp_auth = trim($mail['auth']);
         $smtp_sec = trim($mail['socket']);
-        $mail_type = $smtp_protocol; // Use protocol from mail table
+        $oauth_client_id = trim($mail['oauth_client_id']);
+        $oauth_client_secret = trim($mail['oauth_client_secret']);
+        $oauth_refresh_token = trim($mail['oauth_refresh_token']);
     } else {
-        error_log("Mail settings not found");
-        die("Mail settings not found.");
+        error_log("login.php: Mail settings not found");
+        ob_end_clean();
+        die($generic_error ?: "Mail settings not found.");
     }
 } catch (PDOException $e) {
-    error_log("Failed to fetch mail settings: " . $e->getMessage());
-    die("Failed to fetch mail settings: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    error_log("login.php: Failed to fetch mail settings: " . $e->getMessage());
+    ob_end_clean();
+    die($generic_error ?: "Failed to fetch mail settings: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 
 // Set theme and language
@@ -114,12 +175,14 @@ try {
         $default_lang = trim($interface['lang']);
         $default_theme = trim($interface['theme']);
     } else {
-        error_log("Interface settings not found");
-        die("Interface settings not found.");
+        error_log("login.php: Interface settings not found");
+        ob_end_clean();
+        die($generic_error ?: "Interface settings not found.");
     }
 } catch (PDOException $e) {
-    error_log("Failed to fetch interface settings: " . $e->getMessage());
-    die("Failed to fetch interface settings: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+    error_log("login.php: Failed to fetch interface settings: " . $e->getMessage());
+    ob_end_clean();
+    die($generic_error ?: "Failed to fetch interface settings: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 require_once("langs/$default_lang");
 
@@ -134,12 +197,13 @@ try {
     $ads_1 = $ads ? trim($ads['ads_1']) : '';
     $ads_2 = $ads ? trim($ads['ads_2']) : '';
 } catch (PDOException $e) {
-    error_log("Failed to fetch ads: " . $e->getMessage());
+    error_log("login.php: Failed to fetch ads: " . $e->getMessage());
     $text_ads = $ads_1 = $ads_2 = '';
 }
 
 // Check if IP is banned
 if (is_banned($pdo, $ip)) {
+    ob_end_clean();
     die($lang['banned'] ?? 'You are banned.');
 }
 
@@ -155,7 +219,8 @@ try {
         $last_date = $page_view['date'];
 
         if ($last_date == $date) {
-            if (str_contains_polyfill($data_ip, $ip)) {
+            $data_ip = file_exists($tmp_file) ? file_get_contents($tmp_file) : '';
+            if (str_contains($data_ip, $ip)) {
                 $last_tpage = (int) $page_view['tpage'];
                 $last_tpage += 1;
                 $stmt = $pdo->prepare("UPDATE page_view SET tpage = ? WHERE id = ?");
@@ -170,7 +235,7 @@ try {
                 if (is_writable($tmp_dir)) {
                     file_put_contents($tmp_file, $data_ip . "\r\n" . $ip);
                 } else {
-                    error_log("Cannot write to $tmp_file: directory not writable");
+                    error_log("login.php: Cannot write to $tmp_file: directory not writable");
                 }
             }
         } else {
@@ -183,7 +248,7 @@ try {
             if (is_writable($tmp_dir)) {
                 file_put_contents($tmp_file, $ip);
             } else {
-                error_log("Cannot write to $tmp_file: directory not writable");
+                error_log("login.php: Cannot write to $tmp_file: directory not writable");
             }
         }
     } else {
@@ -192,50 +257,61 @@ try {
         if (is_writable($tmp_dir)) {
             file_put_contents($tmp_file, $ip);
         } else {
-            error_log("Cannot write to $tmp_file: directory not writable");
+            error_log("login.php: Cannot write to $tmp_file: directory not writable");
         }
     }
 } catch (PDOException $e) {
-    error_log("Failed to update page views: " . $e->getMessage());
+    error_log("login.php: Failed to update page views: " . $e->getMessage());
 }
 
-// Logout
-if (isset($_GET['logout'])) {
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
-    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $baseurl));
-    exit;
+// Verify email
+if (isset($_GET['action']) && $_GET['action'] === 'verify' && isset($_GET['code']) && isset($_GET['username'])) {
+    $username = filter_var(trim($_GET['username']), FILTER_SANITIZE_SPECIAL_CHARS);
+    $code = filter_var(trim($_GET['code']), FILTER_SANITIZE_SPECIAL_CHARS);
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND verification_code = ?");
+        $stmt->execute([$username, $code]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $stmt = $pdo->prepare("UPDATE users SET verified = '1', verification_code = NULL WHERE username = ?");
+            $stmt->execute([$username]);
+            $success = $lang['email_verified'] ?? 'Email verified successfully. You can now log in.';
+        } else {
+            $error = $lang['invalid_code'] ?? 'Invalid verification code or username.';
+        }
+    } catch (PDOException $e) {
+        error_log("login.php: Verification error: " . $e->getMessage());
+        $error = $generic_error ?: "Verification error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    }
 }
 
 // Resend verification
-if (isset($_GET['resend']) && isset($_POST['email'])) {
-    $email = htmlentities(trim($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');
+if (isset($_GET['action']) && $_GET['action'] === 'resend' && isset($_POST['email']) && isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) {
+    $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email_id = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         if ($user) {
-            if ($user['verified'] == '0') {
+            if ($user['verified'] === '0') {
                 $username = $user['username'];
-                $db_email_id = $user['email_id'];
                 $db_full_name = $user['full_name'];
-                $protocol = paste_protocol();
-                $verify_url = $protocol . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/verify.php?username=$username&code=" . hash('sha256', '4et4$55765' . $db_email_id . 'd94ereg');
-                $sent_mail = $email;
+                $verification_code = bin2hex(random_bytes(16));
+                $stmt = $pdo->prepare("UPDATE users SET verification_code = ? WHERE email_id = ?");
+                $stmt->execute([$verification_code, $email]);
+                $verify_url = $baseurl . "login.php?action=verify&username=" . urlencode($username) . "&code=" . urlencode($verification_code);
                 $subject = $lang['mail_acc_con'] ?? 'Account Confirmation';
                 $body = "
-                    Hello $db_full_name, Please verify your account by clicking the link below.<br /><br />
-                    <a href='$verify_url' target='_self'>$verify_url</a> <br /> <br />
-                    After confirming your account you can log in using your <b>$username</b> and the password you used when signing up.
+                    Hello $db_full_name, please verify your account by clicking the link below.<br /><br />
+                    <a href='$verify_url' target='_self'>$verify_url</a> <br /><br />
+                    After confirming your account, you can log in using your <b>$username</b> and the password you used when signing up.
                 ";
-                if ($mail_type == '1') {
-                    default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
+                $mail_result = send_mail($email, $subject, $body, $admin_mail, $admin_name, $csrf_token);
+                if ($mail_result['status'] === 'success') {
+                    $success = $lang['mail_suc'] ?? 'Verification email sent.';
                 } else {
-                    smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
+                    $error = $lang['mail_error'] ?? 'Failed to send verification email: ' . htmlspecialchars($mail_result['message'], ENT_QUOTES, 'UTF-8');
                 }
-                $success = $lang['mail_suc'] ?? 'Verification email sent.';
             } else {
                 $error = $lang['email_ver'] ?? 'Email already verified.';
             }
@@ -243,56 +319,87 @@ if (isset($_GET['resend']) && isset($_POST['email'])) {
             $error = $lang['email_not'] ?? 'Email not found.';
         }
     } catch (PDOException $e) {
-        $error = "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        error_log("login.php: Resend verification error: " . $e->getMessage());
+        $error = $generic_error ?: "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    } catch (Exception $e) {
+        error_log("login.php: Error generating verification code: " . $e->getMessage());
+        $error = $generic_error ?: "Error generating verification code: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     }
 }
 
 // Forgot password
-if (isset($_GET['forgot']) && isset($_POST['email'])) {
-    $email = htmlentities(trim($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');
+if (isset($_GET['action']) && $_GET['action'] === 'forgot' && isset($_POST['email']) && isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) {
+    $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email_id = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         if ($user) {
             $username = $user['username'];
-            $new_pass = bin2hex(random_bytes(8));
-            $new_pass_hash = password_hash($new_pass, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE username = ?");
-            $stmt->execute([$new_pass_hash, $username]);
-            $success = $lang['pass_change'] ?? 'Password reset successful. Check your email.';
-            $sent_mail = $email;
+            $reset_code = bin2hex(random_bytes(16));
+            $reset_expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            $stmt = $pdo->prepare("UPDATE users SET reset_code = ?, reset_expiry = ? WHERE email_id = ?");
+            $stmt->execute([$reset_code, $reset_expiry, $email]);
+            $reset_url = $baseurl . "login.php?action=reset&username=" . urlencode($username) . "&code=" . urlencode($reset_code);
             $subject = "$site_name Password Reset";
             $body = "
                 Hello, <br /><br />
-                Your new password is: $new_pass <br /> <br />
-                You can now login and change your password.
+                To reset your password, click the link below:<br /><br />
+                <a href='$reset_url' target='_self'>$reset_url</a> <br /><br />
+                This link will expire in 1 hour.
             ";
-            if ($mail_type == '1') {
-                default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
+            $mail_result = send_mail($email, $subject, $body, $admin_mail, $admin_name, $csrf_token);
+            if ($mail_result['status'] === 'success') {
+                $success = $lang['pass_change'] ?? 'Password reset link sent. Check your email.';
             } else {
-                smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
+                $error = $lang['mail_error'] ?? 'Failed to send password reset email: ' . htmlspecialchars($mail_result['message'], ENT_QUOTES, 'UTF-8');
             }
         } else {
-            sleep(rand(0, 2));
-            $success = $lang['pass_change'] ?? 'Password reset successful. Check your email.';
+            sleep(rand(0, 2)); // Prevent timing attacks
+            $success = $lang['pass_change'] ?? 'Password reset link sent. Check your email.';
         }
     } catch (PDOException $e) {
-        $error = "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        error_log("login.php: Forgot password error: " . $e->getMessage());
+        $error = $generic_error ?: "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     } catch (Exception $e) {
-        $error = "Error generating password: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        error_log("login.php: Error generating reset code: " . $e->getMessage());
+        $error = $generic_error ?: "Error generating reset code: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+// Reset password
+if (isset($_GET['action']) && $_GET['action'] === 'reset' && isset($_GET['username']) && isset($_GET['code']) && isset($_POST['password']) && isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) {
+    $username = filter_var(trim($_GET['username']), FILTER_SANITIZE_SPECIAL_CHARS);
+    $code = filter_var(trim($_GET['code']), FILTER_SANITIZE_SPECIAL_CHARS);
+    $new_password = $_POST['password'];
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND reset_code = ? AND reset_expiry > ?");
+        $stmt->execute([$username, $code, $date]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $new_pass_hash = password_hash($new_password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("UPDATE users SET password = ?, reset_code = NULL, reset_expiry = NULL WHERE username = ?");
+            $stmt->execute([$new_pass_hash, $username]);
+            $success = $lang['pass_reset'] ?? 'Password reset successful. You can now log in.';
+        } else {
+            $error = $lang['invalid_code'] ?? 'Invalid or expired reset code.';
+        }
+    } catch (PDOException $e) {
+        error_log("login.php: Password reset error: " . $e->getMessage());
+        $error = $generic_error ?: "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
     }
 }
 
 // Form processing
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) {
     if (isset($_SESSION['token'])) {
+        ob_end_clean();
         header("Location: ./");
         exit;
     }
     // Login
     if (isset($_POST['signin'])) {
-        $username = htmlentities(trim($_POST['username'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $username = filter_var(trim($_POST['username'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $password = $_POST['password'] ?? '';
         if ($username && $password) {
             try {
@@ -302,9 +409,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user) {
                     if (password_verify($password, $user['password'])) {
                         if ($user['verified'] === '1') {
-                            $_SESSION['token'] = hash('sha256', $user['id'] . $username . random_bytes(16));
+                            $new_token = bin2hex(random_bytes(32));
+                            $stmt = $pdo->prepare("UPDATE users SET token = ? WHERE username = ?");
+                            $stmt->execute([$new_token, $username]);
+                            $_SESSION['token'] = $new_token;
                             $_SESSION['oauth_uid'] = $user['oauth_uid'];
                             $_SESSION['username'] = $username;
+                            ob_end_clean();
                             header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $baseurl));
                             exit;
                         } elseif ($user['verified'] === '2') {
@@ -319,7 +430,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = $lang['incorrect'] ?? 'Incorrect username or password.';
                 }
             } catch (PDOException $e) {
-                $error = "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+                error_log("login.php: Login error: " . $e->getMessage());
+                $error = $generic_error ?: "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
             }
         } else {
             $error = $lang['missingfields'] ?? 'Please fill in all fields.';
@@ -327,10 +439,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     // Register
     if (isset($_POST['signup'])) {
-        $username = htmlentities(trim($_POST['username'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $username = filter_var(trim($_POST['username'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $password = $_POST['password'] ?? '';
-        $email = htmlentities(trim($_POST['email'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $full_name = htmlentities(trim($_POST['full'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $email = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+        $full_name = filter_var(trim($_POST['full'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         if ($username && $password && $email && $full_name) {
             if (isValidUsername($username)) {
                 try {
@@ -346,31 +458,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $password_hash = password_hash($password, PASSWORD_DEFAULT);
                             $verified = $verification === 'disabled' ? '1' : '0';
-                            $stmt = $pdo->prepare("INSERT INTO users (oauth_uid, username, email_id, full_name, platform, password, verified, picture, date, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->execute(['0', $username, $email, $full_name, 'Direct', $password_hash, $verified, 'NONE', $date, $ip]);
+                            $verification_code = $verification === 'disabled' ? null : bin2hex(random_bytes(16));
+                            $stmt = $pdo->prepare("INSERT INTO users (oauth_uid, username, email_id, full_name, platform, password, verified, picture, date, ip, verification_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute(['0', $username, $email, $full_name, 'Direct', $password_hash, $verified, 'NONE', $date, $ip, $verification_code]);
                             if ($verification !== 'disabled') {
-                                $protocol = paste_protocol();
-                                $verify_url = $protocol . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/verify.php?username=$username&code=" . hash('sha256', '4et4$55765' . $email . 'd94ereg');
-                                $sent_mail = $email;
+                                $verify_url = $baseurl . "login.php?action=verify&username=" . urlencode($username) . "&code=" . urlencode($verification_code);
                                 $subject = $lang['mail_acc_con'] ?? 'Account Confirmation';
                                 $body = "
-                                    Hello $full_name, Your $site_name account has been created. Please verify your account by clicking the link below.<br /><br />
-                                    <a href='$verify_url' target='_self'>$verify_url</a> <br /> <br />
-                                    After confirming your account you can log in using your <b>$username</b> and the password you used when signing up.
+                                    Hello $full_name, your $site_name account has been created. Please verify your account by clicking the link below.<br /><br />
+                                    <a href='$verify_url' target='_self'>$verify_url</a> <br /><br />
+                                    After confirming your account, you can log in using your <b>$username</b> and the password you used when signing up.
                                 ";
-                                if ($mail_type == '1') {
-                                    default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
-                                } else {
-                                    smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
+                                $mail_result = send_mail($email, $subject, $body, $admin_mail, $admin_name, $csrf_token);
+                                if ($mail_result['status'] !== 'success') {
+                                    $error = $lang['mail_error'] ?? 'Failed to send verification email: ' . htmlspecialchars($mail_result['message'], ENT_QUOTES, 'UTF-8');
                                 }
                             }
-                            $success = $lang['registered'] ?? 'Registration successful.';
-                            header('Location: login.php');
-                            exit;
+                            if (!isset($error)) {
+                                $success = $lang['registered'] ?? 'Registration successful.' . ($verification !== 'disabled' ? ' Please check your email to verify your account.' : '');
+                                ob_end_clean();
+                                header('Location: login.php');
+                                exit;
+                            }
                         }
                     }
                 } catch (PDOException $e) {
-                    $error = "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+                    error_log("login.php: Registration error: " . $e->getMessage());
+                    $error = $generic_error ?: "Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+                } catch (Exception $e) {
+                    error_log("login.php: Error generating verification code: " . $e->getMessage());
+                    $error = $generic_error ?: "Error generating verification code: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
                 }
             } else {
                 $error = $lang['usrinvalid'] ?? 'Invalid username. Use only letters, numbers, .#$';
@@ -382,18 +499,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Handle GET signup
-if (isset($_GET['signup'])) {
+if (isset($_GET['action']) && $_GET['action'] === 'signup') {
     $p_title = $lang['login/register'] ?? 'Login / Register';
 }
 
 // OAuth handling
-if (isset($_GET['login']) && ($enablegoog == 'yes' || $enablefb == 'yes')) {
-    require_once('theme/default/oauth.php');
+if (isset($_GET['login']) && ($enablegoog === 'yes' || $enablefb === 'yes')) {
+    if ($_GET['login'] === 'google' && $enablegoog === 'yes') {
+        ob_end_clean();
+        header("Location: oauth/google.php?login=1");
+        exit;
+    } elseif ($_GET['login'] === 'facebook' && $enablefb === 'yes') {
+        ob_end_clean();
+        header("Location: oauth/facebook.php?login=1");
+        exit;
+    } else {
+        error_log("login.php: Invalid OAuth provider or disabled in config");
+        $error = $generic_error ?: "Invalid OAuth provider or disabled in config.";
+    }
 }
 
 // Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/login.php');
-require_once('theme/' . $default_theme . '/footer.php');
-ob_end_flush();
+ob_end_clean();
+require_once("theme/$default_theme/header.php");
+require_once("theme/$default_theme/login.php");
+require_once("theme/$default_theme/footer.php");
 ?>
