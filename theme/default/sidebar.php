@@ -10,7 +10,7 @@
 declare(strict_types=1);
 ?>
 <!-- Sidebar -->
-<div class="col-lg-2 mt-4 mt-lg-0">
+<div class="col-lg-12">
     <?php if (isset($_SESSION['username'])): ?>
         <!-- My Pastes -->
         <div class="card mt-3">
@@ -58,7 +58,7 @@ declare(strict_types=1);
                                         <a class="delete-paste icon" href="<?php echo htmlspecialchars($baseurl . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>" data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>" title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                         </a>
-                                        <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="hover focus" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted">
+                                        <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted">
                                             <i class="bi bi-clock"></i>
                                         </button>
                                     </p>
@@ -73,7 +73,7 @@ declare(strict_types=1);
                 </div>
             </div>
         </div>
-    <?php else: ?>
+    <?php elseif (!isset($privatesite) || $privatesite !== 'on'): ?>
         <!-- Guest message -->
         <div class="card mt-3" style="background:#399bff;">
             <div class="card-body">
@@ -110,7 +110,7 @@ declare(strict_types=1);
                                     ); ?>" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                         <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
                                     </a>
-                                    <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="hover focus" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
+                                    <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted">
                                         <i class="bi bi-clock"></i>
                                     </button>
                                 </p>
@@ -125,7 +125,7 @@ declare(strict_types=1);
             </div>
         </div>
     <?php endif; ?>
-    <?php if (!isset($_SESSION['username'])): ?>
+    <?php if (!isset($_SESSION['username']) && (!isset($privatesite) || $privatesite !== 'on')): ?>
         <div class="text-center">
             <?php echo $ads_1 ?? ''; ?>
         </div>
