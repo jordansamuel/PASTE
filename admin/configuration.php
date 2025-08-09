@@ -356,10 +356,7 @@ try {
                                             </div>
                                             <div class="form-group">
                                                 <label class="col-sm-2 control-label form-label">Domain name</label>
-                                                <div class="col-sm-1" style="padding:5px;">
-                                                    <span class="badge"><?php echo isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://'; ?></span>
-                                                </div>
-                                                <div class="col-sm-5">
+                                                <div class="col-sm-10">
                                                     <input type="text" class="form-control" name="baseurl" placeholder="eg: pastethis.in (no trailing slash)" value="<?php echo htmlspecialchars(isset($_POST['baseurl']) ? $_POST['baseurl'] : $baseurl, ENT_QUOTES, 'UTF-8'); ?>">
                                                 </div>
                                             </div>
