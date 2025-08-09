@@ -58,7 +58,7 @@ declare(strict_types=1);
                                         <a class="delete-paste icon" href="<?php echo htmlspecialchars($baseurl . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>" data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>" title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                         </a>
-                                        <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted">
+                                        <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
                                             <i class="bi bi-clock"></i>
                                         </button>
                                     </p>
@@ -110,7 +110,7 @@ declare(strict_types=1);
                                     ); ?>" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                         <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
                                     </a>
-                                    <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted">
+                                    <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
                                         <i class="bi bi-clock"></i>
                                     </button>
                                 </p>
