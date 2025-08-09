@@ -331,6 +331,9 @@ try {
             ip VARCHAR(45) NOT NULL,
             refresh_token VARCHAR(255) DEFAULT NULL,
             token VARCHAR(512) DEFAULT NULL,
+			verification_code varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+			reset_code varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+			reset_expiry DATETIME DEFAULT NULL
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "users table created.";
@@ -348,6 +351,9 @@ try {
         ensureColumn($pdo, 'users', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
         ensureColumn($pdo, 'users', 'refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
         ensureColumn($pdo, 'users', 'token', 'VARCHAR(512) DEFAULT NULL', $output, $errors);
+		ensureColumn($pdo, 'users', 'verification_code', 'VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL', $output, $errors);
+		ensureColumn($pdo, 'users', 'reset_code', 'VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL', $output, $errors);
+		ensureColumn($pdo, 'users', 'reset_expiry', 'DATETIME DEFAULT NULL', $output, $errors);
     }
 
     // Ban user table
