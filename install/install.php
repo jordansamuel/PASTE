@@ -333,7 +333,7 @@ try {
             token VARCHAR(512) DEFAULT NULL,
 			verification_code varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 			reset_code varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-			reset_expiry DATETIME DEFAULT NULL
+			reset_expiry DATETIME DEFAULT NULL,
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "users table created.";
