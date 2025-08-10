@@ -331,9 +331,9 @@ try {
             ip VARCHAR(45) NOT NULL,
             refresh_token VARCHAR(255) DEFAULT NULL,
             token VARCHAR(512) DEFAULT NULL,
-			verification_code varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-			reset_code varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-			reset_expiry DATETIME DEFAULT NULL,
+            verification_code VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            reset_code VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            reset_expiry DATETIME DEFAULT NULL,
             PRIMARY KEY(id)
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "users table created.";
@@ -351,9 +351,9 @@ try {
         ensureColumn($pdo, 'users', 'ip', 'VARCHAR(45) NOT NULL', $output, $errors);
         ensureColumn($pdo, 'users', 'refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
         ensureColumn($pdo, 'users', 'token', 'VARCHAR(512) DEFAULT NULL', $output, $errors);
-		ensureColumn($pdo, 'users', 'verification_code', 'VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL', $output, $errors);
-		ensureColumn($pdo, 'users', 'reset_code', 'VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL', $output, $errors);
-		ensureColumn($pdo, 'users', 'reset_expiry', 'DATETIME DEFAULT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'verification_code', 'VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'reset_code', 'VARCHAR(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL', $output, $errors);
+        ensureColumn($pdo, 'users', 'reset_expiry', 'DATETIME DEFAULT NULL', $output, $errors);
     }
 
     // Ban user table
@@ -407,6 +407,22 @@ try {
         ensureColumn($pdo, 'mail', 'oauth_client_id', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
         ensureColumn($pdo, 'mail', 'oauth_client_secret', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
         ensureColumn($pdo, 'mail', 'oauth_refresh_token', 'VARCHAR(255) DEFAULT NULL', $output, $errors);
+    }
+
+    // Mail log table
+    if (!tableExists($pdo, 'mail_log')) {
+        $pdo->exec("CREATE TABLE mail_log (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL,
+            sent_at DATETIME NOT NULL,
+            type ENUM('verification', 'reset', 'test') NOT NULL
+        ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $output[] = "mail_log table created.";
+    } else {
+        ensureColumn($pdo, 'mail_log', 'id', 'INT AUTO_INCREMENT PRIMARY KEY', $output, $errors);
+        ensureColumn($pdo, 'mail_log', 'email', 'VARCHAR(255) NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'mail_log', 'sent_at', 'DATETIME NOT NULL', $output, $errors);
+        ensureColumn($pdo, 'mail_log', 'type', "ENUM('verification', 'reset', 'test') NOT NULL", $output, $errors);
     }
 
     // Pages table
@@ -489,6 +505,7 @@ try {
             id INT NOT NULL AUTO_INCREMENT,
             cap_e VARCHAR(10) NOT NULL DEFAULT 'off',
             mode VARCHAR(50) NOT NULL DEFAULT 'Normal',
+            recaptcha_version ENUM('v2', 'v3') NOT NULL DEFAULT 'v2',
             mul VARCHAR(10) NOT NULL DEFAULT 'off',
             allowed TEXT NOT NULL,
             color VARCHAR(7) NOT NULL DEFAULT '#000000',
@@ -498,13 +515,14 @@ try {
         ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $output[] = "captcha table created.";
 
-        $pdo->exec("INSERT INTO captcha (cap_e, mode, mul, allowed, color, recaptcha_sitekey, recaptcha_secretkey) 
-            VALUES ('off', 'Normal', 'off', 'ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789', '#000000', '', '')");
+        $pdo->exec("INSERT INTO captcha (cap_e, mode, recaptcha_version, mul, allowed, color, recaptcha_sitekey, recaptcha_secretkey) 
+            VALUES ('off', 'Normal', 'v2', 'off', 'ABCDEFGHIJKLMNOPQRSTUVYXYZabcdefghijklmnopqrstuvwxyz0123456789', '#000000', '', '')");
         $output[] = "Captcha settings inserted.";
     } else {
         ensureColumn($pdo, 'captcha', 'id', 'INT NOT NULL AUTO_INCREMENT', $output, $errors);
         ensureColumn($pdo, 'captcha', 'cap_e', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
         ensureColumn($pdo, 'captcha', 'mode', 'VARCHAR(50) NOT NULL DEFAULT \'Normal\'', $output, $errors);
+        ensureColumn($pdo, 'captcha', 'recaptcha_version', 'ENUM(\'v2\', \'v3\') NOT NULL DEFAULT \'v2\'', $output, $errors);
         ensureColumn($pdo, 'captcha', 'mul', 'VARCHAR(10) NOT NULL DEFAULT \'off\'', $output, $errors);
         ensureColumn($pdo, 'captcha', 'allowed', 'TEXT NOT NULL', $output, $errors);
         ensureColumn($pdo, 'captcha', 'color', 'VARCHAR(7) NOT NULL DEFAULT \'#000000\'', $output, $errors);
