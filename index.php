@@ -1,8 +1,8 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
- * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
+ * Paste <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
+ * Demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
  *
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
@@ -21,7 +21,7 @@ if (file_exists($directory)) {
 require_once('config.php');
 require_once('includes/captcha.php');
 require_once('includes/functions.php');
-//require_once('includes/password.php'); php5.5 - obsolete
+//require_once('includes/password.php'); // php5.5 - obsolete
 
 $stmt = $pdo->query("SELECT * FROM site_info WHERE id='1'");
 $row = $stmt->fetch();
@@ -67,6 +67,7 @@ $allowed = trim($row['allowed'] ?? '');
 $cap_e = trim($row['cap_e'] ?? 'off');
 $recaptcha_sitekey = trim($row['recaptcha_sitekey'] ?? '');
 $recaptcha_secretkey = trim($row['recaptcha_secretkey'] ?? '');
+$recaptcha_version = trim($row['recaptcha_version'] ?? 'v2');
 
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     if ($cap_e == "on") {
@@ -82,7 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     }
 }
 
-if (is_banned($pdo, $ip)) die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
+if (is_banned($pdo, $ip)) {
+    die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
+}
 
 $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id='1'");
 $row = $stmt->fetch();
@@ -175,10 +178,68 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['title']) && isset($_POST['paste_data'])) {
         if ($cap_e == "on" && !isset($_SESSION['username'])) {
             if ($mode == "reCAPTCHA") {
-                $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=" . $recaptcha_secretkey . "&response=" . ($_POST['g-recaptcha-response'] ?? ''));
+                // Check if g-recaptcha-response is set and not empty
+                if (!isset($_POST['g-recaptcha-response']) || empty($_POST['g-recaptcha-response'])) {
+                    error_log("reCAPTCHA error: g-recaptcha-response missing or empty");
+                    $error = $lang['recaptcha_missing'] ?? 'Please complete the reCAPTCHA.';
+                    goto OutPut;
+                }
+
+                // Verify reCAPTCHA with Google's API
+                $recaptcha_url = "https://www.google.com/recaptcha/api/siteverify";
+                $recaptcha_data = [
+                    'secret' => $recaptcha_secretkey,
+                    'response' => $_POST['g-recaptcha-response'],
+                    'remoteip' => $_SERVER['REMOTE_ADDR']
+                ];
+
+                // Try cURL first
+                $response = false;
+                if (function_exists('curl_init')) {
+                    $ch = curl_init($recaptcha_url);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($recaptcha_data));
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                    $response = curl_exec($ch);
+                    $curl_error = curl_error($ch);
+                    curl_close($ch);
+
+                    if ($curl_error) {
+                        error_log("reCAPTCHA cURL error: " . $curl_error);
+                    }
+                }
+
+                // Fallback to file_get_contents if cURL fails or is unavailable
+                if ($response === false) {
+                    $response = @file_get_contents($recaptcha_url . '?' . http_build_query($recaptcha_data));
+                    if ($response === false) {
+                        error_log("reCAPTCHA file_get_contents failed");
+                        $error = $lang['recaptcha_error'] ?? 'Failed to verify reCAPTCHA. Please try again.';
+                        goto OutPut;
+                    }
+                }
+
                 $response = json_decode($response, true);
-                if ($response["success"] == false) {
-                    $error = $lang[$response["error-codes"][0]] ?? ($lang['error'] ?? 'CAPTCHA verification failed.');
+
+                if ($response === null || !isset($response['success'])) {
+                    error_log("reCAPTCHA API response invalid: " . print_r($response, true));
+                    $error = $lang['recaptcha_error'] ?? 'Invalid reCAPTCHA response from server.';
+                    goto OutPut;
+                }
+
+                if ($response['success'] === false) {
+                    $error_codes = $response['error-codes'] ?? [];
+                    $error_message = !empty($error_codes) ? ($lang[$error_codes[0]] ?? implode(', ', $error_codes)) : ($lang['recaptcha_failed'] ?? 'reCAPTCHA verification failed.');
+                    error_log("reCAPTCHA verification failed: " . $error_message);
+                    $error = $error_message;
+                    goto OutPut;
+                }
+
+                // For v3, check the score (if applicable)
+                if ($recaptcha_version === 'v3' && ($response['score'] ?? 0) < 0.5) {
+                    error_log("reCAPTCHA v3 low score: " . ($response['score'] ?? 0));
+                    $error = $lang['low_score'] ?? 'Your action was flagged as potentially automated. Please try again.';
                     goto OutPut;
                 }
             } else {

@@ -29,11 +29,7 @@ if (!defined('SECRET')) {
 // Check required files
 $required_files = [
     __DIR__ . '/vendor/autoload.php' => ['phpmailer/phpmailer:^6.9'],
-    __DIR__ . '/vendor/phpmailer/phpmailer/src/PHPMailer.php' => [],
-    __DIR__ . '/vendor/phpmailer/phpmailer/src/Exception.php' => [],
-    __DIR__ . '/vendor/phpmailer/phpmailer/src/SMTP.php' => [],
-    __DIR__ . '/vendor/phpmailer/phpmailer/src/OAuth.php' => [],
-    __DIR__ . '/../oauth/vendor/autoload.php' => ['google/apiclient:^2.12'],
+    __DIR__ . '/../oauth/vendor/autoload.php' => ['league/oauth2-client:^2.7', 'league/oauth2-google:^4.0'],
 ];
 foreach ($required_files as $file => $packages) {
     if (!file_exists($file)) {
@@ -44,15 +40,14 @@ foreach ($required_files as $file => $packages) {
     }
 }
 
-// Include Composer autoloader
-require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/../oauth/vendor/autoload.php';
+// Include Composer autoloaders
+require_once __DIR__ . '/vendor/autoload.php'; // PHPMailer
+require_once __DIR__ . '/../oauth/vendor/autoload.php'; // OAuth dependencies
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\OAuth;
-use Google\Client as Google_Client;
-use Google\Service\Gmail as Google_Service_Gmail;
+use League\OAuth2\Client\Provider\Google;
 
 function send_mail(string $to, string $subject, string $message, string $name, string $csrf_token): array
 {
@@ -176,33 +171,31 @@ function send_mail(string $to, string $subject, string $message, string $name, s
 
         // Configure OAuth for Gmail
         if ($mailer->SMTPAuth && $smtp_host === 'smtp.gmail.com') {
-            $google_client = new Google_Client();
-            $google_client->setClientId($oauth_client_id);
-            $google_client->setClientSecret($oauth_client_secret);
-            $google_client->setRedirectUri($baseurl . 'oauth/google_smtp.php');
-            $google_client->addScope('https://www.googleapis.com/auth/gmail.send');
-            $google_client->setAccessType('offline');
-            $google_client->setAccessToken(['refresh_token' => $oauth_refresh_token]);
-
-            // Refresh access token if expired
-            if ($google_client->isAccessTokenExpired()) {
-                $google_client->refreshToken($oauth_refresh_token);
-                $access_token = $google_client->getAccessToken();
-                if (!$access_token) {
-                    error_log("mail.php: Failed to refresh OAuth access token");
-                    ob_end_clean();
-                    return ['status' => 'error', 'message' => 'Failed to refresh OAuth access token.'];
-                }
-            }
-
-            $mailer->AuthType = 'XOAUTH2';
-            $mailer->setOAuth(new OAuth([
-                'provider' => new Google_Service_Gmail($google_client),
+            $provider = new Google([
                 'clientId' => $oauth_client_id,
                 'clientSecret' => $oauth_client_secret,
-                'refreshToken' => $oauth_refresh_token,
-                'userName' => $smtp_username,
-            ]));
+                'redirectUri' => $baseurl . 'oauth/google_smtp.php',
+            ]);
+            try {
+                $accessToken = $provider->getAccessToken('refresh_token', ['refresh_token' => $oauth_refresh_token]);
+                if (!$accessToken) {
+                    error_log("mail.php: Failed to obtain OAuth access token for $from_email");
+                    ob_end_clean();
+                    return ['status' => 'error', 'message' => 'Failed to obtain OAuth access token.'];
+                }
+                $mailer->AuthType = 'XOAUTH2';
+                $mailer->setOAuth(new OAuth([
+                    'provider' => $provider,
+                    'clientId' => $oauth_client_id,
+                    'clientSecret' => $oauth_client_secret,
+                    'refreshToken' => $oauth_refresh_token,
+                    'userName' => $from_email, // Use admin email
+                ]));
+            } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
+                error_log("mail.php: OAuth error for $from_email: " . $e->getMessage());
+                ob_end_clean();
+                return ['status' => 'error', 'message' => 'OAuth error: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')];
+            }
         } else {
             $mailer->Username = $smtp_username;
             $mailer->Password = $smtp_password;

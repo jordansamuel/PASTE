@@ -1,10 +1,13 @@
 <?php
-/*
- * Paste <https://github.com/boxlabss/PASTE>
- * Google OAuth 2.0 for Gmail SMTP with Credential Input
- */
 declare(strict_types=1);
-
+/*
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
+ *
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
+ */
 session_start([
     'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
     'cookie_httponly' => true,
@@ -12,225 +15,258 @@ session_start([
 ]);
 
 ob_start();
-header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
-error_log("oauth/google_smtp.php: Accessed from IP: {$_SERVER['REMOTE_ADDR']}, Session ID: " . session_id() . ", Session: " . json_encode($_SESSION) . ", Query: " . json_encode($_GET));
-
-// Generate or verify CSRF token
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    error_log("oauth/google_smtp.php: Generated CSRF token: {$_SESSION['csrf_token']}");
-}
-
-// Check required files and classes
-$required_files = [
-    '../config.php' => [],
-    'vendor/autoload.php' => ['google/apiclient:^2.17']
-];
-$required_classes = [
-    'Google\Client' => 'google/apiclient:^2.17'
-];
-foreach ($required_files as $file => $packages) {
-    if (!file_exists($file)) {
-        $message = empty($packages) ? "Missing required file: $file" : "Missing Composer dependencies in " . dirname($file) . ". Run: <code>cd oauth && composer require " . implode(' ', $packages) . "</code>";
-        error_log("oauth/google_smtp.php: $message");
-        ob_end_clean();
-        echo json_encode(['status' => 'error', 'error_code' => 'missing_file', 'message' => $message]);
-        exit;
-    }
-}
-require_once '../config.php';
-require_once 'vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use Google\Client as Google_Client;
 
-foreach ($required_classes as $class => $packages) {
-    if (!class_exists($class)) {
-        error_log("oauth/google_smtp.php: $class not found. Run: cd oauth && composer require $packages");
+try {
+    // Restrict to admins
+    if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
+        error_log("oauth/google_smtp.php: Unauthorized access attempt from {$_SERVER['REMOTE_ADDR']}");
+        header('Content-Type: application/json; charset=utf-8');
         ob_end_clean();
-        echo json_encode(['status' => 'error', 'error_code' => 'missing_dependency', 'message' => "Missing dependency: $class. Run: composer require $packages"]);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Admin authentication required.',
+            'redirect' => '../admin/configuration.php'
+        ]);
         exit;
     }
-}
 
-try {
-    // Connect to database
+    // CSRF token generation
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    // Ensure config.php exists
+    if (!file_exists(__DIR__ . '/../config.php')) {
+        throw new Exception("Missing config.php at ../config.php");
+    }
+    require_once __DIR__ . '/../config.php';
+
+    // Connect to DB
     if (!isset($dbhost, $dbuser, $dbpassword, $dbname)) {
-        throw new Exception("Database configuration missing in config.php.", 1001);
+        throw new Exception("Database configuration missing in config.php.");
     }
     $pdo = new PDO("mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4", $dbuser, $dbpassword, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
-    error_log("oauth/google_smtp.php: Database connection established");
 
-    // Validate admin session only for OAuth initiation
-    if (isset($_GET['start'])) {
-        if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
-            error_log("oauth/google_smtp.php: Unauthorized access for OAuth start - no admin session. IP: {$_SERVER['REMOTE_ADDR']}");
-            ob_end_clean();
-            echo json_encode([
-                'status' => 'error',
-                'error_code' => 'auth_failed',
-                'message' => 'Admin authentication required.',
-                'redirect' => '../admin/login.php'
-            ]);
-            exit;
-        }
-        $stmt = $pdo->prepare("SELECT id FROM admin WHERE user = ?");
-        $stmt->execute([$_SESSION['admin_login']]);
-        $admin = $stmt->fetch();
-        if (!$admin || $admin['id'] != $_SESSION['admin_id']) {
-            error_log("oauth/google_smtp.php: Invalid admin session for admin_login: {$_SESSION['admin_login']}, admin_id: {$_SESSION['admin_id']}");
-            $_SESSION = [];
-            session_destroy();
-            ob_end_clean();
-            echo json_encode([
-                'status' => 'error',
-                'error_code' => 'invalid_session',
-                'message' => 'Invalid admin session. Please log in again.',
-                'redirect' => '../admin/login.php'
-            ]);
-            exit;
-        }
-    }
-
-    // Fetch baseurl from site_info
+    // Fetch baseurl for redirect URI
     $stmt = $pdo->query("SELECT baseurl FROM site_info WHERE id = 1");
-    $site_info = $stmt->fetch() ?: [];
-    $baseurl = trim($site_info['baseurl'] ?? '');
-    if (empty($baseurl)) {
-        throw new Exception("Base URL not found in site_info. Run install.php to set it.", 1002);
+    $site_info = $stmt->fetch();
+    if (!$site_info || empty($site_info['baseurl'])) {
+        throw new Exception("Base URL not found in site_info. Run install.php to set it.");
     }
-    $baseurl = rtrim($baseurl, '/') . '/';
+    $baseurl = rtrim($site_info['baseurl'], '/') . '/';
     $redirect_uri = $baseurl . 'oauth/google_smtp.php';
-    error_log("oauth/google_smtp.php: Base URL: $baseurl, Redirect URI: $redirect_uri");
 
-    // Ensure mail table has a record
-    $stmt = $pdo->query("SELECT COUNT(*) FROM mail WHERE id = 1");
-    if ($stmt->fetchColumn() == 0) {
-        $stmt = $pdo->prepare("INSERT INTO mail (id, verification, smtp_host, smtp_port, smtp_username, smtp_password, socket, protocol, auth, oauth_client_id, oauth_client_secret, oauth_refresh_token) VALUES (1, '', '', '', '', '', '', '', '', '', '', '')");
-        $stmt->execute();
-        error_log("oauth/google_smtp.php: Created default mail record with id = 1");
-    }
-
-    // Fetch and validate mail settings
+    // Fetch existing mail settings
     $stmt = $pdo->query("SELECT oauth_client_id, oauth_client_secret, oauth_refresh_token FROM mail WHERE id = 1");
-    $mail_settings = $stmt->fetch() ?: [];
-    $required_fields = ['oauth_client_id', 'oauth_client_secret', 'oauth_refresh_token'];
-    foreach ($required_fields as $field) {
-        if (!array_key_exists($field, $mail_settings)) {
-            $mail_settings[$field] = '';
-        }
-    }
+    $mail_settings = $stmt->fetch();
     $client_id = trim($mail_settings['oauth_client_id'] ?? '');
     $client_secret = trim($mail_settings['oauth_client_secret'] ?? '');
     $refresh_token = trim($mail_settings['oauth_refresh_token'] ?? '');
-    error_log("oauth/google_smtp.php: Mail settings - Client ID: $client_id, Refresh Token: " . ($refresh_token ? substr($refresh_token, 0, 10) . '...' : 'none'));
 
-    // Handle OAuth flow
-    if (isset($_GET['start'])) {
+    // Handle saving client credentials via AJAX POST
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_credentials'])) {
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            throw new Exception("CSRF validation failed for POST request.");
+        }
+        $client_id = trim($_POST['client_id'] ?? '');
+        $client_secret = trim($_POST['client_secret'] ?? '');
         if (empty($client_id) || empty($client_secret)) {
-            throw new Exception("Please save OAuth Client ID and Secret first.", 1011);
+            throw new Exception("Please fill in both Client ID and Client Secret.");
         }
-        $client = new Google_Client();
-        $client->setClientId($client_id);
-        $client->setClientSecret($client_secret);
-        $client->setRedirectUri($redirect_uri);
-        $client->addScope('https://www.googleapis.com/auth/gmail.send');
-        $client->setAccessType('offline');
-        $client->setPrompt('select_account consent');
-        $client->setState($_SESSION['csrf_token']);
-        $auth_url = $client->createAuthUrl();
-        error_log("oauth/google_smtp.php: Initiating OAuth flow, redirecting to: $auth_url");
+        $stmt = $pdo->prepare("UPDATE mail SET oauth_client_id = ?, oauth_client_secret = ? WHERE id = 1");
+        $stmt->execute([$client_id, $client_secret]);
+        error_log("oauth/google_smtp.php: OAuth credentials saved for client_id={$client_id}");
+        header('Content-Type: application/json; charset=utf-8');
         ob_end_clean();
-        header('Location: ' . $auth_url);
-        exit;
-    } elseif (isset($_GET['code'])) {
-        if (!isset($_GET['state']) || $_GET['state'] !== $_SESSION['csrf_token']) {
-            error_log("oauth/google_smtp.php: CSRF validation failed for OAuth callback. Received: " . ($_GET['state'] ?? 'none') . ", Expected: {$_SESSION['csrf_token']}");
-            throw new Exception("CSRF validation failed for OAuth callback.", 1007);
-        }
-        if (empty($client_id) || empty($client_secret)) {
-            throw new Exception("OAuth Client ID or Secret not set in mail settings.", 1008);
-        }
-        $client = new Google_Client();
-        $client->setClientId($client_id);
-        $client->setClientSecret($client_secret);
-        $client->setRedirectUri($redirect_uri);
-        $client->addScope('https://www.googleapis.com/auth/gmail.send');
-        $access_token = $client->authenticate($_GET['code']);
-        if (!$access_token) {
-            throw new Exception("Failed to obtain access token. Check Client ID, Client Secret, and Redirect URI.", 1009);
-        }
-        $refresh_token = $access_token['refresh_token'] ?? null;
-        if (!$refresh_token) {
-            throw new Exception("No refresh token received. Ensure 'access_type=offline' and 'prompt=consent' are set in Google Cloud Console.", 1010);
-        }
-        $stmt = $pdo->prepare("UPDATE mail SET oauth_refresh_token = ? WHERE id = 1");
-        $rows_affected = $stmt->execute([$refresh_token]);
-        error_log("oauth/google_smtp.php: OAuth refresh token update attempted. Rows affected: $rows_affected, refresh_token: " . substr($refresh_token, 0, 10) . "...");
-        if ($rows_affected === 0) {
-            throw new Exception("Failed to update refresh token in database. No rows affected. Check if mail table record exists with id=1.", 1013);
-        }
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        error_log("oauth/google_smtp.php: OAuth refresh token saved successfully, new CSRF token: {$_SESSION['csrf_token']}");
-        ob_end_clean();
-        header('Location: ../admin/configuration.php?msg=' . urlencode('OAuth refresh token saved successfully.'));
-        exit;
-    } elseif (isset($_GET['refresh'])) {
-        // Handle token refresh requests from mail.php
-        if (empty($client_id) || empty($client_secret) || empty($refresh_token)) {
-            error_log("oauth/google_smtp.php: Missing OAuth credentials for refresh");
-            ob_end_clean();
-            echo json_encode(['status' => 'error', 'error_code' => 'missing_credentials', 'message' => 'OAuth credentials missing.']);
-            exit;
-        }
-        $client = new Google_Client();
-        $client->setClientId($client_id);
-        $client->setClientSecret($client_secret);
-        $client->setRedirectUri($redirect_uri);
-        $client->addScope('https://www.googleapis.com/auth/gmail.send');
-        $client->setAccessToken(['refresh_token' => $refresh_token]);
-        $new_token = $client->fetchAccessTokenWithRefreshToken($refresh_token);
-        if (isset($new_token['error'])) {
-            error_log("oauth/google_smtp.php: Token refresh failed: " . json_encode($new_token));
-            ob_end_clean();
-            echo json_encode(['status' => 'error', 'error_code' => 'refresh_failed', 'message' => 'Token refresh failed: ' . ($new_token['error_description'] ?? 'Unknown error')]);
-            exit;
-        }
-        error_log("oauth/google_smtp.php: Token refreshed successfully: " . json_encode($new_token));
-        ob_end_clean();
-        echo json_encode(['status' => 'success', 'access_token' => $new_token]);
+        echo json_encode(['status' => 'success', 'message' => 'OAuth credentials saved. Click "Authorize Gmail SMTP" to proceed.', 'reload' => true]);
         exit;
     }
 
-    // Return current settings for AJAX requests
-    ob_end_clean();
-    echo json_encode([
-        'status' => 'success',
-        'error_code' => null,
-        'client_id' => $client_id,
-        'client_secret' => $client_secret,
-        'refresh_token' => $refresh_token ? true : false,
-        'redirect_uri' => $redirect_uri
-    ]);
-    exit;
+    // Initialize Google client when needed
+    if ((isset($_GET['start']) && !empty($client_id) && !empty($client_secret)) || isset($_GET['code'])) {
+        $gclient = new Google_Client();
+        $gclient->setClientId($client_id);
+        $gclient->setClientSecret($client_secret);
+        $gclient->setRedirectUri($redirect_uri);
+
+        // IMPORTANT: use full Gmail scope for SMTP access
+        $gclient->setScopes(['https://mail.google.com/']);
+        $gclient->setAccessType('offline'); // request refresh token
+        $gclient->setPrompt('consent');     // ensure refresh token is returned
+        $gclient->setState($_SESSION['csrf_token']);
+    }
+
+    // Start OAuth flow: redirect to Google consent screen
+    if (isset($_GET['start'])) {
+        if (empty($client_id) || empty($client_secret)) {
+            throw new Exception("Please save OAuth Client ID and Secret first.");
+        }
+        $authUrl = $gclient->createAuthUrl();
+        error_log("oauth/google_smtp.php: Redirecting to Google OAuth: $authUrl");
+        ob_end_clean();
+        header('Location: ' . $authUrl);
+        exit;
+    }
+
+    // OAuth callback: exchange code for tokens
+    if (isset($_GET['code'])) {
+        if (!isset($_GET['state']) || $_GET['state'] !== $_SESSION['csrf_token']) {
+            throw new Exception("CSRF validation failed for OAuth callback.");
+        }
+        if (empty($client_id) || empty($client_secret)) {
+            throw new Exception("OAuth Client ID or Secret not set in mail settings.");
+        }
+
+        $token = $gclient->fetchAccessTokenWithAuthCode($_GET['code']);
+        if (isset($token['error'])) {
+            // Provide a safe message for admin and log details
+            error_log("oauth/google_smtp.php: Token error: " . json_encode($token));
+            throw new Exception("Failed to obtain access token: " . htmlspecialchars($token['error_description'] ?? $token['error']));
+        }
+
+        $new_refresh = $token['refresh_token'] ?? null;
+        if (!$new_refresh) {
+            // If Google didn't return a refresh token, likely user previously authorized without 'prompt=consent'
+            throw new Exception("No refresh token received. Ensure you've used the provided 'Authorize Gmail SMTP' button which forces a fresh consent screen.");
+        }
+
+        // Save refresh token to DB
+        $stmt = $pdo->prepare("UPDATE mail SET oauth_refresh_token = ? WHERE id = 1");
+        $stmt->execute([$new_refresh]);
+        error_log("oauth/google_smtp.php: OAuth refresh token saved to DB.");
+        ob_end_clean();
+        header('Location: ../admin/configuration.php');
+        exit;
+    }
+
+    // Render HTML
+    header('Content-Type: text/html; charset=UTF-8');
+    ob_end_flush();
+
 } catch (Exception $e) {
-    $error_code = $e->getCode() ?: 1000;
-    error_log("oauth/google_smtp.php: Error (code $error_code): " . $e->getMessage());
+    error_log("oauth/google_smtp.php: Error: " . $e->getMessage());
+    header('Content-Type: application/json; charset=utf-8');
     ob_end_clean();
     echo json_encode([
         'status' => 'error',
-        'error_code' => 'error_' . $error_code,
         'message' => 'OAuth error: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'),
-        'redirect' => '../admin/configuration.php?error=' . urlencode($e->getMessage())
+        'reload' => true
     ]);
     exit;
-} finally {
-    $pdo = null;
 }
-?> 
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Paste - Google OAuth Setup for Gmail SMTP</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="shortcut icon" href="../admin/favicon.ico">
+    <link href="../admin/css/paste.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div id="top" class="clearfix">
+        <div class="applogo"><a href="../" class="logo">Paste</a></div>
+        <ul class="top-right">
+            <li class="dropdown link">
+                <a href="#" class="profilebox"><b><?php echo htmlspecialchars($_SESSION['admin_login']); ?></b></a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <div class="container-widget">
+            <div class="panel panel-widget">
+                <div class="panel-body">
+                    <h2>Google OAuth 2.0 Setup for Gmail SMTP</h2>
+
+                    <form class="form-horizontal" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">Client ID</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" name="client_id" placeholder="Google OAuth Client ID" value="<?php echo htmlspecialchars($client_id); ?>">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">Client Secret</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" name="client_secret" placeholder="Google OAuth Client Secret" value="<?php echo htmlspecialchars($client_secret); ?>">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <button type="submit" name="save_credentials" class="btn btn-default">Save Credentials</button>
+                                <?php if (!empty($client_id) && !empty($client_secret)): ?>
+                                    <a href="?start=1" class="btn btn-info">Authorize Gmail SMTP</a>
+                                <?php else: ?>
+                                    <button type="button" class="btn btn-info" disabled>Authorize Gmail SMTP (save creds first)</button>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </form>
+
+                    <p><a href="https://console.developers.google.com" target="_blank" rel="noreferrer">Create or manage your Google OAuth credentials</a></p>
+                    <p>Redirect URI for Google Cloud Console: <code><?php echo htmlspecialchars($redirect_uri); ?></code></p>
+
+                    <?php if (!empty($refresh_token)): ?>
+                        <p><strong>Refresh Token Status:</strong> A refresh token is saved in the database.</p>
+                    <?php else: ?>
+                        <p><strong>Refresh Token Status:</strong> No refresh token saved. Click "Authorize Gmail SMTP" to obtain one (you'll be redirected to Google).</p>
+                    <?php endif; ?>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="row footer">
+            <div class="col-md-6 text-left">
+                <a href="https://github.com/boxlabss/PASTE" target="_blank" rel="noreferrer">Updates</a> &mdash; <a href="https://github.com/boxlabss/PASTE/issues" target="_blank" rel="noreferrer">Bugs</a>
+            </div>
+            <div class="col-md-6 text-right">
+                Powered by <a href="https://phpaste.sourceforge.io" target="_blank" rel="noreferrer">Paste</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../admin/js/jquery.min.js"></script>
+    <script src="../admin/js/bootstrap.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // AJAX form submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[name="save_credentials"]');
+            btn.disabled = true;
+            const formData = new FormData(this);
+            fetch(this.action, { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    btn.disabled = false;
+                    if (data.status === 'success') {
+                        if (data.reload) window.location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                        if (data.reload) window.location.reload();
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    alert('Request failed: ' + err.message);
+                });
+        });
+    });
+    </script>
+</body>
+</html>
+<?php $pdo = null; ?>

@@ -3,7 +3,6 @@
  * Paste <https://github.com/jordansamuel/PASTE> - Default theme
  * Licensed under the GNU General Public License, version 3 or later.
  */
-$protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://');
 ?>
 <?php require_once('theme/' . ($default_theme ?? 'default') . '/header.php'); ?>
 <style>
@@ -56,7 +55,7 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                         <div class="card-body">
                             <div class="alert alert-warning">
                                 <?php echo htmlspecialchars($lang['login_required'] ?? 'You must be logged in to create a paste.', ENT_QUOTES, 'UTF-8'); ?>
-                                <a href="<?php echo htmlspecialchars($baseurl . '/login.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary mt-2">Login</a>
+                                <a href="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary mt-2">Login</a>
                             </div>
                         </div>
                     </div>
@@ -65,7 +64,7 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                         <div class="card-body">
                             <div class="alert alert-warning">
                                 <?php echo htmlspecialchars($lang['login_required'] ?? 'You must be logged in to create a paste.', ENT_QUOTES, 'UTF-8'); ?>
-                                <a href="<?php echo htmlspecialchars($baseurl . '/login.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary mt-2">Login</a>
+                                <a href="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary mt-2">Login</a>
                             </div>
                         </div>
                     </div>
@@ -78,7 +77,7 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                             <?php if (isset($error)): ?>
                                 <div class="alert alert-warning"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
                             <?php endif; ?>
-                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST">
+                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST" onsubmit="return validateRecaptcha()">
                                 <div class="row mb-3 g-3">
                                     <div class="col-sm-4">
                                         <div class="input-group">
@@ -151,7 +150,11 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                                 </div>
                                 <?php if ($cap_e == "on" && !isset($_SESSION['username']) && (!isset($disableguest) || $disableguest !== "on")): ?>
                                     <?php if ($_SESSION['captcha_mode'] == "recaptcha"): ?>
-                                        <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-theme="dark"></div>
+                                        <?php if ($recaptcha_version == 'v2'): ?>
+                                            <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($recaptcha_sitekey, ENT_QUOTES, 'UTF-8'); ?>" data-theme="dark"></div>
+                                        <?php else: ?>
+                                            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <div class="row mb-3">
                                             <?php echo '<img src="' . htmlspecialchars($_SESSION['captcha']['image_src'] ?? '', ENT_QUOTES, 'UTF-8') . '" alt="CAPTCHA" class="imagever">'; ?>
@@ -188,7 +191,7 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                         <div class="card-body">
                             <div class="alert alert-warning">
                                 <?php echo htmlspecialchars($lang['login_required'] ?? 'You must be logged in to create a paste.', ENT_QUOTES, 'UTF-8'); ?>
-                                <a href="<?php echo htmlspecialchars($baseurl . '/login.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary mt-2">Login</a>
+                                <a href="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-primary mt-2">Login</a>
                             </div>
                         </div>
                     </div>
@@ -201,7 +204,7 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                             <?php if (isset($error)): ?>
                                 <div class="alert alert-warning"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
                             <?php endif; ?>
-                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST">
+                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST" onsubmit="return validateRecaptcha()">
                                 <div class="row mb-3 g-3">
                                     <div class="col-sm-4">
                                         <div class="input-group">
@@ -274,7 +277,9 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
                                 </div>
                                 <?php if ($cap_e == "on" && !isset($_SESSION['username']) && (!isset($disableguest) || $disableguest !== "on")): ?>
                                     <?php if ($_SESSION['captcha_mode'] == "recaptcha"): ?>
-                                        <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-theme="dark"></div>
+                                        <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-theme="dark" data-callback="onRecaptchaSuccess"></div>
+                                    <?php elseif ($_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
+                                        <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
                                     <?php else: ?>
                                         <div class="row mb-3">
                                             <?php echo '<img src="' . htmlspecialchars($_SESSION['captcha']['image_src'] ?? '', ENT_QUOTES, 'UTF-8') . '" alt="CAPTCHA" class="imagever">'; ?>
@@ -301,40 +306,8 @@ $protocol = $protocol ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('paste.php DOMContentLoaded fired');
-    const toggleLineNumbersBtn = document.querySelector('.toggle-line-numbers');
-    const toggleFullscreenBtn = document.querySelector('.toggle-fullscreen');
-    const copyClipboardBtn = document.querySelector('.copy-clipboard');
-    const embedToolBtn = document.querySelector('.embed-tool');
     const highlightLineBtn = document.querySelector('.highlight-line');
 
-    if (toggleLineNumbersBtn) {
-        toggleLineNumbersBtn.addEventListener('click', function(e) {
-            console.log('Toggle Line Numbers button clicked');
-            e.preventDefault();
-            window.togglev();
-        });
-    }
-    if (toggleFullscreenBtn) {
-        toggleFullscreenBtn.addEventListener('click', function(e) {
-            console.log('Toggle Fullscreen button clicked');
-            e.preventDefault();
-            window.toggleFullScreen();
-        });
-    }
-    if (copyClipboardBtn) {
-        copyClipboardBtn.addEventListener('click', function(e) {
-            console.log('Copy to Clipboard button clicked');
-            e.preventDefault();
-            window.copyToClipboard();
-        });
-    }
-    if (embedToolBtn) {
-        embedToolBtn.addEventListener('click', function(e) {
-            console.log('Embed Tool button clicked');
-            e.preventDefault();
-            window.showEmbedCode();
-        });
-    }
     if (highlightLineBtn) {
         highlightLineBtn.addEventListener('click', function(e) {
             console.log('Highlight Line button clicked');
@@ -343,5 +316,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+<?php if (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha"): ?>
+function onRecaptchaSuccess(token) {
+    console.log('reCAPTCHA v2 completed: Token received');
+    document.getElementById('g-recaptcha-response').value = token;
+}
+
+
+<?php elseif (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
+grecaptcha.ready(function() {
+    grecaptcha.execute('<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>', {action: 'create_paste'}).then(function(token) {
+        console.log('reCAPTCHA v3 executed: Token received');
+        document.getElementById('g-recaptcha-response').value = token;
+    }, function(error) {
+        console.error('reCAPTCHA v3 error:', error);
+    });
+});
+
+function validateRecaptcha() {
+    return true; // No client-side validation needed for v3
+}
+<?php else: ?>
+function validateRecaptcha() {
+    return true; // No reCAPTCHA validation for internal or none
+}
+<?php endif; ?>
 </script>
 <?php require_once('theme/' . ($default_theme ?? 'default') . '/footer.php'); ?>
