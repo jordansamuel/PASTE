@@ -99,13 +99,13 @@ $protocol = paste_protocol();
                             <nav aria-label="Page navigation" class="mt-4">
                                 <ul class="pagination justify-content-center">
                                     <?php
-                                    $range = 2;
-                                    $prevPage = $page > 1 ? $page - 1 : 1;
+                                    $range = 2; // Number of pages to show around current page
+                                    $prevPage = $page > 1 ? $page - 1 : 1; // Previous button
                                     $queryParamsPrev = http_build_query(array_merge($_GET, ['page' => $prevPage]));
                                     $disabledPrev = $page == 1 ? ' disabled' : '';
                                     echo '<li class="page-item' . $disabledPrev . '"><a class="page-link btn btn-primary btn-sm" href="?' . $queryParamsPrev . '" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>';
 
-                                    for ($i = 1; $i <= $totalPages; $i++) {
+                                    for ($i = 1; $i <= $totalPages; $i++) { // Page numbers
                                         $isActive = $i === $page ? ' active' : '';
                                         $queryParams = http_build_query(array_merge($_GET, ['page' => $i]));
                                         if ($i === 1 || $i === $totalPages || ($i >= $page - $range && $i <= $page + $range)) {
@@ -115,7 +115,8 @@ $protocol = paste_protocol();
                                         }
                                     }
 
-                                    $nextPage = $page < $totalPages ? $page + 1 : $totalPages;
+                                    $nextPage = $page < $totalPages ? $page + 1 : $totalPages;	// Next button
+
                                     $queryParamsNext = http_build_query(array_merge($_GET, ['page' => $nextPage]));
                                     $disabledNext = $page == $totalPages ? ' disabled' : '';
                                     echo '<li class="page-item' . $disabledNext . '"><a class="page-link" href="?' . $queryParamsNext . '" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>';
