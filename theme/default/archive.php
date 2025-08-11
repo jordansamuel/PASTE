@@ -52,7 +52,7 @@ $protocol = paste_protocol();
                         <?php endif; ?>
                         <div class="table-responsive">
                             <table id="archive" class="table table-hover table-bordered">
-                                <thead class="table-light" style="background-color: #dee2e6;">
+                                <thead class="table-dark">
                                     <tr>
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastetitle'] ?? 'Title'); ?></th>
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastetime'] ?? 'Time'); ?></th>
@@ -93,7 +93,7 @@ $protocol = paste_protocol();
                                     }
                                     ?>
                                 </tbody>
-                                <tfoot class="table-light" style="background-color: #dee2e6;">
+                                <tfoot class="table-dark">
                                     <tr>
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastetitle'] ?? 'Title'); ?></th>
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastetime'] ?? 'Time'); ?></th>
