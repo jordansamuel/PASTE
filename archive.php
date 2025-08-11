@@ -1,8 +1,8 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
+ * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
  *
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
@@ -153,56 +153,40 @@ try {
     if ($search_query) {
         // Search pastes by title or content, handling encrypted pastes in PHP
         $search_term = '%' . $search_query . '%';
-        // Count non-encrypted matching pastes with password = 'NONE'
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?)");
-        $stmt->execute([$search_term, $search_term]);
-        $non_encrypted_count = $stmt->fetchColumn();
+        $matching_paste_ids = [];
 
-        // Fetch all encrypted pastes with password = 'NONE' to check in PHP
+        // Fetch non-encrypted matching paste IDs
+        $stmt = $pdo->prepare("SELECT id FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?)");
+        $stmt->execute([$search_term, $search_term]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $matching_paste_ids[] = $row['id'];
+        }
+
+        // Fetch encrypted pastes and check in PHP
         $stmt = $pdo->prepare("SELECT id, title, content, encrypt FROM pastes WHERE visible = '0' AND password = 'NONE' AND encrypt = '1'");
         $stmt->execute();
         $encrypted_pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $encrypted_matches = 0;
-        $matching_paste_ids = [];
 
         foreach ($encrypted_pastes as $paste) {
             $decrypted_title = $paste['encrypt'] == '1' ? decrypt($paste['title'], hex2bin(SECRET)) ?? $paste['title'] : $paste['title'];
             $decrypted_content = $paste['encrypt'] == '1' ? decrypt($paste['content'], hex2bin(SECRET)) ?? '' : $paste['content'];
             if (stripos($decrypted_title, $search_query) !== false || stripos($decrypted_content, $search_query) !== false) {
-                $encrypted_matches++;
                 $matching_paste_ids[] = $paste['id'];
             }
         }
 
-        $totalItems = $non_encrypted_count + $encrypted_matches;
+        // Remove duplicates and count total items
+        $matching_paste_ids = array_unique($matching_paste_ids);
+        $totalItems = count($matching_paste_ids);
 
-        // Fetch non-encrypted matching pastes with password = 'NONE'
-        $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?) ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
-        $stmt->execute([$search_term, $search_term, $perPage, $offset]);
-        $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Fetch encrypted matching pastes with password = 'NONE' within pagination range
+        // Fetch matching pastes with pagination
+        $pastes = [];
         if ($matching_paste_ids) {
             $placeholders = implode(',', array_fill(0, count($matching_paste_ids), '?'));
             $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member FROM pastes WHERE visible = '0' AND password = 'NONE' AND id IN ($placeholders) ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
             $stmt->execute(array_merge($matching_paste_ids, [$perPage, $offset]));
-            $encrypted_matching_pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $pastes = array_merge($pastes, $encrypted_matching_pastes);
+            $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-
-        // Sort pastes by selected column and direction
-        usort($pastes, function ($a, $b) use ($sortColumn, $sortDirection) {
-            if ($sortColumn === 'date') {
-                return $sortDirection === 'ASC' ? $a['now_time'] <=> $b['now_time'] : $b['now_time'] <=> $a['now_time'];
-            } elseif ($sortColumn === 'title') {
-                return $sortDirection === 'ASC' ? strcmp($a['title'], $b['title']) : strcmp($b['title'], $a['title']);
-            } else {
-                return $sortDirection === 'ASC' ? strcmp($a['code'], $b['code']) : strcmp($b['code'], $a['code']);
-            }
-        });
-
-        // Apply pagination to merged results
-        $pastes = array_slice($pastes, 0, $perPage);
 
         // Decrypt titles for display
         foreach ($pastes as &$row) {

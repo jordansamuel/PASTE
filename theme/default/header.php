@@ -23,21 +23,57 @@
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/monokai.min.css">
     <?php if (isset($ges_style)) { echo $ges_style; } ?>
     <link href="<?php echo htmlspecialchars($baseurl . 'theme/' . ($default_theme ?? 'default') . '/css/paste.css', ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet" type="text/css" />
+    <style>
+        .navbar { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .navbar-brand { font-weight: 600; font-size: 1.5rem; display: flex; align-items: center; gap: 8px; }
+        .nav-link { transition: color 0.2s; }
+        .nav-link:hover { color: #0d6efd !important; }
+        .search-form { max-width: 400px; width: 100%; display: flex; align-items: center; }
+        .search-form .form-control { background-color: #2a2a2a; border-color: #444; color: #fff; }
+        .search-form .form-control:focus { background-color: #2a2a2a; border-color: #0d6efd; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); }
+        .search-form .btn { border-color: #444; }
+        .dropdown-menu { background-color: #212529; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .dropdown-item { color: #fff; }
+        .dropdown-item:hover { background-color: #0d6efd; color: #fff; }
+        .modal-content { background-color: #212529; }
+        .modal-header { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .modal-footer { border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .btn-oauth { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .navbar-center { flex-grow: 1; display: flex; justify-content: center; }
+        .navbar-toggler { margin-left: 15px; }
+        @media (max-width: 991px) {
+            .navbar-center { justify-content: center; }
+            .search-form { max-width: 100%; margin: 10px auto; }
+            .navbar-nav-guest { margin-top: 10px; }
+            .navbar-collapse { justify-content: flex-end; }
+            .navbar-toggler { margin-left: 10px; }
+        }
+    </style>
 </head>
 
 <body>
     <!-- Header -->
     <nav class="navbar navbar-expand-lg bg-dark">
-        <div class="container-xl">
-            <a class="navbar-brand" href="<?php echo htmlspecialchars($baseurl ?? '', ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($site_name ?? '', ENT_QUOTES, 'UTF-8'); ?></a>
+        <div class="container-xl d-flex align-items-center">
+            <a class="navbar-brand" href="<?php echo htmlspecialchars($baseurl ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                <i class="bi bi-clipboard"></i> <?php echo htmlspecialchars($site_name ?? '', ENT_QUOTES, 'UTF-8'); ?>
+            </a>
+            <?php if (!isset($privatesite) || $privatesite != "on") { ?>
+                <div class="navbar-center">
+                    <form class="search-form" action="<?php echo htmlspecialchars($baseurl . ($mod_rewrite == '1' ? 'archive' : 'archive.php'), ENT_QUOTES, 'UTF-8'); ?>" method="get">
+                        <input class="form-control me-2" type="search" name="q" placeholder="<?php echo htmlspecialchars($lang['search'] ?? 'Search pastes...', ENT_QUOTES, 'UTF-8'); ?>" aria-label="Search" value="<?php echo htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <button class="btn btn-outline-light" type="submit"><i class="bi bi-search"></i></button>
+                    </form>
+                </div>
+            <?php } ?>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?php echo htmlspecialchars($baseurl ?? '', ENT_QUOTES, 'UTF-8'); ?>" aria-label="Home"><i class="bi bi-clipboard"></i></a>
-                    </li>
+                <ul class="navbar-nav ms-auto">
+                    <!-- <li class="nav-item">
+                        <a class="nav-link" href="<?php //echo htmlspecialchars($baseurl ?? '', ENT_QUOTES, 'UTF-8'); ?>" aria-label="Home"><?php //echo htmlspecialchars($lang['home'] ?? 'Home', ENT_QUOTES, 'UTF-8'); ?></a>
+                    </li> -->
                     <?php
                     if (!isset($privatesite) || $privatesite != "on") {
                         if ($mod_rewrite == '1') {
@@ -47,41 +83,44 @@
                         }
                     }
                     ?>
-                </ul>
-                <?php if (!isset($privatesite) || $privatesite != "on") { ?>
-                    <form class="d-flex me-3" action="<?php echo htmlspecialchars($baseurl . ($mod_rewrite == '1' ? 'archive' : 'archive.php'), ENT_QUOTES, 'UTF-8'); ?>" method="get">
-                        <input class="form-control me-2" type="search" name="q" placeholder="<?php echo htmlspecialchars($lang['search'] ?? 'Search pastes...', ENT_QUOTES, 'UTF-8'); ?>" aria-label="Search" value="<?php echo htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-                        <button class="btn btn-outline-light" type="submit"><i class="bi bi-search"></i></button>
-                    </form>
-                    <ul class="navbar-nav navbar-nav-guest">
-                        <li class="nav-item dropdown">
-                            <?php if (isset($_SESSION['token'])) {
-                                echo '<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><b>' . htmlspecialchars($_SESSION['username'] ?? '', ENT_QUOTES, 'UTF-8') . '</b></a>';
-                            } else {
-                                echo '<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><b>' . htmlspecialchars($lang['guest'] ?? 'Guest', ENT_QUOTES, 'UTF-8') . '</b></a>';
-                            }
-                            ?>
+                    <li class="nav-item dropdown navbar-nav-guest">
+                        <?php if (isset($_SESSION['token'])) {
+                            echo '<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-person"></i> ' . htmlspecialchars($_SESSION['username'] ?? '', ENT_QUOTES, 'UTF-8') . '</a>';
+                        ?>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <?php if (isset($_SESSION['token'])) {
-                                    echo '<li><h6 class="dropdown-header">' . htmlspecialchars($lang['my_account'] ?? 'My Account', ENT_QUOTES, 'UTF-8') . '</h6></li>';
-                                    if ($mod_rewrite == '1') {
-                                        echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'user/' . urlencode($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-clipboard"></i> ' . htmlspecialchars($lang['pastes'] ?? 'Pastes', ENT_QUOTES, 'UTF-8') . '</a></li>';
-                                        echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'profile', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-person"></i> ' . htmlspecialchars($lang['settings'] ?? 'Settings', ENT_QUOTES, 'UTF-8') . '</a></li>';
-                                    } else {
-                                        echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'user.php?user=' . urlencode($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-clipboard"></i> ' . htmlspecialchars($lang['pastes'] ?? 'Pastes', ENT_QUOTES, 'UTF-8') . '</a></li>';
-                                        echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'profile.php', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-person"></i> ' . htmlspecialchars($lang['settings'] ?? 'Settings', ENT_QUOTES, 'UTF-8') . '</a></li>';
-                                    }
+                                <li><h6 class="dropdown-header"><?php echo htmlspecialchars($lang['my_account'] ?? 'My Account', ENT_QUOTES, 'UTF-8'); ?></h6></li>
+                                <?php
+                                if ($mod_rewrite == '1') {
+                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'user/' . urlencode($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-clipboard"></i> ' . htmlspecialchars($lang['pastes'] ?? 'Pastes', ENT_QUOTES, 'UTF-8') . '</a></li>';
+                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'profile', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-person"></i> ' . htmlspecialchars($lang['settings'] ?? 'Settings', ENT_QUOTES, 'UTF-8') . '</a></li>';
                                     echo '<li><hr class="dropdown-divider"></li>';
                                     echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'login.php?action=logout', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-box-arrow-right"></i> ' . htmlspecialchars($lang['logout'] ?? 'Logout', ENT_QUOTES, 'UTF-8') . '</a></li>';
                                 } else {
-                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lang['login'] ?? 'Login', ENT_QUOTES, 'UTF-8') . '</a></li>';
-                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8') . '</a></li>';
+                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'user.php?user=' . urlencode($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-clipboard"></i> ' . htmlspecialchars($lang['pastes'] ?? 'Pastes', ENT_QUOTES, 'UTF-8') . '</a></li>';
+                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'profile.php', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-person"></i> ' . htmlspecialchars($lang['settings'] ?? 'Settings', ENT_QUOTES, 'UTF-8') . '</a></li>';
+                                    echo '<li><hr class="dropdown-divider"></li>';
+                                    echo '<li><a class="dropdown-item" href="' . htmlspecialchars($baseurl . 'login.php?action=logout', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-box-arrow-right"></i> ' . htmlspecialchars($lang['logout'] ?? 'Logout', ENT_QUOTES, 'UTF-8') . '</a></li>';
                                 }
                                 ?>
                             </ul>
-                        </li>
-                    </ul>
-                <?php } ?>
+                        <?php } else {
+                            echo '<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-person"></i> ' . htmlspecialchars($lang['guest'] ?? 'Guest', ENT_QUOTES, 'UTF-8') . '</a>';
+                        ?>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#signin"><i class="bi bi-box-arrow-in-right"></i> <?php echo htmlspecialchars($lang['login'] ?? 'Login', ENT_QUOTES, 'UTF-8'); ?></a></li>
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#signup"><i class="bi bi-person-plus"></i> <?php echo htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8'); ?></a></li>
+                                <?php
+                                if ($enablegoog == 'yes') {
+                                    echo '<li><a class="dropdown-item btn-oauth" href="' . htmlspecialchars($baseurl . 'login.php?login=google', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-google oauth-icon"></i> ' . htmlspecialchars($lang['login_with_google'] ?? 'Google', ENT_QUOTES, 'UTF-8') . '</a></li>';
+                                }
+                                if ($enablefb == 'yes') {
+                                    echo '<li><a class="dropdown-item btn-oauth" href="' . htmlspecialchars($baseurl . 'login.php?login=facebook', ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-facebook oauth-icon"></i> ' . htmlspecialchars($lang['login_with_facebook'] ?? 'Facebook', ENT_QUOTES, 'UTF-8') . '</a></li>';
+                                }
+                                ?>
+                            </ul>
+                        <?php } ?>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
@@ -96,7 +135,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="<?php echo htmlspecialchars($baseurl ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signin" value="1">
                             <div class="mb-3">
@@ -149,19 +188,31 @@
                             <input type="hidden" name="signup" value="1">
                             <div class="mb-3">
                                 <label for="signupUsername" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
-                                <input type="text" class="form-control" id="signupUsername" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="signupUsername" name="username" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="signupEmail" class="form-label"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
-                                <input type="email" class="form-control" id="signupEmail" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control" id="signupEmail" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="signupFullname" class="form-label"><?php echo htmlspecialchars($lang['full_name'] ?? 'Full Name', ENT_QUOTES, 'UTF-8'); ?></label>
-                                <input type="text" class="form-control" id="signupFullname" name="full" value="<?php echo htmlspecialchars($_POST['full'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="signupFullname" name="full" value="<?php echo htmlspecialchars($_POST['full'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="signupPassword" class="form-label"><?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?></label>
-                                <input type="password" class="form-control" id="signupPassword" name="password" required>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" id="signupPassword" name="password" required>
+                                </div>
                             </div>
                             <button type="submit" name="signup" class="btn btn-primary btn-lg fw-bold w-100"><?php echo htmlspecialchars($lang['signup'] ?? 'Register', ENT_QUOTES, 'UTF-8'); ?></button>
                         </form>

@@ -21,7 +21,6 @@ if (file_exists($directory)) {
 require_once('config.php');
 require_once('includes/captcha.php');
 require_once('includes/functions.php');
-//require_once('includes/password.php'); // php5.5 - obsolete
 
 $stmt = $pdo->query("SELECT * FROM site_info WHERE id='1'");
 $row = $stmt->fetch();
@@ -72,7 +71,7 @@ $recaptcha_version = trim($row['recaptcha_version'] ?? 'v2');
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     if ($cap_e == "on") {
         if ($mode == "reCAPTCHA") {
-            $_SESSION['captcha_mode'] = "recaptcha";
+            $_SESSION['captcha_mode'] = ($recaptcha_version == 'v3') ? "recaptcha_v3" : "recaptcha";
             $_SESSION['captcha'] = $recaptcha_sitekey;
         } else {
             $_SESSION['captcha_mode'] = "internal";
@@ -236,11 +235,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     goto OutPut;
                 }
 
-                // For v3, check the score (if applicable)
-                if ($recaptcha_version === 'v3' && ($response['score'] ?? 0) < 0.5) {
-                    error_log("reCAPTCHA v3 low score: " . ($response['score'] ?? 0));
-                    $error = $lang['low_score'] ?? 'Your action was flagged as potentially automated. Please try again.';
-                    goto OutPut;
+                // For v3, check the score
+                if ($recaptcha_version === 'v3') {
+                    $score = isset($response['score']) ? (float)$response['score'] : 0.0;
+                    $action = $response['action'] ?? '';
+                    error_log("reCAPTCHA v3 response: Score: {$score}, Action: {$action}, Hostname: {$response['hostname']}");
+                    if ($score < 0.3 || $action !== 'create_paste') {
+                        error_log("reCAPTCHA v3 verification failed. Score: {$score}, Action: {$action}");
+                        $error = $lang['low_score'] ?? 'Your action was flagged as potentially automated. Please try again.';
+                        goto OutPut;
+                    }
                 }
             } else {
                 $scode = strtolower(htmlentities(trim($_POST['scode'] ?? '')));

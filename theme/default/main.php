@@ -4,7 +4,6 @@
  * Licensed under the GNU General Public License, version 3 or later.
  */
 ?>
-<?php require_once('theme/' . ($default_theme ?? 'default') . '/header.php'); ?>
 <style>
 /* Custom styles for dark theme and spacing */
 .g-recaptcha {
@@ -77,7 +76,7 @@
                             <?php if (isset($error)): ?>
                                 <div class="alert alert-warning"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
                             <?php endif; ?>
-                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST" onsubmit="return validateRecaptcha()">
+                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST">
                                 <div class="row mb-3 g-3">
                                     <div class="col-sm-4">
                                         <div class="input-group">
@@ -150,11 +149,9 @@
                                 </div>
                                 <?php if ($cap_e == "on" && !isset($_SESSION['username']) && (!isset($disableguest) || $disableguest !== "on")): ?>
                                     <?php if ($_SESSION['captcha_mode'] == "recaptcha"): ?>
-                                        <?php if ($recaptcha_version == 'v2'): ?>
-                                            <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($recaptcha_sitekey, ENT_QUOTES, 'UTF-8'); ?>" data-theme="dark"></div>
-                                        <?php else: ?>
-                                            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
-                                        <?php endif; ?>
+                                        <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-theme="dark" data-callback="onRecaptchaSuccess"></div>
+                                    <?php elseif ($_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
+                                        <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
                                     <?php else: ?>
                                         <div class="row mb-3">
                                             <?php echo '<img src="' . htmlspecialchars($_SESSION['captcha']['image_src'] ?? '', ENT_QUOTES, 'UTF-8') . '" alt="CAPTCHA" class="imagever">'; ?>
@@ -204,7 +201,7 @@
                             <?php if (isset($error)): ?>
                                 <div class="alert alert-warning"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
                             <?php endif; ?>
-                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST" onsubmit="return validateRecaptcha()">
+                            <form class="form-horizontal" name="mainForm" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>" method="POST">
                                 <div class="row mb-3 g-3">
                                     <div class="col-sm-4">
                                         <div class="input-group">
@@ -322,20 +319,28 @@ function onRecaptchaSuccess(token) {
     console.log('reCAPTCHA v2 completed: Token received');
     document.getElementById('g-recaptcha-response').value = token;
 }
-
-
-<?php elseif (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
-grecaptcha.ready(function() {
-    grecaptcha.execute('<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>', {action: 'create_paste'}).then(function(token) {
-        console.log('reCAPTCHA v3 executed: Token received');
-        document.getElementById('g-recaptcha-response').value = token;
-    }, function(error) {
-        console.error('reCAPTCHA v3 error:', error);
-    });
-});
-
 function validateRecaptcha() {
-    return true; // No client-side validation needed for v3
+    const token = document.getElementById('g-recaptcha-response').value;
+    if (!token) {
+        console.error('reCAPTCHA v2 token missing');
+        alert('<?php echo htmlspecialchars($lang['recaptcha_missing'] ?? 'Please complete the reCAPTCHA.', ENT_QUOTES, 'UTF-8'); ?>');
+        return false;
+    }
+    return true;
+}
+<?php elseif (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
+function onRecaptchaLoad() {
+    grecaptcha.ready(function() {
+        grecaptcha.execute('<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>', {action: 'create_paste'}).then(function(token) {
+            console.log('reCAPTCHA v3 executed: Token received');
+            document.getElementById('g-recaptcha-response').value = token;
+        }, function(error) {
+            console.error('reCAPTCHA v3 error:', error);
+        });
+    });
+}
+function validateRecaptcha() {
+    return true; // Validation handled server-side for v3
 }
 <?php else: ?>
 function validateRecaptcha() {
