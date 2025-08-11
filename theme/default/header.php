@@ -49,6 +49,10 @@
                     ?>
                 </ul>
                 <?php if (!isset($privatesite) || $privatesite != "on") { ?>
+                    <form class="d-flex me-3" action="<?php echo htmlspecialchars($baseurl . ($mod_rewrite == '1' ? 'archive' : 'archive.php'), ENT_QUOTES, 'UTF-8'); ?>" method="get">
+                        <input class="form-control me-2" type="search" name="q" placeholder="<?php echo htmlspecialchars($lang['search'] ?? 'Search pastes...', ENT_QUOTES, 'UTF-8'); ?>" aria-label="Search" value="<?php echo htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <button class="btn btn-outline-light" type="submit"><i class="bi bi-search"></i></button>
+                    </form>
                     <ul class="navbar-nav navbar-nav-guest">
                         <li class="nav-item dropdown">
                             <?php if (isset($_SESSION['token'])) {

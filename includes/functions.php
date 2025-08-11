@@ -106,13 +106,16 @@ if (isset($_POST['delete']) && isset($_SESSION['username']) && isset($paste_id))
     }
 }
 
-function getRecent(PDO $pdo, int $count = 5): array
+function getRecent(PDO $pdo, int $count = 5, int $offset = 0, string $sortColumn = 'date', string $sortDirection = 'DESC'): array
 {
     try {
-        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, now_time, encrypt 
-                  FROM pastes WHERE visible = '0' ORDER BY id DESC LIMIT :count";
+        $sortColumn = in_array($sortColumn, ['date', 'title', 'code']) ? $sortColumn : 'date';
+        $sortDirection = in_array($sortDirection, ['ASC', 'DESC']) ? $sortDirection : 'DESC';
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt 
+                  FROM pastes WHERE visible = '0' AND password = 'NONE' ORDER BY $sortColumn $sortDirection LIMIT :count OFFSET :offset";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':count', $count, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as &$row) {
