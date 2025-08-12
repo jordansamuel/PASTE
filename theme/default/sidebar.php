@@ -32,12 +32,12 @@ declare(strict_types=1);
                         <?php
                         $username = (string) ($_SESSION['username'] ?? '');
                         if ($username === '') {
-                            echo '<p class="text-muted">Error: User not logged in.</p>';
+                            echo '<p class="p-4 text-muted">Error: User not logged in.</p>';
                         } else {
                             try {
                                 $pastes = getUserRecent($pdo, $username, 10);
                                 if (empty($pastes)) {
-                                    echo '<p class="text-muted">No pastes yet. Create one!</p>';
+                                    echo '<p class="p-4 text-muted">No pastes yet. Create one!</p>';
                                 } else {
                                     foreach ($pastes as $row) {
                                         $title = (string) ($row['title'] ?? 'Untitled');
@@ -71,7 +71,7 @@ declare(strict_types=1);
                                     }
                                 }
                             } catch (Exception $e) {
-                                echo '<p class="text-danger">Error fetching pastes: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
+                                echo '<p class="p-4 text-danger">Error fetching pastes: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
                             }
                         }
                         ?>
@@ -83,9 +83,9 @@ declare(strict_types=1);
         <!-- Guest message -->
         <div class="col-12">
             <div class="card mb-4">
-                <div class="card-body p-4 rounded-1 border border-light">
-                    <h6 class="text-blue"><?php echo htmlspecialchars($lang['guestmsgtitle'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></h6>
-                    <p class="text-muted mb-0"><?php echo $lang['guestmsgbody'] ?? 'Sign in to manage your pastes.'; ?></p>
+                <div class="card-body rounded-1 border border-light">
+                    <h6><?php echo htmlspecialchars($lang['guestmsgtitle'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></h6>
+                    <p class="p-1 text-muted"><?php echo $lang['guestmsgbody'] ?? 'Sign in to manage your pastes.'; ?></p>
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@ declare(strict_types=1);
                         try {
                             $pastes = getRecent($pdo, 10);
                             if (empty($pastes)) {
-                                echo '<p class="text-muted">' . htmlspecialchars($lang['emptypastebin'] ?? 'No pastes found', ENT_QUOTES, 'UTF-8') . '</p>';
+                                echo '<p class="p-4 text-muted">' . htmlspecialchars($lang['emptypastebin'] ?? 'No pastes found', ENT_QUOTES, 'UTF-8') . '</p>';
                             } else {
                                 foreach ($pastes as $row) {
                                     $title = (string) ($row['title'] ?? 'Untitled');
