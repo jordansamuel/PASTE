@@ -109,7 +109,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>">
+                        <form method="GET" action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signin" value="1">
                             <div class="mb-3">
@@ -157,7 +157,7 @@
                         <?php if (isset($success)): ?>
                             <div class="alert alert-success"><?php echo htmlspecialchars($success ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
-                        <form action="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                        <form method="GET" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signup" value="1">
                             <div class="mb-3">
