@@ -1,5 +1,6 @@
 body {
-    font-family: monospace;
+	font-family: "Open Sans", sans-serif;
+	font-optical-sizing: auto;
     background-color: #1a1a1a !important; /* Dark base theme */
     color: #fff;
     margin: 0 !important;
@@ -196,12 +197,12 @@ body {
 .code-content .st_h { color: green !important; }
 
 .code-content {
-    background-color: #222;
-    padding: 1rem;
+    overflow-x: auto;
+    max-width: 100%;
     border-radius: 4px;
     margin-bottom: 1rem;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.9rem;
+    font-family: Menlo, Monaco, 'Courier New', monospace;
+    font-size: 0.8rem;
 }
 
 .code-content.no-line-numbers ol, .code-content.no-line-numbers pre, .code-content.no-line-numbers ol li, .code-content.no-line-numbers pre span {
