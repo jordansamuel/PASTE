@@ -252,24 +252,31 @@ body {
     margin-bottom: 1rem;
 }
 
+.no-line-numbers ol, .no-line-numbers ol li.marker {
+    list-style: none !important;
+}
+.close-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #000;
+}
 .notification {
     position: relative;
-    margin-top: 10px;
     padding: 10px;
-    background-color: #333;
-    color: #fff;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
     display: none;
 }
-
 .notification.error {
-    background-color: #f92672;
+    border-color: #dc3545;
+    color: #dc3545;
 }
-
 .notification.fade-out {
     opacity: 0;
     transition: opacity 0.5s;
-}
-
-.no-line-numbers ol, .no-line-numbers ol li.marker {
-    list-style: none !important;
 }

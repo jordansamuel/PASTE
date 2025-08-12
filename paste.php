@@ -21,7 +21,9 @@ $ges_style = '';
 // Initialize variables
 $p_password = ''; // Default to empty string to avoid undefined warning
 
-$paste_id = isset($_GET['id']) ? (int) trim(htmlspecialchars($_GET['id'] ?? '')) : (isset($_POST['id']) ? (int) trim(htmlspecialchars($_POST['id'] ?? '')) : null);
+$paste_id = isset($_GET['id']) && !empty($_GET['id']) ? (int) trim(htmlspecialchars($_GET['id'])) : (isset($_POST['id']) && !empty($_POST['id']) ? (int) trim(htmlspecialchars($_POST['id'])) : null);
+$referrer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'No referrer';
+error_log("Debug: paste.php - \$_GET: " . print_r($_GET, true) . ", \$paste_id: " . ($paste_id ?? 'null') . ", Referrer: $referrer");
 
 try {
     $stmt = $pdo->query("SELECT * FROM site_info WHERE id = '1'");
@@ -63,7 +65,7 @@ try {
 
     $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
     $row = $stmt->fetch();
-    $text_ads = trim($row['text_ads'] ?? '');
+    $text_ads = trim($row['ads_1'] ?? '');
     $ads_1 = trim($row['ads_1'] ?? '');
     $ads_2 = trim($row['ads_2'] ?? '');
 
@@ -106,8 +108,8 @@ try {
                 $stmt = $pdo->prepare("SELECT tpage, tvisit FROM page_view WHERE id = ?");
                 $stmt->execute([$last_id]);
                 $row = $stmt->fetch();
-                $last_tpage = (int) trim($row['tpage']) + 1;
-                $last_tvisit = (int) trim($row['tvisit']) + 1;
+                $last_tpage = (int) trim($row['tpage'] ?? 0) + 1;
+                $last_tvisit = (int) trim($row['tvisit'] ?? 0) + 1;
                 $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
                 $stmt->execute([$last_tpage, $last_tvisit, $last_id]);
                 file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
@@ -147,6 +149,7 @@ try {
             $p_date = (string) ($row['date'] ?? '');
             $p_encrypt = $row['encrypt'] ?? '0';
             $p_views = (int) ($row['views'] ?? 0);
+            error_log("Debug: paste.php - \$p_code: $p_code, \$p_content: " . substr($p_content, 0, 50) . "...");
 
             if ($p_visible == "2") {
                 if (isset($_SESSION['username']) && $p_member == (string) ($_SESSION['username'] ?? '')) {

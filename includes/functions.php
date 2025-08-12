@@ -109,9 +109,9 @@ if (isset($_POST['delete']) && isset($_SESSION['username']) && isset($paste_id))
 function getRecent(PDO $pdo, int $count = 5, int $offset = 0, string $sortColumn = 'date', string $sortDirection = 'DESC'): array
 {
     try {
-        $sortColumn = in_array($sortColumn, ['date', 'title', 'code']) ? $sortColumn : 'date';
+        $sortColumn = in_array($sortColumn, ['date', 'title', 'code', 'views']) ? $sortColumn : 'date';
         $sortDirection = in_array($sortDirection, ['ASC', 'DESC']) ? $sortDirection : 'DESC';
-        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt 
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, views 
                   FROM pastes WHERE visible = '0' AND password = 'NONE' ORDER BY $sortColumn $sortDirection LIMIT :count OFFSET :offset";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':count', $count, PDO::PARAM_INT);
@@ -135,7 +135,7 @@ function getRecent(PDO $pdo, int $count = 5, int $offset = 0, string $sortColumn
 function getUserRecent(PDO $pdo, string $username, int $count = 5): array
 {
     try {
-        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, now_time, encrypt 
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, views 
                   FROM pastes WHERE member = :username ORDER BY id DESC LIMIT :count";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':username', $username, PDO::PARAM_STR);
@@ -159,7 +159,7 @@ function getUserRecent(PDO $pdo, string $username, int $count = 5): array
 function getUserPastes(PDO $pdo, string $username): array
 {
     try {
-        $query = "SELECT id, title, content, visible, code, password, member, date, now_time, encrypt, views, expiry 
+        $query = "SELECT id, title, content, visible, code, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, views, expiry 
                   FROM pastes WHERE member = :username ORDER BY id DESC";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':username', $username, PDO::PARAM_STR);
@@ -213,17 +213,44 @@ function existingUser(PDO $pdo, string $username): bool
 function updateMyView(PDO $pdo, int $paste_id): bool
 {
     try {
-        $pdo->beginTransaction();
-        $query = "SELECT views FROM pastes WHERE id = :paste_id FOR UPDATE";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute(['paste_id' => $paste_id]);
-        $p_view = (int) ($stmt->fetchColumn() ?? 0);
-        $p_view++;
-        $query = "UPDATE pastes SET views = :views WHERE id = :paste_id";
-        $stmt = $pdo->prepare($query);
-        $success = $stmt->execute(['views' => $p_view, 'paste_id' => $paste_id]);
-        $pdo->commit();
-        return $success;
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $log_file = 'tmp/views_log.txt';
+        $current_time = time();
+        $unique_view = true;
+
+        // Load existing view log
+        $view_log = file_exists($log_file) ? file($log_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
+        foreach ($view_log as $index => $entry) {
+            [$logged_paste_id, $logged_ip, $timestamp] = explode(':', $entry);
+            if ($logged_paste_id == $paste_id && $logged_ip == $ip && $current_time - $timestamp < 86400) { // 24 hours
+                $unique_view = false;
+                break;
+            }
+            // Clean up old entries (older than 24 hours)
+            if ($current_time - $timestamp >= 86400) {
+                unset($view_log[$index]);
+            }
+        }
+
+        if ($unique_view) {
+            $pdo->beginTransaction();
+            $query = "SELECT views FROM pastes WHERE id = :paste_id FOR UPDATE";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute(['paste_id' => $paste_id]);
+            $p_view = (int) ($stmt->fetchColumn() ?? 0);
+            $p_view++;
+            $query = "UPDATE pastes SET views = :views WHERE id = :paste_id";
+            $stmt = $pdo->prepare($query);
+            $success = $stmt->execute(['views' => $p_view, 'paste_id' => $paste_id]);
+            $pdo->commit();
+
+            // Log the new unique view
+            file_put_contents($log_file, "$paste_id:$ip:$current_time\n", FILE_APPEND | LOCK_EX);
+            // Update view_log to remove old entries and add the new one
+            file_put_contents($log_file, implode("\n", $view_log) . "\n$paste_id:$ip:$current_time\n");
+        }
+
+        return $unique_view;
     } catch (PDOException $e) {
         $pdo->rollBack();
         error_log("Failed to update view count for paste ID {$paste_id}: " . $e->getMessage());
@@ -231,9 +258,38 @@ function updateMyView(PDO $pdo, int $paste_id): bool
     }
 }
 
-function conTime(int $seconds): string
+function conTime(int $timestamp): string
 {
-    if ($seconds === 0) {
+    if ($timestamp <= 0) {
+        return '0 seconds';
+    }
+    $now = time();
+    $diff = $now - $timestamp;
+    if ($diff < 0) {
+        return 'In the future';
+    }
+    $periods = [
+        'year' => 31536000,
+        'month' => 2592000,
+        'day' => 86400,
+        'hour' => 3600,
+        'minute' => 60,
+        'second' => 1
+    ];
+    $result = '';
+    foreach ($periods as $name => $duration) {
+        $value = floor($diff / $duration);
+        if ($value >= 1) {
+            $result .= "$value $name" . ($value > 1 ? 's' : '') . ' ';
+            $diff -= $value * $duration;
+        }
+    }
+    return trim($result) ?: 'just now';
+}
+
+function getRelativeTime(int $seconds): string
+{
+    if ($seconds <= 0) {
         return '0 seconds';
     }
     $now = new DateTime('@0');
@@ -259,6 +315,20 @@ function conTime(int $seconds): string
     return trim($ret);
 }
 
+function formatRealTime(string $dateStr): string
+{
+    // Convert database date (Y-m-d H:i:s) to a formatted date with time
+    if (empty($dateStr)) {
+        return 'Invalid date';
+    }
+    try {
+        $date = new DateTime($dateStr, new DateTimeZone('UTC'));
+        return $date->format('jS F Y H:i'); // e.g., "11th August 2025 23:43"
+    } catch (Exception $e) {
+        return 'Invalid date';
+    }
+}
+
 function truncate(string $input, int $maxWords, int $maxChars): string
 {
     $words = preg_split('/\s+/', trim($input), $maxWords + 1, PREG_SPLIT_NO_EMPTY);
@@ -278,7 +348,7 @@ function truncate(string $input, int $maxWords, int $maxChars): string
 
 function doDownload(int $paste_id, string $p_title, string $p_content, string $p_code): bool
 {
-    if (!$p_code) {
+    if (!$p_code || !$p_content) {
         header('HTTP/1.1 404 Not Found');
         return false;
     }
@@ -306,8 +376,9 @@ function doDownload(int $paste_id, string $p_title, string $p_content, string $p
 
 function rawView(int $paste_id, string $p_title, string $p_content, string $p_code): bool
 {
-    if (!$p_code) {
+    if (!$paste_id || !$p_code || !$p_content) {
         header('HTTP/1.1 404 Not Found');
+        error_log("Debug: rawView - Invalid input: paste_id=$paste_id, p_code=$p_code, p_content length=" . strlen($p_content));
         return false;
     }
     header('Content-Type: text/plain; charset=utf-8');
@@ -317,7 +388,7 @@ function rawView(int $paste_id, string $p_title, string $p_content, string $p_co
 
 function embedView(int $paste_id, string $p_title, string $p_content, string $p_code, string $title, string $baseurl, string $ges_style, array $lang): bool
 {
-    if (!$p_content) {
+    if (!$paste_id || !$p_content) {
         header('HTTP/1.1 404 Not Found');
         return false;
     }
@@ -374,6 +445,14 @@ function embedView(int $paste_id, string $p_title, string $p_content, string $p_
     header('Content-Type: text/javascript; charset=utf-8');
     echo 'document.write(' . json_encode($output) . ')';
     return true;
+}
+
+function getEmbedUrl($paste_id, $mod_rewrite, $baseurl) {
+    if ($mod_rewrite) {
+        return $baseurl . 'embed/' . $paste_id;
+    } else {
+        return $baseurl . 'embed.php?id=' . $paste_id;
+    }
 }
 
 function paste_protocol(): string

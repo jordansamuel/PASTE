@@ -1,8 +1,8 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
@@ -119,8 +119,8 @@ try {
     $ads_2 = trim($row['ads_2']);
 
     // Search, pagination, and sorting
-    $search_query = isset($_GET['q']) ? trim($_GET['q']) : '';
-    $sort = isset($_GET['sort']) && in_array($_GET['sort'], ['date_desc', 'date_asc', 'title_asc', 'title_desc', 'code_asc', 'code_desc']) ? $_GET['sort'] : 'date_desc';
+    $search_query = isset($_GET['q']) && !empty($_GET['q']) ? trim($_GET['q']) : '';
+    $sort = isset($_GET['sort']) && in_array($_GET['sort'], ['date_desc', 'date_asc', 'title_asc', 'title_desc', 'code_asc', 'code_desc', 'views_desc', 'views_asc']) ? $_GET['sort'] : 'date_desc';
     $perPage = 10;
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $offset = ($page - 1) * $perPage;
@@ -148,61 +148,63 @@ try {
             $sortColumn = 'code';
             $sortDirection = 'DESC';
             break;
+        case 'views_desc':
+            $sortColumn = 'views';
+            $sortDirection = 'DESC';
+            break;
+        case 'views_asc':
+            $sortColumn = 'views';
+            $sortDirection = 'ASC';
+            break;
     }
 
-    if ($search_query) {
-        // Search pastes by title or content, handling encrypted pastes in PHP
+    // Initialize variables
+    $pastes = [];
+    $totalItems = 0;
+    $totalPages = 1;
+    $error = '';
+
+    if ($search_query && strlen($search_query) >= 3) { // Only proceed with search if query is valid
+        // Search all pastes (encrypted or not) with a single query
         $search_term = '%' . $search_query . '%';
-        $matching_paste_ids = [];
+        $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member, views FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?) ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
+        $stmt->execute([$search_term, $search_term, $perPage, $offset]);
+        $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Fetch non-encrypted matching paste IDs
-        $stmt = $pdo->prepare("SELECT id FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?)");
+        // Count total matching pastes for pagination
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?)");
         $stmt->execute([$search_term, $search_term]);
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $matching_paste_ids[] = $row['id'];
-        }
+        $totalItems = $stmt->fetchColumn();
+        $totalPages = $totalItems > 0 ? ceil($totalItems / $perPage) : 1;
 
-        // Fetch encrypted pastes and check in PHP
-        $stmt = $pdo->prepare("SELECT id, title, content, encrypt FROM pastes WHERE visible = '0' AND password = 'NONE' AND encrypt = '1'");
-        $stmt->execute();
-        $encrypted_pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($encrypted_pastes as $paste) {
-            $decrypted_title = $paste['encrypt'] == '1' ? decrypt($paste['title'], hex2bin(SECRET)) ?? $paste['title'] : $paste['title'];
-            $decrypted_content = $paste['encrypt'] == '1' ? decrypt($paste['content'], hex2bin(SECRET)) ?? '' : $paste['content'];
-            if (stripos($decrypted_title, $search_query) !== false || stripos($decrypted_content, $search_query) !== false) {
-                $matching_paste_ids[] = $paste['id'];
-            }
-        }
-
-        // Remove duplicates and count total items
-        $matching_paste_ids = array_unique($matching_paste_ids);
-        $totalItems = count($matching_paste_ids);
-
-        // Fetch matching pastes with pagination
-        $pastes = [];
-        if ($matching_paste_ids) {
-            $placeholders = implode(',', array_fill(0, count($matching_paste_ids), '?'));
-            $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member FROM pastes WHERE visible = '0' AND password = 'NONE' AND id IN ($placeholders) ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
-            $stmt->execute(array_merge($matching_paste_ids, [$perPage, $offset]));
-            $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-
-        // Decrypt titles for display
+        // Decrypt titles and format time
         foreach ($pastes as &$row) {
             if ($row['encrypt'] == '1') {
                 $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
             }
+            $row['time_display'] = formatRealTime($row['date']);
+            $row['url'] = $mod_rewrite == '1' ? $baseurl . $row['id'] : $baseurl . 'paste.php?id=' . $row['id'];
+            $row['title'] = truncate($row['title'], 20, 50);
         }
         unset($row);
-    } else {
-        // Fetch recent pastes with password = 'NONE'
-        $stmt = $pdo->query("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE'");
-        $totalItems = (int) $stmt->fetchColumn();
-        $pastes = getRecent($pdo, $perPage, $offset, $sortColumn, $sortDirection);
+    } elseif (isset($_GET['q']) && (empty($search_query) || strlen($search_query) < 3)) {
+        // Set error for empty or too short search query
+        $error = "Please use a keyword.";
     }
 
-    $totalPages = $totalItems > 0 ? ceil($totalItems / $perPage) : 1;
+    // Pagination
+    $prev_page_query = http_build_query(array_merge($_GET, ['page' => $page > 1 ? $page - 1 : 1]));
+    $next_page_query = http_build_query(array_merge($_GET, ['page' => $page < $totalPages ? $page + 1 : $totalPages]));
+    $page_queries = [];
+    for ($i = 1; $i <= $totalPages; $i++) {
+        $page_queries[$i] = http_build_query(array_merge($_GET, ['page' => $i]));
+    }
+
+    // Set archives title
+    $archives_title = htmlspecialchars($lang['archives'] ?? 'Archives');
+    if ($search_query && !empty($search_query)) {
+        $archives_title .= ' - ' . htmlspecialchars($lang['search_results_for'] ?? 'Search Results for') . ' "' . htmlspecialchars($search_query) . '"';
+    }
 
     // Theme
     require_once('theme/' . $default_theme . '/header.php');

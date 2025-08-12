@@ -42,7 +42,7 @@ declare(strict_types=1);
                                     $p_id = (string) ($row['id'] ?? '');
                                     $p_date = (string) ($row['date'] ?? '');
                                     $p_time = (int) ($row['now_time'] ?? 0);
-                                    $p_time_ago = conTime(time() - $p_time);
+                                    $p_time_ago = conTime($p_time);
                                     $title = truncate($title, 6, 15);
                                     $p_delete_link = $mod_rewrite ? "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id)
                                                                 : "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id);
@@ -58,7 +58,7 @@ declare(strict_types=1);
                                         <a class="delete-paste icon" href="<?php echo htmlspecialchars($baseurl . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>" data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>" title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                         </a>
-                                        <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
+                                        <button type="button" class="btn btn-dark btn-sm float-end popover-clock" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
                                             <i class="bi bi-clock"></i>
                                         </button>
                                     </p>
@@ -99,7 +99,7 @@ declare(strict_types=1);
                                 $p_id = (string) ($row['id'] ?? '');
                                 $p_date = (string) ($row['date'] ?? '');
                                 $p_time = (int) ($row['now_time'] ?? 0);
-                                $p_time_ago = conTime(time() - $p_time);
+                                $p_time_ago = conTime($p_time);
                                 $title = truncate($title, 6, 15);
                                 ?>
                                 <p class="mb-0">
@@ -110,7 +110,7 @@ declare(strict_types=1);
                                     ); ?>" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                         <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
                                     </a>
-                                    <button type="button" class="btn btn-dark btn-sm float-end" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-trigger="click" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
+                                    <button type="button" class="btn btn-dark btn-sm float-end popover-clock" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="<?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?>" title="Posted <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago">
                                         <i class="bi bi-clock"></i>
                                     </button>
                                 </p>
@@ -131,3 +131,43 @@ declare(strict_types=1);
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('.popover-clock'));
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl, {
+            trigger: 'click',
+            container: 'body',
+            placement: 'left',
+            // Handle touch devices with manual toggle
+            customClass: 'touch-popover',
+            // Ensure popover closes on outside click or second tap
+            content: popoverTriggerEl.getAttribute('data-bs-content'),
+            title: popoverTriggerEl.getAttribute('title')
+        });
+    });
+
+    // Close popover on outside click or second tap
+    document.addEventListener('click', function (e) {
+        popoverList.forEach(function (popover) {
+            if (!popover._element.contains(e.target) && popover._isShown()) {
+                popover.hide();
+            }
+        });
+    });
+
+    // Ensure touch devices can toggle
+    popoverTriggerList.forEach(function (el) {
+        el.addEventListener('touchstart', function (e) {
+            e.preventDefault(); // Prevent default touch behavior
+            var popover = bootstrap.Popover.getInstance(el);
+            if (popover && popover._isShown()) {
+                popover.hide();
+            } else if (popover) {
+                popover.show();
+            }
+        }, { passive: false });
+    });
+});
+</script>

@@ -23,7 +23,7 @@ $protocol = paste_protocol();
                     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap py-3">
                         <h1 class="h4 mb-0">
                             <?php echo htmlspecialchars($lang['archives'] ?? 'Archives', ENT_QUOTES, 'UTF-8'); ?>
-                            <?php if ($search_query): ?> - <?php echo htmlspecialchars($lang['search_results_for'] ?? 'Search Results for', ENT_QUOTES, 'UTF-8'); ?> "<?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?>"<?php endif; ?>
+                            <?php if ($search_query && !empty($search_query)): ?> - <?php echo htmlspecialchars($lang['search_results_for'] ?? 'Search Results for', ENT_QUOTES, 'UTF-8'); ?> "<?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?>"<?php endif; ?>
                         </h1>
                         <div class="d-flex align-items-center flex-wrap gap-2">
                             <form class="d-flex align-items-center" action="<?php echo htmlspecialchars($baseurl . ($mod_rewrite == '1' ? 'archive' : 'archive.php'), ENT_QUOTES, 'UTF-8'); ?>" method="get">
@@ -31,7 +31,7 @@ $protocol = paste_protocol();
                                 <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
                             </form>
                             <form class="d-flex align-items-center" action="<?php echo htmlspecialchars($baseurl . ($mod_rewrite == '1' ? 'archive' : 'archive.php'), ENT_QUOTES, 'UTF-8'); ?>" method="get">
-                                <?php if ($search_query): ?>
+                                <?php if ($search_query && !empty($search_query)): ?>
                                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8'); ?>">
                                 <?php endif; ?>
                                 <select name="sort" class="form-select me-2" style="width: auto; background-color: #2a2a2a; border-color: #444; color: #fff;">
@@ -41,13 +41,17 @@ $protocol = paste_protocol();
                                     <option value="title_desc" <?php echo ($sort == 'title_desc') ? 'selected' : ''; ?>><?php echo htmlspecialchars($lang['sort_title_desc'] ?? 'Title (Z-A)', ENT_QUOTES, 'UTF-8'); ?></option>
                                     <option value="code_asc" <?php echo ($sort == 'code_asc') ? 'selected' : ''; ?>><?php echo htmlspecialchars($lang['sort_code_asc'] ?? 'Syntax (A-Z)', ENT_QUOTES, 'UTF-8'); ?></option>
                                     <option value="code_desc" <?php echo ($sort == 'code_desc') ? 'selected' : ''; ?>><?php echo htmlspecialchars($lang['sort_code_desc'] ?? 'Syntax (Z-A)', ENT_QUOTES, 'UTF-8'); ?></option>
+                                    <option value="views_desc" <?php echo ($sort == 'views_desc') ? 'selected' : ''; ?>><?php echo htmlspecialchars($lang['sort_views_desc'] ?? 'Popularity (Most Views)', ENT_QUOTES, 'UTF-8'); ?></option>
+                                    <option value="views_asc" <?php echo ($sort == 'views_asc') ? 'selected' : ''; ?>><?php echo htmlspecialchars($lang['sort_views_asc'] ?? 'Popularity (Least Views)', ENT_QUOTES, 'UTF-8'); ?></option>
                                 </select>
                                 <button type="submit" class="btn btn-outline-light"><?php echo htmlspecialchars($lang['sort'] ?? 'Sort', ENT_QUOTES, 'UTF-8'); ?></button>
                             </form>
                         </div>
                     </div>
                     <div class="card-body" style="background-color: #2a2a2a; color: #fff;">
-                        <?php if ($search_query && empty($pastes)): ?>
+                        <?php if ($error): ?>
+                            <div class="alert alert-warning"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php elseif ($search_query && !empty($search_query) && empty($pastes)): ?>
                             <div class="alert alert-info"><?php echo htmlspecialchars($lang['no_results'] ?? 'No results found for your search.', ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
                         <div class="table-responsive">
@@ -58,13 +62,14 @@ $protocol = paste_protocol();
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastetime'] ?? 'Time', ENT_QUOTES, 'UTF-8'); ?></th>
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastesyntax'] ?? 'Syntax', ENT_QUOTES, 'UTF-8'); ?></th>
                                         <th scope="col"><?php echo htmlspecialchars($lang['pastemember'] ?? 'Posted By', ENT_QUOTES, 'UTF-8'); ?></th>
+                                        <th scope="col"><?php echo htmlspecialchars($lang['pasteviews'] ?? 'Views', ENT_QUOTES, 'UTF-8'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
                                     try {
                                         if (empty($pastes)) {
-                                            echo '<tr><td colspan="4" class="text-center">' . htmlspecialchars($lang['emptypastebin'] ?? 'No pastes found', ENT_QUOTES, 'UTF-8') . '</td></tr>';
+                                            echo '<tr><td colspan="5" class="text-center">' . htmlspecialchars($lang['emptypastebin'] ?? 'No pastes found', ENT_QUOTES, 'UTF-8') . '</td></tr>';
                                         } else {
                                             foreach ($pastes as $row) {
                                                 $title = trim((string) ($row['title'] ?? 'Untitled'));
@@ -73,7 +78,9 @@ $protocol = paste_protocol();
                                                 $p_date = trim((string) ($row['date'] ?? ''));
                                                 $p_time = (int) ($row['now_time'] ?? 0);
                                                 $p_member = trim((string) ($row['member'] ?? 'Guest'));
-                                                $p_time_ago = conTime(time() - $p_time);
+                                                $p_views = (int) ($row['views'] ?? 0);
+                                                // Use formatRealTime for absolute date from database date string
+                                                $p_time_display = formatRealTime($p_date);
                                                 $title = truncate($title, 20, 50);
                                                 $url = $mod_rewrite == '1' 
                                                     ? htmlspecialchars($baseurl . '' . $p_id, ENT_QUOTES, 'UTF-8')
@@ -81,15 +88,16 @@ $protocol = paste_protocol();
                                                 ?>
                                                 <tr>
                                                     <td><a href="<?php echo $url; ?>" title="<?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>" class="text-primary"><?php echo ucfirst(htmlspecialchars($title, ENT_QUOTES, 'UTF-8')); ?></a></td>
-                                                    <td><?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td><?php echo htmlspecialchars($p_time_display, ENT_QUOTES, 'UTF-8'); ?></td>
                                                     <td><span class="badge bg-primary"><?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?></span></td>
                                                     <td><?php echo htmlspecialchars($p_member, ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td><?php echo htmlspecialchars($p_views, ENT_QUOTES, 'UTF-8'); ?></td>
                                                 </tr>
                                                 <?php
                                             }
                                         }
                                     } catch (Exception $e) {
-                                        echo '<tr><td colspan="4" class="text-center text-danger">Error fetching pastes: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</td></tr>';
+                                        echo '<tr><td colspan="5" class="text-center text-danger">Error fetching pastes: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</td></tr>';
                                     }
                                     ?>
                                 </tbody>
@@ -115,8 +123,7 @@ $protocol = paste_protocol();
                                         }
                                     }
 
-                                    $nextPage = $page < $totalPages ? $page + 1 : $totalPages;	// Next button
-
+                                    $nextPage = $page < $totalPages ? $page + 1 : $totalPages; // Next button
                                     $queryParamsNext = http_build_query(array_merge($_GET, ['page' => $nextPage]));
                                     $disabledNext = $page == $totalPages ? ' disabled' : '';
                                     echo '<li class="page-item' . $disabledNext . '"><a class="page-link" href="?' . $queryParamsNext . '" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>';

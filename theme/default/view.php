@@ -8,14 +8,7 @@
  * See LICENCE for details.
  */
 ?>
-<style>
-<?php if (isset($privatesite) && $privatesite === "on"): ?>
-/* Ensure proper spacing when sidebar is below main content */
-.sidebar-below {
-    margin-top: 1.5rem; /* Add spacing between main content and sidebar */
-}
-<?php endif; ?>
-</style>
+
 <!-- Content -->
 <div class="container-xl my-4">
     <div class="row">
@@ -43,8 +36,8 @@
                                         echo 'Guest';
                                     } else {
                                         $user_link = $mod_rewrite ?? false 
-                                            ? htmlspecialchars($baseurl . '/user/' . $p_member_display) 
-                                            : htmlspecialchars($baseurl . '/user.php?user=' . $p_member_display);
+                                            ? htmlspecialchars($baseurl . 'user/' . $p_member_display) 
+                                            : htmlspecialchars($baseurl . 'user.php?user=' . $p_member_display);
                                         echo 'By <a href="' . $user_link . '">' . htmlspecialchars($p_member_display) . '</a>';
                                     }
                                     ?> on <?php echo htmlspecialchars($p_date ?? date('Y-m-d H:i:s')); ?></p>
@@ -61,7 +54,11 @@
                                 <button type="button" class="btn btn-outline-secondary copy-clipboard" title="Copy to Clipboard" onclick="copyToClipboard()">
                                     <i class="bi bi-clipboard"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary embed-tool" title="Embed Paste" onclick="showEmbedCode()">
+                                <?php
+                                $embed_url = getEmbedUrl($paste_id ?? '', $mod_rewrite ?? false, $baseurl ?? '');
+                                $embed_code = $paste_id ? '<iframe src="' . htmlspecialchars($embed_url, ENT_QUOTES, 'UTF-8') . '" width="100%" height="400px" frameborder="0" allowfullscreen></iframe>' : '';
+                                ?>
+                                <button type="button" class="btn btn-outline-secondary embed-tool" title="Embed Paste" onclick="showEmbedCode('<?php echo addslashes(htmlspecialchars($embed_code, ENT_QUOTES, 'UTF-8')); ?>')">
                                     <i class="bi bi-code-square"></i>
                                 </button>
                                 <a href="<?php echo htmlspecialchars($p_raw ?? ($baseurl . '/raw.php?id=' . ($paste_id ?? ''))); ?>" class="btn btn-outline-secondary" title="Raw Paste">
@@ -214,8 +211,8 @@
                                     echo 'Guest';
                                 } else {
                                     $user_link = $mod_rewrite ?? false 
-                                        ? htmlspecialchars($baseurl . '/user/' . $p_member_display) 
-                                        : htmlspecialchars($baseurl . '/user.php?user=' . $p_member_display);
+                                        ? htmlspecialchars($baseurl . 'user/' . $p_member_display) 
+                                        : htmlspecialchars($baseurl . 'user.php?user=' . $p_member_display);
                                     echo 'By <a href="' . $user_link . '">' . htmlspecialchars($p_member_display) . '</a>';
                                 }
                                 ?> on <?php echo htmlspecialchars($p_date ?? date('Y-m-d H:i:s')); ?></p>
@@ -232,7 +229,12 @@
                             <button type="button" class="btn btn-outline-secondary copy-clipboard" title="Copy to Clipboard" onclick="copyToClipboard()">
                                 <i class="bi bi-clipboard"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary embed-tool" title="Embed Paste" onclick="showEmbedCode()">
+                            <?php
+                            // Generate embed code using function from functions.php
+                            $embed_url = getEmbedUrl($paste_id ?? '', $mod_rewrite ?? false, $baseurl ?? '');
+                            $embed_code = $paste_id ? '<iframe src="' . htmlspecialchars($embed_url, ENT_QUOTES, 'UTF-8') . '" width="100%" height="400px" frameborder="0" allowfullscreen></iframe>' : '';
+                            ?>
+                            <button type="button" class="btn btn-outline-secondary embed-tool" title="Embed Paste" onclick="showEmbedCode('<?php echo addslashes(htmlspecialchars($embed_code, ENT_QUOTES, 'UTF-8')); ?>')">
                                 <i class="bi bi-code-square"></i>
                             </button>
                             <a href="<?php echo htmlspecialchars($p_raw ?? ($baseurl . '/raw.php?id=' . ($paste_id ?? ''))); ?>" class="btn btn-outline-secondary" title="Raw Paste">
@@ -380,42 +382,4 @@
         <?php endif; ?>
     </div>
 </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('view.php DOMContentLoaded fired');
-    const toggleFullscreenBtn = document.querySelector('.toggle-fullscreen');
-    const copyClipboardBtn = document.querySelector('.copy-clipboard');
-    const embedToolBtn = document.querySelector('.embed-tool');
-    const highlightLineBtn = document.querySelector('.highlight-line');
-
-    if (toggleFullscreenBtn) {
-        toggleFullscreenBtn.addEventListener('click', function(e) {
-            console.log('Toggle Fullscreen button clicked');
-            e.preventDefault();
-            window.toggleFullScreen();
-        });
-    }
-    if (copyClipboardBtn) {
-        copyClipboardBtn.addEventListener('click', function(e) {
-            console.log('Copy to Clipboard button clicked');
-            e.preventDefault();
-            window.copyToClipboard();
-        });
-    }
-    if (embedToolBtn) {
-        embedToolBtn.addEventListener('click', function(e) {
-            console.log('Embed Tool button clicked');
-            e.preventDefault();
-            window.showEmbedCode();
-        });
-    }
-    if (highlightLineBtn) {
-        highlightLineBtn.addEventListener('click', function(e) {
-            console.log('Highlight Line button clicked');
-            e.preventDefault();
-            window.highlightLine(e);
-        });
-    }
-});
-</script>
 <?php require_once('theme/' . ($default_theme ?? 'default') . '/footer.php'); ?>

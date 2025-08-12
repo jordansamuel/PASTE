@@ -83,8 +83,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Function to show notification with delay
-    function showNotification(message, isError = false) {
+    // Function to show notification with optional fade-out
+    function showNotification(message, isError = false, fadeOut = true) {
         console.log('Attempting to show notification:', message);
         setTimeout(() => {
             const notification = document.getElementById('notification');
@@ -93,20 +93,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 notification.textContent = message;
                 notification.className = 'notification' + (isError ? ' error' : '');
                 notification.style.display = 'block';
-                setTimeout(() => {
-                    console.log('Fading out notification');
-                    notification.classList.add('fade-out');
+                if (fadeOut) {
                     setTimeout(() => {
-                        console.log('Hiding notification');
-                        notification.style.display = 'none';
-                        notification.classList.remove('fade-out');
-                        notification.textContent = '';
-                    }, 500); // Match CSS fade-out duration
-                }, 3000); // Show for 3 seconds
+                        console.log('Fading out notification');
+                        notification.classList.add('fade-out');
+                        setTimeout(() => {
+                            console.log('Hiding notification');
+                            notification.style.display = 'none';
+                            notification.classList.remove('fade-out');
+                            notification.textContent = '';
+                        }, 500);
+                    }, 3000);
+                } else {
+                    // Add a close button for manual dismissal
+                    if (!notification.querySelector('.close-btn')) {
+                        const closeBtn = document.createElement('button');
+                        closeBtn.textContent = '×';
+                        closeBtn.className = 'close-btn';
+                        closeBtn.addEventListener('click', () => {
+                            console.log('Closing notification manually');
+                            notification.style.display = 'none';
+                            notification.textContent = '';
+                        });
+                        notification.appendChild(closeBtn);
+                    }
+                }
             } else {
                 console.error('Notification element not found');
             }
-        }, 100); // Delay to ensure DOM readiness
+        }, 100);
     }
 
     // Toggle line numbers (GeSHi only, view.php)
@@ -170,18 +185,13 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Show embed code
-    window.showEmbedCode = function() {
-        console.log('Embed Tool button clicked in showEmbedCode');
-        const urlParams = new URLSearchParams(window.location.search);
-        const pasteId = urlParams.get('id');
-        if (pasteId) {
-            const basePath = window.location.pathname.includes('view.php') ? '/embed.php?id=' : '/embed/';
-            const embedCode = `<iframe src="${window.location.origin}${basePath}${pasteId}" width="100%" height="400px" frameborder="0"></iframe>`;
-            console.log('Generated embed code:', embedCode);
-            showNotification(`Embed code: ${embedCode}`);
+    window.showEmbedCode = function(embedCode) {
+        console.log('Embed Tool button clicked in showEmbedCode, embedCode:', embedCode);
+        if (embedCode) {
+            showNotification(`Embed code: ${embedCode}`, false, false); // No fade-out, add close button
         } else {
-            console.error('Paste ID not found in URL');
-            showNotification('Error: Could not generate embed code. Paste ID missing.', true);
+            console.error('Embed code not provided');
+            showNotification('Error: Could not generate embed code.', true);
         }
     };
 
@@ -212,4 +222,32 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Error: Edit mode not available.', true);
         }
     };
+
+    // Add event listeners
+    const toggleFullscreenBtn = document.querySelector('.toggle-fullscreen');
+    if (toggleFullscreenBtn) {
+        toggleFullscreenBtn.addEventListener('click', function(e) {
+            console.log('Toggle Fullscreen button clicked');
+            e.preventDefault();
+            window.toggleFullScreen();
+        });
+    }
+
+    const copyClipboardBtn = document.querySelector('.copy-clipboard');
+    if (copyClipboardBtn) {
+        copyClipboardBtn.addEventListener('click', function(e) {
+            console.log('Copy to Clipboard button clicked');
+            e.preventDefault();
+            window.copyToClipboard();
+        });
+    }
+
+    const highlightLineBtn = document.querySelector('.highlight-line');
+    if (highlightLineBtn) {
+        highlightLineBtn.addEventListener('click', function(e) {
+            console.log('Highlight Line button clicked');
+            e.preventDefault();
+            window.highlightLine(e);
+        });
+    }
 });
