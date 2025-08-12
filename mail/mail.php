@@ -53,8 +53,8 @@ function send_mail(string $to, string $subject, string $message, string $name, s
 {
     global $dbhost, $dbuser, $dbpassword, $dbname;
 
-    // Check if running from installer
-    $is_installer = strpos($_SERVER['SCRIPT_NAME'], 'install.php') !== false;
+    error_log("mail.php: send_mail called - To: $to, Subject: $subject, Name: $name, CSRF Token: $csrf_token");
+
 
     // Validate CSRF token (bypass for installer if site_info is empty)
     try {
@@ -97,6 +97,16 @@ function send_mail(string $to, string $subject, string $message, string $name, s
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
+        error_log("mail.php: Database connection established");
+
+        // Check rate limit
+        $email_type = str_contains($subject, 'Account Confirmation') ? 'verification' : (str_contains($subject, 'Password Reset') ? 'reset' : 'test');
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM mail_log WHERE email = ? AND sent_at > ? AND type = ?");
+        $stmt->execute([$to, date('Y-m-d H:i:s', strtotime('-1 hour')), $email_type]);
+        if ($stmt->fetchColumn() >= 5) {
+            error_log("mail.php: Rate limit exceeded for $email_type email to $to");
+            return ['status' => 'error', 'message' => 'Too many email requests. Please try again later.'];
+        }
 
         // Fetch baseurl and site info
         $stmt = $pdo->query("SELECT baseurl, site_name, email FROM site_info WHERE id = 1");
@@ -129,23 +139,13 @@ function send_mail(string $to, string $subject, string $message, string $name, s
         $oauth_client_id = trim($mail_settings['oauth_client_id'] ?? '');
         $oauth_client_secret = trim($mail_settings['oauth_client_secret'] ?? '');
         $oauth_refresh_token = trim($mail_settings['oauth_refresh_token'] ?? '');
+        error_log("mail.php: Mail settings - Host: $smtp_host, Username: $smtp_username, Port: $smtp_port, Protocol: $protocol, Auth: $auth, Socket: $socket, Refresh Token: " . ($oauth_refresh_token ? substr($oauth_refresh_token, 0, 10) . '...' : 'none'));
 
-        // Validate SMTP settings
-        if ($protocol !== '2') {
-            error_log("mail.php: Invalid mail protocol: expected SMTP (2), got $protocol");
-            ob_end_clean();
-            return ['status' => 'error', 'message' => 'Mail protocol must be set to SMTP in Admin Settings.'];
-        }
-        if (empty($smtp_host) || !preg_match('/^[0-9]+$/', $smtp_port) || !in_array($socket, ['tls', 'ssl', ''], true)) {
-            error_log("mail.php: Invalid SMTP settings - host=$smtp_host, port=$smtp_port, socket=$socket");
-            ob_end_clean();
-            return ['status' => 'error', 'message' => 'Invalid SMTP host, port, or security protocol in Mail Settings.'];
-        }
-        if ($smtp_host === 'smtp.gmail.com' && $auth === 'true' && (empty($oauth_client_id) || empty($oauth_client_secret) || empty($oauth_refresh_token))) {
-            error_log("mail.php: Missing OAuth credentials for Gmail SMTP");
-            ob_end_clean();
-            return ['status' => 'error', 'message' => 'Missing OAuth credentials for Gmail SMTP. Complete OAuth authorization in Admin Settings.'];
-        }
+        // Log email attempt
+        $stmt = $pdo->prepare("INSERT INTO mail_log (email, sent_at, type) VALUES (?, ?, ?)");
+        $stmt->execute([$to, date('Y-m-d H:i:s'), $email_type]);
+        error_log("mail.php: Email attempt logged for $to, type: $email_type");
+
 
         // Validate from email
         if (empty($from_email) || !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
