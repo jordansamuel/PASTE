@@ -195,34 +195,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Highlight line
-    window.highlightLine = function(event) {
-        console.log('Attempting to highlight selected lines');
-        const editCodeTextArea = document.getElementById('edit-code');
-        if (editCodeTextArea && editCodeTextArea.classList.contains('cm-initialized')) {
-            const cmInstance = editCodeTextArea.nextSibling.CodeMirror;
-            if (cmInstance) {
-                console.log('Adding !highlight! to selected lines in #edit-code');
-                cmInstance.operation(() => {
-                    const selections = cmInstance.getSelections();
-                    const ranges = cmInstance.listSelections();
-                    for (let i = 0; i < selections.length; i++) {
-                        const lines = selections[i].split('\n');
-                        const modifiedLines = lines.map(line => line.startsWith('!highlight!') ? line : `!highlight!${line}`);
-                        cmInstance.replaceSelection(modifiedLines.join('\n'), ranges[i]);
-                    }
-                });
-                cmInstance.focus();
-            } else {
-                console.error('CodeMirror instance not found for #edit-code');
-                showNotification('Error: CodeMirror editor not initialized.', true);
-            }
-        } else {
-            console.error('edit-code textarea not found or not initialized');
-            showNotification('Error: Edit mode not available.', true);
-        }
-    };
+	// Highlight line
+	window.highlightLine = function(event) {
+		console.log('Attempting to highlight line at cursor');
+		const editCodeTextArea = document.getElementById('edit-code');
+		if (editCodeTextArea && editCodeTextArea.classList.contains('cm-initialized')) {
+			const cmInstance = editCodeTextArea.nextSibling.CodeMirror;
+			if (cmInstance) {
+				console.log('Adding !highlight! to line at cursor in #edit-code');
+				cmInstance.operation(() => {
+					// Get the cursor position
+					const cursor = cmInstance.getCursor();
+					const lineNumber = cursor.line;
+					const lineContent = cmInstance.getLine(lineNumber);
 
+					// Check if line already starts with !highlight!
+					if (!lineContent.startsWith('!highlight!')) {
+						// Prepend !highlight! at the start of the line
+						cmInstance.replaceRange(
+							'!highlight!',
+							{ line: lineNumber, ch: 0 }, // Insert at the start of the line
+							{ line: lineNumber, ch: 0 }  // No range to replace, just insert
+						);
+						// Adjust cursor position to account for the added text
+						const newCursorPos = {
+							line: lineNumber,
+							ch: cursor.ch + '!highlight!'.length
+						};
+						cmInstance.setCursor(newCursorPos);
+					}
+				});
+				cmInstance.focus();
+			} else {
+				console.error('CodeMirror instance not found for #edit-code');
+				showNotification('Error: CodeMirror editor not initialized.', true);
+			}
+		} else {
+			console.error('edit-code textarea not found or not initialized');
+			showNotification('Error: Edit mode not available.', true);
+		}
+	};
+	
     // Add event listeners
     const toggleFullscreenBtn = document.querySelector('.toggle-fullscreen');
     if (toggleFullscreenBtn) {
