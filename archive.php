@@ -121,7 +121,7 @@ try {
     // Search, pagination, and sorting
     $search_query = isset($_GET['q']) && !empty($_GET['q']) ? trim($_GET['q']) : '';
     $sort = isset($_GET['sort']) && in_array($_GET['sort'], ['date_desc', 'date_asc', 'title_asc', 'title_desc', 'code_asc', 'code_desc', 'views_desc', 'views_asc']) ? $_GET['sort'] : 'date_desc';
-    $perPage = 10;
+    $perPage = 50; // Increased to 50 pastes per page
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $offset = ($page - 1) * $perPage;
 
@@ -164,8 +164,7 @@ try {
     $totalPages = 1;
     $error = '';
 
-    if ($search_query && strlen($search_query) >= 3) { // Only proceed with search if query is valid
-        // Search all pastes (encrypted or not) with a single query
+    if ($search_query && strlen($search_query) >= 3) { // Search query provided
         $search_term = '%' . $search_query . '%';
         $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member, views FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?) ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
         $stmt->execute([$search_term, $search_term, $perPage, $offset]);
@@ -175,21 +174,32 @@ try {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?)");
         $stmt->execute([$search_term, $search_term]);
         $totalItems = $stmt->fetchColumn();
-        $totalPages = $totalItems > 0 ? ceil($totalItems / $perPage) : 1;
+    } else { // No search query, show recent public pastes
+        $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member, views FROM pastes WHERE visible = '0' AND password = 'NONE' ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
+        $stmt->execute([$perPage, $offset]);
+        $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Decrypt titles and format time
-        foreach ($pastes as &$row) {
-            if ($row['encrypt'] == '1') {
-                $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
-            }
-            $row['time_display'] = formatRealTime($row['date']);
-            $row['url'] = $mod_rewrite == '1' ? $baseurl . $row['id'] : $baseurl . 'paste.php?id=' . $row['id'];
-            $row['title'] = truncate($row['title'], 20, 50);
+        // Count total public pastes for pagination
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE'");
+        $stmt->execute();
+        $totalItems = $stmt->fetchColumn();
+    }
+
+    $totalPages = $totalItems > 0 ? ceil($totalItems / $perPage) : 1;
+
+    // Decrypt titles and format time
+    foreach ($pastes as &$row) {
+        if ($row['encrypt'] == '1') {
+            $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
         }
-        unset($row);
-    } elseif (isset($_GET['q']) && (empty($search_query) || strlen($search_query) < 3)) {
-        // Set error for empty or too short search query
-        $error = "Please use a keyword.";
+        $row['time_display'] = formatRealTime($row['date']);
+        $row['url'] = $mod_rewrite == '1' ? $baseurl . $row['id'] : $baseurl . 'paste.php?id=' . $row['id'];
+        $row['title'] = truncate($row['title'], 20, 50);
+    }
+    unset($row);
+
+    if (isset($_GET['q']) && (empty($search_query) || strlen($search_query) < 3)) {
+        $error = "Please use a keyword to search. Here are the latest 50 pastes.";
     }
 
     // Pagination

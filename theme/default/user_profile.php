@@ -11,25 +11,25 @@
 
 <div class="content">
 <!-- START CONTAINER -->
-<div class="container-xl my-4">
+<div class="container-xl my-5">
   <!-- Start Row -->
   <div class="row">
     <!-- Start Card -->
-    <div class="col-lg-10">
-      <div class="card">
+    <div class="col-lg-12">
+      <div class="card shadow-sm border-0 rounded-3">
         <div class="card-header">
-          <h5><?php echo htmlspecialchars($profile_username) . ' ' . htmlspecialchars($lang['user_public_pastes'] ?? 'Public Pastes'); ?>
-            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) { echo '<small>' . htmlspecialchars($lang['mypastestitle'] ?? 'My Pastes') . '</small>'; } ?>
+          <h5 class="mb-0"><?php echo htmlspecialchars($profile_username) . htmlspecialchars($lang['user_public_pastes'] ?? 'Public Pastes'); ?>
+            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) { echo '<small class="ms-2">' . htmlspecialchars($lang['mypastestitle'] ?? 'My Pastes') . '</small>'; } ?>
           </h5>
-          <small><?php echo htmlspecialchars($lang['membersince'] ?? 'Member since') . ' ' . htmlspecialchars($profile_join_date); ?></small>
+          <small class="text-light"><?php echo htmlspecialchars($lang['membersince'] ?? 'Member since') . ' ' . htmlspecialchars($profile_join_date); ?></small>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <?php 
             if (isset($_GET['del'])) {	
                 if (isset($success)) {
-                    echo '<div class="alert alert-success text-center">' . htmlspecialchars($success) . '</div>'; 
+                    echo '<div class="alert alert-success text-center rounded-3">' . htmlspecialchars($success) . '</div>'; 
                 } elseif (isset($error)) {
-                    echo '<div class="alert alert-danger text-center">' . htmlspecialchars($error) . '</div>'; 
+                    echo '<div class="alert alert-danger text-center rounded-3">' . htmlspecialchars($error) . '</div>'; 
                 }
             }
             ?>
@@ -37,16 +37,15 @@
             <?php 
             if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) {
             ?>
-            <div class="card bg-primary text-white mb-3">
+            <div class="card bg-secondary text-light mb-4 border-0 rounded-3">
                 <div class="card-body">
-                    <?php echo htmlspecialchars($lang['hello'] ?? 'Hello') . ', ' . htmlspecialchars($profile_username) . '. ' . htmlspecialchars($lang['profile-message'] ?? 'Manage your pastes here.'); ?>
-                    <br>
-                    <?php echo htmlspecialchars($lang['profile-stats'] ?? 'Stats:'); ?>
-                    <?php echo htmlspecialchars($lang['totalpastes'] ?? 'Total Pastes') . ' ' . htmlspecialchars($profile_total_pastes); ?> &mdash;
-                    <?php echo htmlspecialchars($lang['profile-total-pub'] ?? 'Public') . ' ' . htmlspecialchars($profile_total_public); ?> &mdash;
-                    <?php echo htmlspecialchars($lang['profile-total-unl'] ?? 'Unlisted') . ' ' . htmlspecialchars($profile_total_unlisted); ?> &mdash;
-                    <?php echo htmlspecialchars($lang['profile-total-pri'] ?? 'Private') . ' ' . htmlspecialchars($profile_total_private); ?> &mdash;
-                    <?php echo htmlspecialchars($lang['profile-total-views'] ?? 'Total Views') . ' ' . htmlspecialchars($profile_total_paste_views); ?>
+                    <h6 class="mb-3"><?php echo htmlspecialchars($lang['hello'] ?? 'Hello') . ', ' . htmlspecialchars($profile_username) . '. ' . htmlspecialchars($lang['profile-message'] ?? 'Manage your pastes here.'); ?></h6>
+                    <p class="mb-0"><?php echo htmlspecialchars($lang['profile-stats'] ?? 'Stats:'); ?>
+                    <?php echo htmlspecialchars($lang['totalpastes'] ?? 'Total Pastes') . ': <strong>' . htmlspecialchars($profile_total_pastes) . '</strong>'; ?> &mdash;
+                    <?php echo htmlspecialchars($lang['profile-total-pub'] ?? 'Public') . ': <strong>' . htmlspecialchars($profile_total_public) . '</strong>'; ?> &mdash;
+                    <?php echo htmlspecialchars($lang['profile-total-unl'] ?? 'Unlisted') . ': <strong>' . htmlspecialchars($profile_total_unlisted) . '</strong>'; ?> &mdash;
+                    <?php echo htmlspecialchars($lang['profile-total-pri'] ?? 'Private') . ': <strong>' . htmlspecialchars($profile_total_private) . '</strong>'; ?> &mdash;
+                    <?php echo htmlspecialchars($lang['profile-total-views'] ?? 'Total Views') . ': <strong>' . htmlspecialchars($profile_total_paste_views) . '</strong>'; ?></p>
                 </div>
             </div>
             <?php
@@ -54,18 +53,18 @@
             ?>
             
             <div class="table-responsive">
-                <table id="archive" class="table table-striped">
-                    <thead>
+                <table id="archive" class="table table-striped table-hover align-middle text-light">
+                    <thead class="table-dark">
                         <tr>
                             <th><?php echo htmlspecialchars($lang['pastetitle'] ?? 'Paste Title'); ?></th>
                             <th><?php echo htmlspecialchars($lang['pastetime'] ?? 'Time'); ?></th>
                             <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) { echo '<th>' . htmlspecialchars($lang['visibility'] ?? 'Visibility') . '</th>'; } ?>
                             <th><?php echo htmlspecialchars($lang['pasteviews'] ?? 'Views'); ?></th>
                             <th><?php echo htmlspecialchars($lang['pastesyntax'] ?? 'Syntax'); ?></th>
-                            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) { echo '<th>' . htmlspecialchars($lang['delete'] ?? 'Delete') . '</th>'; } ?>
+                            <?php if (isset($_SESSION['username']) && $_SESSION['username'] == $profile_username) { echo '<th style="min-width: 60px;">' . htmlspecialchars($lang['delete'] ?? 'Delete') . '</th>'; } ?>
                         </tr>
                     </thead>
-                    <tfoot>
+                    <tfoot class="table-dark">
                         <tr>
                             <th><?php echo htmlspecialchars($lang['pastetitle'] ?? 'Paste Title'); ?></th>
                             <th><?php echo htmlspecialchars($lang['pastetime'] ?? 'Time'); ?></th>
@@ -104,20 +103,20 @@
                         if (!isset($_SESSION['token']) || (isset($_SESSION['username']) && $_SESSION['username'] != $profile_username)) {
                             if ($row['visible'] == '0') {
                                 echo '<tr> 
-                                    <td><a href="' . htmlspecialchars($baseurl . $p_link) . '" title="' . htmlspecialchars($title) . '">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
+                                    <td><a href="' . htmlspecialchars($baseurl . $p_link) . '" title="' . htmlspecialchars($title) . '" class="text-light fw-medium">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
                                     <td>' . htmlspecialchars($p_date) . '</td>
                                     <td>' . htmlspecialchars($p_views) . '</td>
-                                    <td>' . htmlspecialchars(strtoupper($p_code)) . '</td>
+                                    <td><span class="badge bg-secondary">' . htmlspecialchars(strtoupper($p_code)) . '</span></td>
                                 </tr>'; 
                             }
                         } else {
                             echo '<tr> 
-                                <td><a href="' . htmlspecialchars($baseurl . $p_link) . '" title="' . htmlspecialchars($title) . '">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
+                                <td><a href="' . htmlspecialchars($baseurl . $p_link) . '" title="' . htmlspecialchars($title) . '" class="text-light fw-medium">' . ucfirst(htmlspecialchars($title)) . '</a></td>    
                                 <td>' . htmlspecialchars($p_date) . '</td>
                                 <td>' . htmlspecialchars($p_visible) . '</td>
                                 <td>' . htmlspecialchars($p_views) . '</td>
-                                <td>' . htmlspecialchars(strtoupper($p_code)) . '</td>
-                                <td><a href="' . htmlspecialchars($baseurl . $p_delete_link) . '" class="text-danger" title="Delete ' . htmlspecialchars($title) . '"><i class="bi bi-trash" aria-hidden="true"></i></a></td>    
+                                <td><span class="badge bg-secondary">' . htmlspecialchars(strtoupper($p_code)) . '</span></td>
+                                <td class="text-center"><a href="' . htmlspecialchars($baseurl . $p_delete_link) . '" class="btn btn-sm btn-outline-danger" title="Delete ' . htmlspecialchars($title) . '"><i class="bi bi-trash" aria-hidden="true"></i></a></td>    
                             </tr>';                   
                         }
                     }
