@@ -163,6 +163,8 @@ body {
 }
 
 .card-header {
+    overflow-x: auto;
+    max-width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -172,7 +174,7 @@ body {
 
 .card-header h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1rem;
 }
 
 .card-header .meta {
@@ -202,7 +204,11 @@ body {
     border-radius: 4px;
     margin-bottom: 1rem;
     font-family: Menlo, Monaco, 'Courier New', monospace;
-    font-size: 0.8rem;
+    font-size: 0.9rem; /* geshi */
+}
+.CodeMirror {
+	font-family: Menlo, Monaco, 'Courier New', monospace;
+	font-size: 0.7rem; /* raw/new paste */
 }
 
 .code-content.no-line-numbers ol, .code-content.no-line-numbers pre, .code-content.no-line-numbers ol li, .code-content.no-line-numbers pre span {

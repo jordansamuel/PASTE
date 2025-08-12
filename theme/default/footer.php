@@ -36,7 +36,7 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/clike/clike.min.js"></script>
 <?php if (isset($_SESSION['captcha_mode']) && ($_SESSION['captcha_mode'] == "recaptcha" || $_SESSION['captcha_mode'] == "recaptcha_v3")): ?>
-    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo ($_SESSION['captcha_mode'] == 'recaptcha_v3') ? htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8') : 'explicit'; ?>&onload=onRecaptchaLoad" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo ($_SESSION['captcha_mode'] == 'recaptcha_v3') ? htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8') : 'explicit'; ?>" async defer></script>
 <?php endif; ?>
 <script src="<?php echo htmlspecialchars($baseurl . 'theme/' . $default_theme . '/js/paste.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 

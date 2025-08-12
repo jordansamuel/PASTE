@@ -122,7 +122,7 @@
                                 <?php endif; ?>
                                 <div class="row mb-3">
                                     <div class="d-grid gap-2">
-                                        <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['createpaste'] ?? 'Paste'); ?>"/>
+                                        <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['createpaste'] ?? 'Paste'); ?>">
                                     </div>
                                 </div>
                             </form>
@@ -247,7 +247,7 @@
                                 <?php endif; ?>
                                 <div class="row mb-3">
                                     <div class="d-grid gap-2">
-                                        <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['createpaste'] ?? 'Paste'); ?>"/>
+                                        <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['createpaste'] ?? 'Paste'); ?>">
                                     </div>
                                 </div>
                             </form>

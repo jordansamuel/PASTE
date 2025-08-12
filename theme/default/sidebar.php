@@ -9,8 +9,6 @@
  */
 declare(strict_types=1);
 ?>
-
-</style>
 <div class="col-lg-12 sidebar-container">
     <?php if (isset($_SESSION['username'])): ?>
         <!-- My Pastes -->

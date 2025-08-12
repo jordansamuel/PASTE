@@ -7,6 +7,20 @@
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
  */
+
+// Function to format file size in a human-readable format
+function formatSize($bytes) {
+    if ($bytes >= 1024 * 1024) {
+        return number_format($bytes / (1024 * 1024), 2) . ' MB';
+    } elseif ($bytes >= 1024) {
+        return number_format($bytes / 1024, 2) . ' KB';
+    } else {
+        return $bytes . ' bytes';
+    }
+}
+
+// Calculate paste size based on $op_content
+$paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
 ?>
 
 <!-- Content -->
@@ -26,23 +40,32 @@
                     </div>
                 <?php else: ?>
                     <div class="card">
-                        <div class="card-header">
-                            <div>
-                                <h1><?php echo ucfirst(htmlspecialchars($p_title ?? 'Untitled')); ?></h1>
-                                <p class="meta"><?php echo htmlspecialchars(strtoupper($p_code ?? 'TEXT')); ?> <i class="bi bi-eye"></i> <?php echo htmlspecialchars((string) ($p_views ?? 0)); ?><br>
-                                    <?php 
-                                    $p_member_display = $p_member ?? 'Guest';
-                                    if ($p_member_display === 'Guest') {
-                                        echo 'Guest';
-                                    } else {
-                                        $user_link = $mod_rewrite ?? false 
-                                            ? htmlspecialchars($baseurl . 'user/' . $p_member_display) 
-                                            : htmlspecialchars($baseurl . 'user.php?user=' . $p_member_display);
-                                        echo 'By <a href="' . $user_link . '">' . htmlspecialchars($p_member_display) . '</a>';
-                                    }
-                                    ?> on <?php echo htmlspecialchars($p_date ?? date('Y-m-d H:i:s')); ?></p>
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                            <!-- Paste Info: Title, Syntax, Author, Views, Size, and Date -->
+                            <div class="paste-info">
+                                <h1 class="h3 mb-2"><?php echo ucfirst(htmlspecialchars($p_title ?? 'Untitled')); ?></h1>
+                                <div class="meta d-flex flex-wrap gap-2 text-muted small align-items-center">
+                                    <span class="badge bg-primary"><?php echo htmlspecialchars(strtoupper($p_code ?? 'TEXT')); ?></span>
+                                    <span>
+                                        <?php 
+                                        $p_member_display = $p_member ?? 'Guest';
+                                        if ($p_member_display === 'Guest') {
+                                            echo 'Guest';
+                                        } else {
+                                            $user_link = $mod_rewrite ?? false 
+                                                ? htmlspecialchars($baseurl . 'user/' . $p_member_display) 
+                                                : htmlspecialchars($baseurl . 'user.php?user=' . $p_member_display);
+                                            echo '<a href="' . $user_link . '" class="text-decoration-none">' . htmlspecialchars($p_member_display) . '</a>';
+                                        }
+                                        ?>
+                                    </span>
+                                    <span><i class="bi bi-eye me-1"></i><?php echo htmlspecialchars((string) ($p_views ?? 0)); ?> <?php echo htmlspecialchars($lang['views'] ?? 'Views'); ?></span>
+                                    <span>Size: <?php echo htmlspecialchars($paste_size); ?></span>
+									<span>Posted on: <?php echo htmlspecialchars($p_date ? date('M j, y @ g:i A', strtotime($p_date)) : date('M j, Y, g:i A')); ?></span>
+                                </div>
                             </div>
-                            <div class="btn-group" role="group" aria-label="Paste actions">
+                            <!-- Paste Actions: Buttons -->
+                            <div class="btn-group ms-auto" role="group" aria-label="Paste actions">
                                 <?php if (($p_code ?? 'text') !== "markdown"): ?>
                                     <button type="button" class="btn btn-outline-secondary toggle-line-numbers" title="Toggle Line Numbers" onclick="togglev()">
                                         <i class="bi bi-list-ol"></i>
@@ -167,9 +190,9 @@
                                                 <div class="d-grid gap-2">
                                                     <input type="hidden" name="paste_id" value="<?php echo htmlspecialchars($paste_id ?? ''); ?>" />
                                                     <?php if (isset($_SESSION['username']) && $_SESSION['username'] == ($p_member ?? 'Guest')): ?>
-                                                        <input class="btn btn-primary paste-button" type="submit" name="edit" id="edit" value="<?php echo htmlspecialchars($lang['editpaste'] ?? 'Edit Paste'); ?>"/>
+                                                        <input class="btn btn-primary paste-button" type="submit" name="edit" id="edit" value="<?php echo htmlspecialchars($lang['editpaste'] ?? 'Edit Paste'); ?>" />
                                                     <?php endif; ?>
-                                                    <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['forkpaste'] ?? 'Fork Paste'); ?>"/>
+                                                    <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['forkpaste'] ?? 'Fork Paste'); ?>" />
                                                 </div>
                                             </form>
                                         </div>
@@ -201,23 +224,32 @@
             <!-- Non-private site: Main content and sidebar side by side -->
             <div class="col-lg-10">
                 <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h1><?php echo ucfirst(htmlspecialchars($p_title ?? 'Untitled')); ?></h1>
-                            <p class="meta"><?php echo htmlspecialchars(strtoupper($p_code ?? 'TEXT')); ?> <i class="bi bi-eye"></i> <?php echo htmlspecialchars((string) ($p_views ?? 0)); ?><br>
-                                <?php 
-                                $p_member_display = $p_member ?? 'Guest';
-                                if ($p_member_display === 'Guest') {
-                                    echo 'Guest';
-                                } else {
-                                    $user_link = $mod_rewrite ?? false 
-                                        ? htmlspecialchars($baseurl . 'user/' . $p_member_display) 
-                                        : htmlspecialchars($baseurl . 'user.php?user=' . $p_member_display);
-                                    echo 'By <a href="' . $user_link . '">' . htmlspecialchars($p_member_display) . '</a>';
-                                }
-                                ?> on <?php echo htmlspecialchars($p_date ?? date('Y-m-d H:i:s')); ?></p>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                        <!-- Paste Info: Title, Syntax, Author, Views, Size, and Date -->
+                        <div class="paste-info">
+                            <h1 class="h3 mb-2"><?php echo ucfirst(htmlspecialchars($p_title ?? 'Untitled')); ?></h1>
+                            <div class="meta d-flex flex-wrap gap-2 text-muted small align-items-center">
+                                <span class="badge bg-primary"><?php echo htmlspecialchars(strtoupper($p_code ?? 'TEXT')); ?></span>
+                                <span>
+                                    <?php 
+                                    $p_member_display = $p_member ?? 'Guest';
+                                    if ($p_member_display === 'Guest') {
+                                        echo 'Guest';
+                                    } else {
+                                        $user_link = $mod_rewrite ?? false 
+                                            ? htmlspecialchars($baseurl . 'user/' . $p_member_display) 
+                                            : htmlspecialchars($baseurl . 'user.php?user=' . $p_member_display);
+                                        echo '<a href="' . $user_link . '" class="text-decoration-none">' . htmlspecialchars($p_member_display) . '</a>';
+                                    }
+                                    ?>
+                                </span>
+                                <span><i class="bi bi-eye me-1"></i><?php echo htmlspecialchars((string) ($p_views ?? 0)); ?> <?php echo htmlspecialchars($lang['views'] ?? 'Views'); ?></span>
+                                <span>Size: <?php echo htmlspecialchars($paste_size); ?></span>
+                                <span>Posted on: <?php echo htmlspecialchars($p_date ? date('M j, y @ g:i A', strtotime($p_date)) : date('M j, Y, g:i A')); ?></span>
+                            </div>
                         </div>
-                        <div class="btn-group" role="group" aria-label="Paste actions">
+                        <!-- Paste Actions: Buttons -->
+                        <div class="btn-group ms-auto" role="group" aria-label="Paste actions">
                             <?php if (($p_code ?? 'text') !== "markdown"): ?>
                                 <button type="button" class="btn btn-outline-secondary toggle-line-numbers" title="Toggle Line Numbers" onclick="togglev()">
                                     <i class="bi bi-list-ol"></i>
@@ -230,7 +262,6 @@
                                 <i class="bi bi-clipboard"></i>
                             </button>
                             <?php
-                            // Generate embed code using function from functions.php
                             $embed_url = getEmbedUrl($paste_id ?? '', $mod_rewrite ?? false, $baseurl ?? '');
                             $embed_code = $paste_id ? '<iframe src="' . htmlspecialchars($embed_url, ENT_QUOTES, 'UTF-8') . '" width="100%" height="400px" frameborder="0" allowfullscreen></iframe>' : '';
                             ?>
@@ -328,58 +359,58 @@
                                                         <option value="1W" <?php echo ($p_expire_date ?? 'N') == "1W" ? 'selected' : ''; ?>>1 Week</option>
                                                         <option value="2W" <?php echo ($p_expire_date ?? 'N') == "2W" ? 'selected' : ''; ?>>2 Weeks</option>
                                                         <option value="1M" <?php echo ($p_expire_date ?? 'N') == "1M" ? 'selected' : ''; ?>>1 Month</option>
-                                                    </select>
+                                                        </select>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <label class="col-sm-2 col-form-label"><?php echo htmlspecialchars($lang['visibility'] ?? 'Visibility'); ?></label>
-                                                <div class="col-sm-10">
-                                                    <select class="form-select" name="visibility">
-                                                        <option value="0" <?php echo ($p_visible ?? '0') == "0" ? 'selected' : ''; ?>>Public</option>
-                                                        <option value="1" <?php echo ($p_visible ?? '0') == "1" ? 'selected' : ''; ?>>Unlisted</option>
-                                                        <option value="2" <?php echo ($p_visible ?? '0') == "2" ? 'selected' : ''; ?>>Private</option>
-                                                    </select>
+                                                <div class="row mb-3">
+                                                    <label class="col-sm-2 col-form-label"><?php echo htmlspecialchars($lang['visibility'] ?? 'Visibility'); ?></label>
+                                                    <div class="col-sm-10">
+                                                        <select class="form-select" name="visibility">
+                                                            <option value="0" <?php echo ($p_visible ?? '0') == "0" ? 'selected' : ''; ?>>Public</option>
+                                                            <option value="1" <?php echo ($p_visible ?? '0') == "1" ? 'selected' : ''; ?>>Unlisted</option>
+                                                            <option value="2" <?php echo ($p_visible ?? '0') == "2" ? 'selected' : ''; ?>>Private</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                                    <input type="text" class="form-control" name="pass" id="pass" placeholder="<?php echo htmlspecialchars($lang['pwopt'] ?? 'Optional Password'); ?>">
+                                                <div class="mb-3">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                                        <input type="text" class="form-control" name="pass" id="pass" placeholder="<?php echo htmlspecialchars($lang['pwopt'] ?? 'Optional Password'); ?>">
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="d-grid gap-2">
-                                                <input type="hidden" name="paste_id" value="<?php echo htmlspecialchars($paste_id ?? ''); ?>" />
-                                                <?php if (isset($_SESSION['username']) && $_SESSION['username'] == ($p_member ?? 'Guest')): ?>
-                                                    <input class="btn btn-primary paste-button" type="submit" name="edit" id="edit" value="<?php echo htmlspecialchars($lang['editpaste'] ?? 'Edit Paste'); ?>"/>
-                                                <?php endif; ?>
-                                                <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['forkpaste'] ?? 'Fork Paste'); ?>"/>
-                                            </div>
-                                        </form>
+                                                <div class="d-grid gap-2">
+                                                    <input type="hidden" name="paste_id" value="<?php echo htmlspecialchars($paste_id ?? ''); ?>" />
+                                                    <?php if (isset($_SESSION['username']) && $_SESSION['username'] == ($p_member ?? 'Guest')): ?>
+                                                        <input class="btn btn-primary paste-button" type="submit" name="edit" id="edit" value="<?php echo htmlspecialchars($lang['editpaste'] ?? 'Edit Paste'); ?>" />
+                                                    <?php endif; ?>
+                                                    <input class="btn btn-primary paste-button" type="submit" name="submit" id="submit" value="<?php echo htmlspecialchars($lang['forkpaste'] ?? 'Fork Paste'); ?>" />
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    <!-- Full Screen Modal -->
-                    <div class="modal fade" id="fullscreenModal" tabindex="-1" aria-labelledby="fullscreenModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-fullscreen">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="fullscreenModalLabel"><?php echo htmlspecialchars($p_title ?? 'Untitled'); ?></h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="code-content" id="fullscreen-code-content"><?php echo $p_content ?? ''; ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <!-- Full Screen Modal -->
+                        <div class="modal fade" id="fullscreenModal" tabindex="-1" aria-labelledby="fullscreenModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-fullscreen">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="fullscreenModalLabel"><?php echo htmlspecialchars($p_title ?? 'Untitled'); ?></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="code-content" id="fullscreen-code-content"><?php echo $p_content ?? ''; ?></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-2 mt-4 mt-lg-0">
-                <?php require_once('theme/' . ($default_theme ?? 'default') . '/sidebar.php'); ?>
-            </div>
-        <?php endif; ?>
+                <div class="col-lg-2 mt-4 mt-lg-0">
+                    <?php require_once('theme/' . ($default_theme ?? 'default') . '/sidebar.php'); ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
-</div>
 <?php require_once('theme/' . ($default_theme ?? 'default') . '/footer.php'); ?>

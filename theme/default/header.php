@@ -109,21 +109,21 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form method="GET" action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>">
+                        <form method="POST" action="<?php echo htmlspecialchars($baseurl . 'login.php', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signin" value="1">
                             <div class="mb-3">
                                 <label for="username" class="form-label"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-person"></i></span>
-                                    <input type="text" name="username" class="form-control" id="username" placeholder="<?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                    <input type="text" name="username" class="form-control" id="username1" placeholder="<?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?>" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label"><?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-key"></i></span>
-                                    <input type="password" name="password" class="form-control" id="password" placeholder="<?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?>" required>
+                                    <input type="password" name="password" class="form-control" id="password1" placeholder="<?php echo htmlspecialchars($lang['password'] ?? 'Password', ENT_QUOTES, 'UTF-8'); ?>" required>
                                 </div>
                             </div>
                             <div class="form-check mb-3">
@@ -157,7 +157,7 @@
                         <?php if (isset($success)): ?>
                             <div class="alert alert-success"><?php echo htmlspecialchars($success ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
                         <?php endif; ?>
-                        <form method="GET" action="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>">
+                        <form action="<?php echo htmlspecialchars($baseurl . 'login.php?action=signup', ENT_QUOTES, 'UTF-8'); ?>" method="post">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="signup" value="1">
                             <div class="mb-3">

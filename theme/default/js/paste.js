@@ -22,31 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Initialize CodeMirror for #paste_data (main.php, editable)
-    const pasteDataTextArea = document.getElementById('paste_data');
-    if (pasteDataTextArea && !pasteDataTextArea.classList.contains('cm-initialized')) {
-        console.log('Initializing CodeMirror for #paste_data');
-        try {
-            const pasteDataEditor = CodeMirror.fromTextArea(pasteDataTextArea, {
-                mode: 'markdown',
-                theme: 'monokai',
-                lineNumbers: true,
-                readOnly: false
-            });
-            pasteDataTextArea.classList.add('cm-initialized');
-            console.log('CodeMirror initialized for #paste_data');
-            pasteDataEditor.on('change', () => {
-                console.log('paste_data editor content changed');
-            });
-        } catch (e) {
-            console.error('Failed to initialize CodeMirror for #paste_data:', e);
-        }
-    } else if (pasteDataTextArea) {
-        console.log('paste_data already initialized');
-    } else {
-        console.log('paste_data textarea not found');
-    }
-
     // Initialize CodeMirror for #code (view.php, read-only)
     const codeTextArea = document.getElementById('code');
     if (codeTextArea && !codeTextArea.classList.contains('cm-initialized')) {
