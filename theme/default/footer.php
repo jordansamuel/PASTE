@@ -36,7 +36,7 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/clike/clike.min.js"></script>
 <?php if (isset($_SESSION['captcha_mode']) && ($_SESSION['captcha_mode'] == "recaptcha" || $_SESSION['captcha_mode'] == "recaptcha_v3")): ?>
-    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo ($_SESSION['captcha_mode'] == 'recaptcha_v3') ? htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8') : 'explicit'; ?>" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo ($_SESSION['captcha_mode'] == 'recaptcha_v3') ? htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8') : 'explicit'; ?>&onload=onRecaptchaLoad" async defer></script>
 <?php endif; ?>
 <script src="<?php echo htmlspecialchars($baseurl . 'theme/' . $default_theme . '/js/paste.js', ENT_QUOTES, 'UTF-8'); ?>"></script>
 
@@ -51,6 +51,43 @@ ga('create', '<?php echo htmlspecialchars($ga, ENT_QUOTES, 'UTF-8'); ?>', 'auto'
 ga('send', 'pageview');
 </script>
 <?php endif; ?>
+
+<script>
+
+<?php if (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha"): ?>
+function onRecaptchaSuccess(token) {
+    console.log('reCAPTCHA v2 completed: Token received');
+    document.getElementById('g-recaptcha-response').value = token;
+}
+function validateRecaptcha() {
+    const token = document.getElementById('g-recaptcha-response').value;
+    if (!token) {
+        console.error('reCAPTCHA v2 token missing');
+        alert('<?php echo htmlspecialchars($lang['recaptcha_missing'] ?? 'Please complete the reCAPTCHA.', ENT_QUOTES, 'UTF-8'); ?>');
+        return false;
+    }
+    return true;
+}
+<?php elseif (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
+function onRecaptchaLoad() {
+    grecaptcha.ready(function() {
+        grecaptcha.execute('<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>', {action: 'create_paste'}).then(function(token) {
+            console.log('reCAPTCHA v3 executed: Token received');
+            document.getElementById('g-recaptcha-response').value = token;
+        }, function(error) {
+            console.error('reCAPTCHA v3 error:', error);
+        });
+    });
+}
+function validateRecaptcha() {
+    return true; // Validation handled server-side for v3
+}
+<?php else: ?>
+function validateRecaptcha() {
+    return true; // No reCAPTCHA validation for internal or none
+}
+<?php endif; ?>
+</script>
 
 <!-- Additional Scripts -->
 <?php echo $additional_scripts ?? ''; ?>

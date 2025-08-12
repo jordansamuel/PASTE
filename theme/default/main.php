@@ -261,40 +261,4 @@
         <?php endif; ?>
     </div>
 </div>
-<script>
-
-<?php if (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha"): ?>
-function onRecaptchaSuccess(token) {
-    console.log('reCAPTCHA v2 completed: Token received');
-    document.getElementById('g-recaptcha-response').value = token;
-}
-function validateRecaptcha() {
-    const token = document.getElementById('g-recaptcha-response').value;
-    if (!token) {
-        console.error('reCAPTCHA v2 token missing');
-        alert('<?php echo htmlspecialchars($lang['recaptcha_missing'] ?? 'Please complete the reCAPTCHA.', ENT_QUOTES, 'UTF-8'); ?>');
-        return false;
-    }
-    return true;
-}
-<?php elseif (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha_v3"): ?>
-function onRecaptchaLoad() {
-    grecaptcha.ready(function() {
-        grecaptcha.execute('<?php echo htmlspecialchars($_SESSION['captcha'] ?? '', ENT_QUOTES, 'UTF-8'); ?>', {action: 'create_paste'}).then(function(token) {
-            console.log('reCAPTCHA v3 executed: Token received');
-            document.getElementById('g-recaptcha-response').value = token;
-        }, function(error) {
-            console.error('reCAPTCHA v3 error:', error);
-        });
-    });
-}
-function validateRecaptcha() {
-    return true; // Validation handled server-side for v3
-}
-<?php else: ?>
-function validateRecaptcha() {
-    return true; // No reCAPTCHA validation for internal or none
-}
-<?php endif; ?>
-</script>
 <?php require_once('theme/' . ($default_theme ?? 'default') . '/footer.php'); ?>
