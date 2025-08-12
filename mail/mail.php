@@ -145,7 +145,23 @@ function send_mail(string $to, string $subject, string $message, string $name, s
         $stmt = $pdo->prepare("INSERT INTO mail_log (email, sent_at, type) VALUES (?, ?, ?)");
         $stmt->execute([$to, date('Y-m-d H:i:s'), $email_type]);
         error_log("mail.php: Email attempt logged for $to, type: $email_type");
-
+		
+        // Validate SMTP settings
+        if ($protocol !== '2') {
+            error_log("mail.php: Invalid mail protocol: expected SMTP (2), got $protocol");
+            ob_end_clean();
+            return ['status' => 'error', 'message' => 'Mail protocol must be set to SMTP in Admin Settings.'];
+        }
+        if (empty($smtp_host) || !preg_match('/^[0-9]+$/', $smtp_port) || !in_array($socket, ['tls', 'ssl', ''], true)) {
+            error_log("mail.php: Invalid SMTP settings - host=$smtp_host, port=$smtp_port, socket=$socket");
+            ob_end_clean();
+            return ['status' => 'error', 'message' => 'Invalid SMTP host, port, or security protocol in Mail Settings.'];
+        }
+        if ($smtp_host === 'smtp.gmail.com' && $auth === 'true' && (empty($oauth_client_id) || empty($oauth_client_secret) || empty($oauth_refresh_token))) {
+            error_log("mail.php: Missing OAuth credentials for Gmail SMTP");
+            ob_end_clean();
+            return ['status' => 'error', 'message' => 'Missing OAuth credentials for Gmail SMTP. Complete OAuth authorization in Admin Settings.'];
+        }
 
         // Validate from email
         if (empty($from_email) || !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
