@@ -9,22 +9,14 @@
  */
 declare(strict_types=1);
 ?>
-<!-- Sidebar -->
-<style>
-.sidebar-container {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-}
-.list-group-item.bg-dark {
-    border: none;
-}
+
 </style>
-<div class="col-lg-12 mt-4 sidebar-container">
+<div class="col-lg-12 sidebar-container">
     <?php if (isset($_SESSION['username'])): ?>
         <!-- My Pastes -->
         <div class="col-12">
-            <div class="card rounded-3 bg-dark mb-4">
-                <div class="card-header bg-dark text-light rounded-top">
+            <div class="card rounded-3 mb-4">
+                <div class="card-header text-light rounded-top">
                     <h6 class="mb-0">Hello <?php echo htmlspecialchars((string) ($_SESSION['username'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
                         <small class="ms-2">
                             <a class="text-light text-decoration-none" href="<?php echo htmlspecialchars(
@@ -35,7 +27,7 @@ declare(strict_types=1);
                         </small>
                     </h6>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         <?php
                         $username = (string) ($_SESSION['username'] ?? '');
@@ -70,7 +62,7 @@ declare(strict_types=1);
                                                 <a class="btn btn-sm btn-outline-danger me-1 py-0 px-1" href="<?php echo htmlspecialchars($baseurl . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>" data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>" title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <i class="bi bi-trash" aria-hidden="true"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?><br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>" title="Paste Details">
+                                                <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago.<br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>" title="Paste Details">
                                                     <i class="bi bi-clock"></i>
                                                 </button>
                                             </div>
@@ -90,9 +82,9 @@ declare(strict_types=1);
     <?php elseif (!isset($privatesite) || $privatesite !== 'on'): ?>
         <!-- Guest message -->
         <div class="col-12">
-            <div class="card rounded-3 bg-dark mb-4">
-                <div class="card-body p-2">
-                    <h6 class="text-light"><?php echo htmlspecialchars($lang['guestmsgtitle'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></h6>
+            <div class="card mb-4">
+                <div class="card-body p-4 rounded-1 border border-light">
+                    <h6 class="text-blue"><?php echo htmlspecialchars($lang['guestmsgtitle'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></h6>
                     <p class="text-muted mb-0"><?php echo $lang['guestmsgbody'] ?? 'Sign in to manage your pastes.'; ?></p>
                 </div>
             </div>
@@ -101,11 +93,11 @@ declare(strict_types=1);
     <?php if (!isset($privatesite) || $privatesite !== 'on'): ?>
         <!-- Recent Public Pastes -->
         <div class="col-12">
-            <div class="card rounded-3 bg-dark mb-4">
-                <div class="card-header bg-dark text-light rounded-top">
+            <div class="card mb-4">
+                <div class="card-header rounded-top">
                     <?php echo htmlspecialchars($lang['recentpastes'] ?? 'Recent Pastes', ENT_QUOTES, 'UTF-8'); ?>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         <?php
                         try {
@@ -122,7 +114,7 @@ declare(strict_types=1);
                                     $p_time_ago = conTime($p_time);
                                     $title = truncate($title, 6, 15);
                                     ?>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center text-light">
                                         <a href="<?php echo htmlspecialchars(
                                             $baseurl . ($mod_rewrite ? $p_id : 'paste.php?id=' . $p_id),
                                             ENT_QUOTES,
@@ -131,7 +123,7 @@ declare(strict_types=1);
                                             <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
                                         </a>
                                         <div class="ms-2">
-                                            <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?><br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>" title="Paste Details">
+                                            <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago.<br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>" title="Paste Details">
                                                 <i class="bi bi-clock"></i>
                                             </button>
                                         </div>

@@ -22,7 +22,7 @@ body {
 
 /* Nav Area */
 .navbar { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-.navbar-brand { font-weight: 600; font-size: 1.5rem; display: flex; align-items: center; gap: 8px; }
+.navbar-brand { /* color: #007bff !important; */ font-weight: 600; font-size: 1.5rem; display: flex; align-items: center; gap: 8px; }
 .nav-link { transition: color 0.2s; }
 .nav-link:hover { color: #0d6efd !important; }
 .search-form { max-width: 400px; width: 100%; display: flex; align-items: center; }
@@ -263,10 +263,11 @@ body {
     border: none;
     font-size: 1.5em;
     cursor: pointer;
-    color: #000;
+    color: #FFF;
 }
 .notification {
     position: relative;
+	overflow: auto;
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid #ccc;

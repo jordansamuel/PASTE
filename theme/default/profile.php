@@ -43,13 +43,13 @@ declare(strict_types=1);
                   <div class="mb-4 position-relative">
                     <label class="form-label text-light"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
                     <input disabled type="text" class="form-control bg-dark text-light pe-5" name="username" placeholder="<?php echo htmlspecialchars($user_username ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="bi bi-person position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem;"></i>
+                    <i class="bi bi-person position-absolute" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem;"></i>
                   </div>
                   
                   <div class="mb-4 position-relative">
                     <label class="form-label text-light"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
                     <input <?php if ($user_verified == "1") { echo 'disabled'; } ?> type="text" class="form-control bg-dark text-light pe-5" name="email" placeholder="<?php echo htmlspecialchars($user_email_id ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="bi bi-envelope position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem;"></i>
+                    <i class="bi bi-person position-absolute" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem;"></i>
                   </div>
 
                   <h5 class="text-center mb-4 text-light"><?php echo htmlspecialchars($lang['chgpwd'] ?? 'Change Password', ENT_QUOTES, 'UTF-8'); ?></h5>
@@ -57,19 +57,19 @@ declare(strict_types=1);
                   <div class="mb-4 position-relative">
                     <label class="form-label text-light"><?php echo htmlspecialchars($lang['curpwd'] ?? 'Current Password', ENT_QUOTES, 'UTF-8'); ?></label>
                     <input type="password" class="form-control bg-dark text-light pe-5" name="old_password" placeholder="<?php echo htmlspecialchars($lang['curpwd'] ?? 'Current Password', ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="bi bi-key position-absolute password-toggle" style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
+                    <i class="bi bi-key position-absolute password-toggle" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
                   </div>
                   
                   <div class="mb-4 position-relative">
                     <label class="form-label text-light"><?php echo htmlspecialchars($lang['newpwd'] ?? 'New Password', ENT_QUOTES, 'UTF-8'); ?></label>
                     <input type="password" class="form-control bg-dark text-light pe-5" name="password" placeholder="<?php echo htmlspecialchars($lang['newpwd'] ?? 'New Password', ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="bi bi-pencil position-absolute password-toggle" style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
+                    <i class="bi bi-pencil position-absolute password-toggle" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
                   </div>
 
                   <div class="mb-4 position-relative">
                     <label class="form-label text-light"><?php echo htmlspecialchars($lang['confpwd'] ?? 'Confirm Password', ENT_QUOTES, 'UTF-8'); ?></label>
                     <input type="password" class="form-control bg-dark text-light pe-5" name="cpassword" placeholder="<?php echo htmlspecialchars($lang['confpwd'] ?? 'Confirm Password', ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="bi bi-check position-absolute password-toggle" style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
+                    <i class="bi bi-check position-absolute password-toggle" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
                   </div>
                   <button type="submit" name="submit" class="btn btn-outline-light w-100 rounded-3">Submit</button>
                 </div>
