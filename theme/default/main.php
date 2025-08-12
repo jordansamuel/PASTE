@@ -4,46 +4,7 @@
  * Licensed under the GNU General Public License, version 3 or later.
  */
 ?>
-<style>
-/* Custom styles for dark theme and spacing */
-.g-recaptcha {
-    margin-bottom: 1.5rem; /* Add spacing below reCAPTCHA */
-}
-.paste-button {
-    margin-top: 1.5rem; /* Add spacing above submit button */
-}
-.card {
-    background-color: #1a1a1a; /* Dark background for card */
-    color: #ffffff; /* Light text for dark theme */
-}
-.form-control, .form-select, .input-group-text {
-    background-color: #2a2a2a; /* Dark input background */
-    color: #ffffff; /* Light text */
-    border-color: #444444; /* Darker border */
-}
-.form-control::placeholder {
-    color: #aaaaaa; /* Lighter placeholder text */
-}
-.btn-primary {
-    background-color: #007bff; /* Primary button color */
-    border-color: #007bff;
-}
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
-}
-.alert-warning {
-    background-color: #4a3c1c; /* Darker warning alert */
-    color: #ffffff;
-    border-color: #664d1e;
-}
-<?php if (isset($privatesite) && $privatesite === "on"): ?>
-/* Ensure proper spacing when sidebar is below main content */
-.sidebar-below {
-    margin-top: 1.5rem; /* Add spacing between main content and sidebar */
-}
-<?php endif; ?>
-</style>
+
 <div class="container-xl my-4">
     <div class="row">
         <?php if (isset($privatesite) && $privatesite === "on"): ?>

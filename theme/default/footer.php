@@ -54,3 +54,5 @@ ga('send', 'pageview');
 
 <!-- Additional Scripts -->
 <?php echo $additional_scripts ?? ''; ?>
+</body>
+</html>
