@@ -301,18 +301,6 @@
     </div>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('paste.php DOMContentLoaded fired');
-    const highlightLineBtn = document.querySelector('.highlight-line');
-
-    if (highlightLineBtn) {
-        highlightLineBtn.addEventListener('click', function(e) {
-            console.log('Highlight Line button clicked');
-            e.preventDefault();
-            window.highlightLine(e);
-        });
-    }
-});
 
 <?php if (isset($_SESSION['captcha_mode']) && $_SESSION['captcha_mode'] == "recaptcha"): ?>
 function onRecaptchaSuccess(token) {
