@@ -11,6 +11,13 @@ The original source is available from the previous owner's **[GitHub repository]
 
 A public version can be found **[here](https://paste.boxlabs.uk/)**
 
+<table style="padding:10px">
+  <tr>
+    <td><img src="https://i.imgur.com/Yrjl8w1.png" align="left" alt="1" width = 279px height = 496px></td>
+    <td><img src="https://i.imgur.com/VleCHjh.png" alt="2" width = 288px height = 512px></td>  
+  </tr>
+</table>
+
 IRC: If you would like support or want to contribute to Paste connect to irc.collectiveirc.net in channel #PASTE
 
 Any bugs can be reported at:
@@ -25,7 +32,6 @@ Requirements
 
 See docs/CHANGELOG
 ---
-
 Install
 ===
 * Create a database for PASTE.
