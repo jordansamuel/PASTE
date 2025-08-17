@@ -185,12 +185,26 @@
 
   // ---------- tools used in view.php ----------
   // Toggle line numbers for GeSHi-rendered block (ordered list)
-  window.togglev = function(){
-    const olElement = document.getElementsByTagName("ol")[0];
-    if (!olElement) { showNotification('Code list element not found.', true); return; }
-    const currentStyle = olElement.style.listStyle || getComputedStyle(olElement).listStyle;
-    olElement.style.listStyle = (currentStyle.substr(0,4) === 'none') ? 'decimal' : 'none';
-  };
+	window.togglev = function () {
+	  // Grab the main code wrapper
+	  const block = document.querySelector('.code-content');
+	  if (block) {
+		block.classList.toggle('no-line-numbers');
+		const hidden = block.classList.contains('no-line-numbers');
+		try { localStorage.setItem('paste_ln_hidden', hidden ? '1' : '0'); } catch (_) {}
+		return;
+	  }
+
+	  // Fallback: if no .code-content wrapper exists
+	  const olElement = document.querySelector('pre ol, .geshi ol, ol');
+	  if (!olElement) { 
+		showNotification('Code list element not found.', true); 
+		return; 
+	  }
+
+	  const currentStyle = olElement.style.listStyle || getComputedStyle(olElement).listStyle;
+	  olElement.style.listStyle = (currentStyle.startsWith('none')) ? 'decimal' : 'none';
+	};
 
   // Fullscreen modal (Bootstrap)
   window.toggleFullScreen = function(){

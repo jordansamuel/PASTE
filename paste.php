@@ -267,28 +267,45 @@ try {
         $p_content = rtrim($p_content);
     }
 
-    // transform content
-    $p_content = htmlspecialchars_decode($p_content);
-    if ($p_code === "markdown") {
-        include($parsedown_path);
-        $Parsedown = new Parsedown();
-        $p_content = $Parsedown->text($p_content);
-    } else {
-        $geshi = new GeSHi($p_content, $p_code, $path);
-        $geshi->enable_classes();
-        $geshi->set_header_type(GESHI_HEADER_DIV);
-        $geshi->set_line_style('color: #aaaaaa; width:auto;');
-        $geshi->set_code_style('color: #757584;');
-        if (!empty($highlight)) {
-            $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-            $geshi->highlight_lines_extra($highlight);
-            $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
-        } else {
-            $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS, 2);
-        }
-        $p_content = $geshi->parse_code();
-        $ges_style = '<style>' . $geshi->get_stylesheet() . '</style>';
-    }
+	// transform content
+	$p_content = htmlspecialchars_decode($p_content);
+	if ($p_code === "markdown") {
+		include($parsedown_path);
+		$Parsedown = new Parsedown();
+		$p_content = $Parsedown->text($p_content);
+	} else {
+		$geshi = new GeSHi($p_content, $p_code, $path);
+		$geshi->enable_classes();
+		$geshi->set_header_type(GESHI_HEADER_DIV);
+		$geshi->set_line_style('color:#aaaaaa; width:auto;');
+		$geshi->set_code_style('color:#757584;');
+
+		// Prefer NORMAL line numbers — avoids the 00/01 rollover bug
+		if (!empty($highlight)) {
+			$geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+			$geshi->highlight_lines_extra($highlight);
+			$geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+		} else {
+			$geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+		}
+
+		// force plain integer formatting
+		if (method_exists($geshi, 'set_line_number_format')) {
+			// '%d' => no padding, no modulo; second arg 0 = no wrap width
+			$geshi->set_line_number_format('%d', 0);
+		}
+
+		// Parse HTML
+		$p_content = $geshi->parse_code();
+
+		// Get stylesheet and remove any leading-zero list style some themes emit
+		$css = $geshi->get_stylesheet();
+		$css = str_replace('list-style-type: decimal-leading-zero;', 'list-style-type: decimal;', $css);
+
+		// $css .= ".li1, .li2 { list-style-type: decimal !important; }";
+
+		$ges_style = '<style>' . $css . '</style>';
+	}
 
     // header
     $theme = 'theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8');

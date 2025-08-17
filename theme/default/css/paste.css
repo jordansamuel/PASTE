@@ -326,3 +326,37 @@ body {
   border-color: #2a2f36 !important;
   outline: 0 !important;
 }
+
+/* Force GeSHi line numbers to render and be visible */
+.code-content ol {
+  list-style-type: decimal !important;   /* make sure markers exist */
+  list-style-position: outside !important;
+  padding-left: 3.5em !important;        /* space for the numbers */
+  margin-left: 0 !important;
+}
+
+.code-content ol li {
+  list-style-type: decimal !important;   /* some resets target <li> */
+  padding-left: .5em;                    /* a little gap after the marker */
+}
+
+.code-content:not(.no-line-numbers) ol,
+.code-content:not(.no-line-numbers) ol li {
+  list-style: decimal !important;
+}
+
+/* Hide GeSHi line numbers cleanly when toggled */
+.no-line-numbers ol,
+.no-line-numbers ol li,
+.no-line-numbers ol li::before {
+    list-style: none !important;
+    counter-increment: none !important;
+    content: '' !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Prevent gutter width reserve */
+.no-line-numbers ol {
+    padding-left: 0 !important;
+}
