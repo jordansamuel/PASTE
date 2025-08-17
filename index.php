@@ -15,6 +15,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in LICENCE for more details.
  */
+// If the installer exists, redirect to prevent errors from empty config variables
+$directory = 'install';
+
+if (file_exists($directory)) {
+    header("Location: install");
+    exit();
+}
+
 require_once 'includes/session.php';
 // Debugging for reCAPTCHA - /index.php?forcefail=1 - index.php?forcepass=1
 // Only uncomment if you need to test. 
