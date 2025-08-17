@@ -1,101 +1,135 @@
 <?php
 /*
- * Paste <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
- * Demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
  *
- * Licensed under GNU General Public License, version 3 or later.
- * See LICENCE for details.
+ * https://phpaste.sourceforge.io/
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License in LICENCE for more details.
  */
-session_start();
+require_once 'includes/session.php';
+// Debugging for reCAPTCHA - /index.php?forcefail=1 - index.php?forcepass=1
+// Only uncomment if you need to test. 
+//if (isset($_GET['forcefail'])) { $_SESSION['forcefail'] = (int)$_GET['forcefail']; }
+//if (isset($_GET['forcepass'])) { $_SESSION['forcepass'] = (int)$_GET['forcepass']; }
 
-// Set default timezone
+// production-style error handling
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_log("index.php boot");
+
+// timezone
 date_default_timezone_set('UTC');
 
-$directory = 'install';
-if (file_exists($directory)) {
-    header("Location: install");
-    exit();
-}
-
+// core includes
 require_once('config.php');
 require_once('includes/captcha.php');
 require_once('includes/functions.php');
 
-$stmt = $pdo->query("SELECT * FROM site_info WHERE id='1'");
-$row = $stmt->fetch();
-$title = trim($row['title'] ?? '');
-$des = trim($row['des'] ?? '');
-$baseurl = trim($row['baseurl'] ?? '');
-$keyword = trim($row['keyword'] ?? '');
-$site_name = trim($row['site_name'] ?? '');
-$email = trim($row['email'] ?? '');
-$twit = trim($row['twit'] ?? '');
-$face = trim($row['face'] ?? '');
-$gplus = trim($row['gplus'] ?? '');
-$ga = trim($row['ga'] ?? '');
-$additional_scripts = trim($row['additional_scripts'] ?? '');
+// ip
+$ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-$stmt = $pdo->query("SELECT * FROM interface WHERE id='1'");
-$row = $stmt->fetch();
-$default_lang = trim($row['lang'] ?? 'en.php');
-$default_theme = trim($row['theme'] ?? 'default');
-require_once("langs/$default_lang");
+// pull config from DB
+try {
+    // site_info
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id='1'");
+    $siteinfo = $stmt->fetch() ?: [];
+    $title       = trim($siteinfo['title'] ?? 'Paste');
+    $des         = trim($siteinfo['des'] ?? '');
+    $baseurl     = trim($siteinfo['baseurl'] ?? '');
+    $keyword     = trim($siteinfo['keyword'] ?? '');
+    $site_name   = trim($siteinfo['site_name'] ?? 'Paste');
+    $ga          = trim($siteinfo['ga'] ?? '');
+    $additional_scripts = trim($siteinfo['additional_scripts'] ?? '');
 
-$date = date('Y-m-d');
-$ip = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
+    // interface
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id='1'");
+    $iface = $stmt->fetch() ?: [];
+    $default_lang  = trim($iface['lang'] ?? 'en.php');
+    $default_theme = trim($iface['theme'] ?? 'default');
+    require_once("langs/$default_lang");
 
-$stmt = $pdo->query("SELECT * FROM ads WHERE id='1'");
-$row = $stmt->fetch();
-$text_ads = trim($row['text_ads'] ?? '');
-$ads_1 = trim($row['ads_1'] ?? '');
-$ads_2 = trim($row['ads_2'] ?? '');
+    // ads
+    $stmt = $pdo->query("SELECT * FROM ads WHERE id='1'");
+    $ads = $stmt->fetch() ?: [];
+    $text_ads = trim($ads['text_ads'] ?? '');
+    $ads_1    = trim($ads['ads_1'] ?? '');
+    $ads_2    = trim($ads['ads_2'] ?? '');
 
-$stmt = $pdo->query("SELECT * FROM sitemap_options WHERE id='1'");
-$row = $stmt->fetch();
-$priority = $row['priority'] ?? '0.8';
-$changefreq = $row['changefreq'] ?? 'daily';
+    // sitemap options
+    $stmt = $pdo->query("SELECT * FROM sitemap_options WHERE id='1'");
+    $sm = $stmt->fetch() ?: [];
+    $priority   = $sm['priority']   ?? '0.8';
+    $changefreq = $sm['changefreq'] ?? 'daily';
 
-$stmt = $pdo->query("SELECT * FROM captcha WHERE id='1'");
-$row = $stmt->fetch();
-$color = trim($row['color'] ?? '');
-$mode = trim($row['mode'] ?? 'normal');
-$mul = trim($row['mul'] ?? '');
-$allowed = trim($row['allowed'] ?? '');
-$cap_e = trim($row['cap_e'] ?? 'off');
-$recaptcha_sitekey = trim($row['recaptcha_sitekey'] ?? '');
-$recaptcha_secretkey = trim($row['recaptcha_secretkey'] ?? '');
-$recaptcha_version = trim($row['recaptcha_version'] ?? 'v2');
+    // captcha settings (from admin/configuration.php)
+    $stmt = $pdo->query("SELECT * FROM captcha WHERE id='1'");
+    $cap = $stmt->fetch() ?: [];
+    $color                = trim($cap['color'] ?? '');
+    $mode                 = trim($cap['mode'] ?? 'normal');          // "normal" | "reCAPTCHA"
+    $mul                  = trim($cap['mul'] ?? '');
+    $allowed              = trim($cap['allowed'] ?? '');
+    $cap_e                = trim($cap['cap_e'] ?? 'off');            // "on" | "off"
+    $recaptcha_sitekey    = trim($cap['recaptcha_sitekey'] ?? '');
+    $recaptcha_secretkey  = trim($cap['recaptcha_secretkey'] ?? '');
+    $recaptcha_version    = trim($cap['recaptcha_version'] ?? 'v2'); // "v2" | "v3"
 
-if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-    if ($cap_e == "on") {
-        if ($mode == "reCAPTCHA") {
-            $_SESSION['captcha_mode'] = ($recaptcha_version == 'v3') ? "recaptcha_v3" : "recaptcha";
-            $_SESSION['captcha'] = $recaptcha_sitekey;
+	// Mirror captcha config into session for recaptcha.php (expects these names)
+	$_SESSION['cap_e']              = $cap_e;                 // 'on'|'off'
+	$_SESSION['mode']               = $mode;                  // 'reCAPTCHA'|'normal'
+	$_SESSION['recaptcha_version']  = $recaptcha_version;     // 'v2'|'v3'
+	$_SESSION['recaptcha_sitekey']  = $recaptcha_sitekey;     // site key used by client
+	$_SESSION['recaptcha_secretkey']= $recaptcha_secretkey;   // secret key used by server
+
+    // permissions
+    $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id='1'");
+    $perm = $stmt->fetch() ?: [];
+    $disableguest = trim($perm['disableguest'] ?? 'off');
+    $siteprivate  = trim($perm['siteprivate'] ?? 'off');
+
+    // rewrite flag (from config.php)
+    $mod_rewrite = isset($mod_rewrite) ? $mod_rewrite : '0';
+} catch (PDOException $e) {
+    error_log("index.php: DB error ".$e->getMessage());
+    $error = $lang['db_error'] ?? 'Database error.';
+    goto OutPut;
+}
+
+// set session flags for captcha on initial GET
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if ($cap_e === "on") {
+        if ($mode === "reCAPTCHA") {
+            $_SESSION['captcha_mode'] = ($recaptcha_version === 'v3') ? "recaptcha_v3" : "recaptcha";
+            $_SESSION['captcha']      = $recaptcha_sitekey;
         } else {
             $_SESSION['captcha_mode'] = "internal";
-            $_SESSION['captcha'] = captcha($color, $mode, $mul, $allowed);
+            $_SESSION['captcha']      = captcha($color, $mode, $mul, $allowed);
         }
     } else {
         $_SESSION['captcha_mode'] = "none";
     }
 }
 
+// ban check
 if (is_banned($pdo, $ip)) {
-    die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
+    $error = $lang['banned'] ?? 'You are banned from this site.';
+    goto OutPut;
 }
 
-$stmt = $pdo->query("SELECT * FROM site_permissions WHERE id='1'");
-$row = $stmt->fetch();
-$disableguest = trim($row['disableguest'] ?? 'off');
-$siteprivate = trim($row['siteprivate'] ?? 'off');
-
-if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-    if ($disableguest == "on") {
+// guest/private flags for theme
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if ($disableguest === "on") {
         $noguests = "on";
     }
-    if ($siteprivate == "on") {
+    if ($siteprivate === "on") {
         $privatesite = "on";
     }
     if (isset($_SESSION['username'])) {
@@ -103,233 +137,224 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     }
 }
 
-if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
-    $callback_stripslashes = function (&$val) {
-        $val = stripslashes($val);
-    };
-    array_walk($_GET, $callback_stripslashes);
-    array_walk($_POST, $callback_stripslashes);
-    array_walk($_COOKIE, $callback_stripslashes);
-}
-
+// logout passthrough
 if (isset($_GET['logout'])) {
-    header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    unset($_SESSION['pic']);
+    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $baseurl));
+    unset($_SESSION['token'], $_SESSION['oauth_uid'], $_SESSION['username'], $_SESSION['pic']);
     session_destroy();
 }
 
-$stmt = $pdo->query("SELECT MAX(id) AS last_id FROM page_view");
-$row = $stmt->fetch();
-$last_id = $row['last_id'] ?? null;
-
-if ($last_id) {
-    $stmt = $pdo->prepare("SELECT * FROM page_view WHERE id = ?");
-    $stmt->execute([$last_id]);
-    $row = $stmt->fetch();
-    $last_date = $row['date'] ?? '';
-
-    if ($last_date == $date) {
-        if (str_contains_polyfill($data_ip, $ip)) {
-            $stmt = $pdo->prepare("SELECT tpage FROM page_view WHERE id = ?");
-            $stmt->execute([$last_id]);
-            $last_tpage = trim($stmt->fetchColumn()) + 1;
-            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ? WHERE id = ?");
-            $stmt->execute([$last_tpage, $last_id]);
-        } else {
-            $stmt = $pdo->prepare("SELECT tpage, tvisit FROM page_view WHERE id = ?");
-            $stmt->execute([$last_id]);
-            $row = $stmt->fetch();
-            $last_tpage = trim($row['tpage']) + 1;
-            $last_tvisit = trim($row['tvisit']) + 1;
-            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
-            $stmt->execute([$last_tpage, $last_tvisit, $last_id]);
-            file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-        }
-    } else {
-        unlink("tmp/temp.tdata");
-        $data_ip = "";
-        $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
-        $stmt->execute([$date]);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    }
-} else {
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
+// page views
+try {
+    $date = date('Y-m-d');
+    $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
     $stmt->execute([$date]);
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+    $pv = $stmt->fetch();
+    if ($pv) {
+        $page_view_id = (int)$pv['id'];
+        $tpage  = (int)$pv['tpage'] + 1;
+        $tvisit = (int)$pv['tvisit'];
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+        $stmt->execute([$ip, $date]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            $tvisit += 1;
+            $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+            $stmt->execute([$ip, $date]);
+        }
+        $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+        $stmt->execute([$tpage, $tvisit, $page_view_id]);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+        $stmt->execute([$date, 1, 1]);
+        $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+        $stmt->execute([$ip, $date]);
+    }
+} catch (PDOException $e) {
+    error_log("index.php: page view err ".$e->getMessage());
 }
 
+// POST: create paste
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (empty($_POST["paste_data"]) || trim($_POST["paste_data"]) == '') {
+
+    // empty content
+    if (empty($_POST["paste_data"]) || trim($_POST["paste_data"]) === '') {
         $error = $lang['empty_paste'] ?? 'Paste content cannot be empty.';
         goto OutPut;
     }
 
+    // size check
     if (mb_strlen($_POST["paste_data"], '8bit') > 1024 * 1024 * ($pastelimit ?? 10)) {
         $error = $lang['large_paste'] ?? 'Paste is too large.';
         goto OutPut;
     }
 
-    if (isset($_POST['title']) && isset($_POST['paste_data'])) {
-        if ($cap_e == "on" && !isset($_SESSION['username'])) {
-            if ($mode == "reCAPTCHA") {
-                // Check if g-recaptcha-response is set and not empty
-                if (!isset($_POST['g-recaptcha-response']) || empty($_POST['g-recaptcha-response'])) {
-                    error_log("reCAPTCHA error: g-recaptcha-response missing or empty");
-                    $error = $lang['recaptcha_missing'] ?? 'Please complete the reCAPTCHA.';
-                    goto OutPut;
-                }
-
-                // Verify reCAPTCHA with Google's API
-                $recaptcha_url = "https://www.google.com/recaptcha/api/siteverify";
-                $recaptcha_data = [
-                    'secret' => $recaptcha_secretkey,
-                    'response' => $_POST['g-recaptcha-response'],
-                    'remoteip' => $_SERVER['REMOTE_ADDR']
-                ];
-
-                // Try cURL first
-                $response = false;
-                if (function_exists('curl_init')) {
-                    $ch = curl_init($recaptcha_url);
-                    curl_setopt($ch, CURLOPT_POST, true);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($recaptcha_data));
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                    $response = curl_exec($ch);
-                    $curl_error = curl_error($ch);
-                    curl_close($ch);
-
-                    if ($curl_error) {
-                        error_log("reCAPTCHA cURL error: " . $curl_error);
-                    }
-                }
-
-                // Fallback to file_get_contents if cURL fails or is unavailable
-                if ($response === false) {
-                    $response = @file_get_contents($recaptcha_url . '?' . http_build_query($recaptcha_data));
-                    if ($response === false) {
-                        error_log("reCAPTCHA file_get_contents failed");
-                        $error = $lang['recaptcha_error'] ?? 'Failed to verify reCAPTCHA. Please try again.';
-                        goto OutPut;
-                    }
-                }
-
-                $response = json_decode($response, true);
-
-                if ($response === null || !isset($response['success'])) {
-                    error_log("reCAPTCHA API response invalid: " . print_r($response, true));
-                    $error = $lang['recaptcha_error'] ?? 'Invalid reCAPTCHA response from server.';
-                    goto OutPut;
-                }
-
-                if ($response['success'] === false) {
-                    $error_codes = $response['error-codes'] ?? [];
-                    $error_message = !empty($error_codes) ? ($lang[$error_codes[0]] ?? implode(', ', $error_codes)) : ($lang['recaptcha_failed'] ?? 'reCAPTCHA verification failed.');
-                    error_log("reCAPTCHA verification failed: " . $error_message);
-                    $error = $error_message;
-                    goto OutPut;
-                }
-
-                // For v3, check the score
-                if ($recaptcha_version === 'v3') {
-                    $score = isset($response['score']) ? (float)$response['score'] : 0.0;
-                    $action = $response['action'] ?? '';
-                    error_log("reCAPTCHA v3 response: Score: {$score}, Action: {$action}, Hostname: {$response['hostname']}");
-                    if ($score < 0.3 || $action !== 'create_paste') {
-                        error_log("reCAPTCHA v3 verification failed. Score: {$score}, Action: {$action}");
-                        $error = $lang['low_score'] ?? 'Your action was flagged as potentially automated. Please try again.';
-                        goto OutPut;
-                    }
-                }
-            } else {
-                $scode = strtolower(htmlentities(trim($_POST['scode'] ?? '')));
-                $cap_code = strtolower($_SESSION['captcha']['code'] ?? '');
-                if ($cap_code != $scode) {
-                    $error = $lang['image_wrong'] ?? 'Incorrect CAPTCHA code.';
-                    goto OutPut;
-                }
-            }
-        }
-
-        $p_title = trim(htmlspecialchars($_POST['title'] ?? '')) ?: 'Untitled';
-        $p_content = htmlspecialchars($_POST['paste_data']);
-        $p_visible = trim(htmlspecialchars($_POST['visibility'] ?? '0'));
-        $p_code = trim(htmlspecialchars($_POST['format'] ?? 'text'));
-        $p_expiry = trim(htmlspecialchars($_POST['paste_expire_date'] ?? 'N'));
-        $p_password = trim($_POST['pass'] ?? '') === '' ? 'NONE' : trim($_POST['pass']);
-        $p_encrypt = '1'; // Always encrypt
-        $p_member = (string) ($_SESSION['username'] ?? 'Guest');
-        $p_date = date('Y-m-d H:i:s');
-        $now_time = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
-        $date = date('Y-m-d');
-
-        // Encrypt content
-        try {
-            $p_content = encrypt($p_content, hex2bin(SECRET));
-            if ($p_content === null) {
-                $error = $lang['error'] ?? 'Encryption failed.';
-                goto OutPut;
-            }
-        } catch (RuntimeException $e) {
-            $error = ($lang['error'] ?? 'Error') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-            goto OutPut;
-        }
-
-        if ($p_password != "NONE") {
-            $p_password = password_hash($p_password, PASSWORD_DEFAULT);
-            if ($p_password === false) {
-                $error = $lang['error'] ?? 'Password hashing failed.';
-                goto OutPut;
-            }
-        }
-
-        $expires = match ($p_expiry) {
-            '10M' => mktime(date("H"), date("i") + 10, date("s"), date("n"), date("j"), date("Y")),
-            '1H' => mktime(date("H") + 1, date("i"), date("s"), date("n"), date("j"), date("Y")),
-            '1D' => mktime(date("H"), date("i"), date("s"), date("n"), date("j") + 1, date("Y")),
-            '1W' => mktime(date("H"), date("i"), date("s"), date("n"), date("j") + 7, date("Y")),
-            '2W' => mktime(date("H"), date("i"), date("s"), date("n"), date("j") + 14, date("Y")),
-            '1M' => mktime(date("H"), date("i"), date("s"), date("n") + 1, date("j"), date("Y")),
-            'self' => "SELF",
-            default => "NULL",
-        };
-
-        try {
-            if (isset($_POST['edit'])) {
-                $edit_paste_id = (int) ($_POST['paste_id'] ?? 0);
-                $stmt = $pdo->prepare("UPDATE pastes SET title = ?, content = ?, visible = ?, code = ?, expiry = ?, password = ?, encrypt = ?, member = ?, date = ?, ip = ? WHERE id = ?");
-                $stmt->execute([$p_title, $p_content, $p_visible, $p_code, $expires, $p_password, $p_encrypt, $p_member, $p_date, $ip, $edit_paste_id]);
-                $success = $edit_paste_id;
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO pastes (title, content, visible, code, expiry, password, encrypt, member, date, ip, now_time, views, s_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '0', ?)");
-                $stmt->execute([$p_title, $p_content, $p_visible, $p_code, $expires, $p_password, $p_encrypt, $p_member, $p_date, $ip, $now_time, $date]);
-                $success = $pdo->lastInsertId();
-            }
-
-            if ($p_visible == '0') {
-                addToSitemap($pdo, (int) $success, $priority, $changefreq, $mod_rewrite);
-            }
-
-            $paste_url = $mod_rewrite == '1' ? "/$success" : "paste.php?id=$success";
-            header("Location: $paste_url");
-            exit;
-        } catch (PDOException $e) {
-            error_log("Database error in INSERT/UPDATE: " . $e->getMessage() . " | Query: " . $stmt->queryString);
-            $error = ($lang['paste_db_error'] ?? 'Database error.') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-            goto OutPut;
-        }
-    } else {
+    // require fields
+    if (!isset($_POST['title']) || !isset($_POST['paste_data'])) {
         $error = $lang['error'] ?? 'Invalid form submission.';
+        goto OutPut;
+    }
+	
+	// --- debug overrides (forcefail/forcepass) ---
+	// Persisted earlier via GET -> session. Handle them here to bypass ALL captcha paths.
+	$captchaOverridePass = !empty($_SESSION['forcepass']);
+	$captchaOverrideFail = !empty($_SESSION['forcefail']);
+
+	// consume them so they only affect one submit
+	if ($captchaOverridePass) unset($_SESSION['forcepass']);
+	if ($captchaOverrideFail) unset($_SESSION['forcefail']);
+
+	// captcha checks for guests (respect admin config)
+	if (!isset($_SESSION['username']) && ($disableguest !== "on")) {
+
+		// 1) debug overrides first
+		if ($captchaOverridePass) {
+			// Skip ALL captcha checks
+			// (do nothing)
+		} elseif ($captchaOverrideFail) {
+			// Force a visible, soft error like the internal captcha branch does
+			$error = $lang['recaptcha_failed'] ?? 'reCAPTCHA verification failed.';
+			goto OutPut;
+		} else {
+			// 2) normal behaviour
+			if ($cap_e === "on") {
+				if ($mode === "reCAPTCHA") {
+					require_once __DIR__ . '/includes/recaptcha.php';
+					require_human('create_paste'); // may set $GLOBALS['error']
+					if (!empty($error)) { 
+						// Map to language string used in main.php alert (soft error)
+						$error = $lang['recaptcha_failed'] ?? 'reCAPTCHA failed to verify you\'re not a bot. Refresh and try again.';
+						goto OutPut; 
+					}
+				} else {
+					// internal captcha (image)
+					$scode    = strtolower(htmlentities(trim($_POST['scode'] ?? '')));
+					$cap_code = strtolower($_SESSION['captcha']['code'] ?? '');
+					if ($cap_code !== $scode) {
+						$error = $lang['image_wrong'] ?? 'Incorrect CAPTCHA code.';
+						goto OutPut;
+					}
+				}
+			}
+		}
+	}
+
+    // sanitize inputs
+    $p_title   = trim(htmlspecialchars($_POST['title'] ?? '', ENT_QUOTES, 'UTF-8')) ?: 'Untitled';
+    $p_content = htmlspecialchars($_POST['paste_data'], ENT_QUOTES, 'UTF-8');
+    $p_visible = trim(htmlspecialchars($_POST['visibility'] ?? '0', ENT_QUOTES, 'UTF-8'));
+    $p_code    = trim(htmlspecialchars($_POST['format'] ?? 'text', ENT_QUOTES, 'UTF-8'));
+    $p_expiry  = trim(htmlspecialchars($_POST['paste_expire_date'] ?? 'N', ENT_QUOTES, 'UTF-8'));
+    $p_password = trim($_POST['pass'] ?? '') === '' ? 'NONE' : trim($_POST['pass']);
+    $p_encrypt = '1';
+    $p_member  = (string)($_SESSION['username'] ?? 'Guest');
+    $p_date    = date('Y-m-d H:i:s');
+    $now_time  = mktime(date("H"), date("i"), date("s"), date("n"), date("j"), date("Y"));
+    $s_date    = date('Y-m-d');
+
+    // encrypt content
+    try {
+        if (!defined('SECRET')) {
+            error_log("index.php: SECRET undefined");
+            $error = $lang['error'] ?? 'Server configuration error.';
+            goto OutPut;
+        }
+        $p_content = encrypt($p_content, hex2bin(SECRET));
+        if ($p_content === null) {
+            $error = $lang['error'] ?? 'Encryption failed.';
+            goto OutPut;
+        }
+    } catch (RuntimeException $e) {
+        $error = ($lang['error'] ?? 'Error') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        goto OutPut;
+    }
+
+    // hash password if provided
+    if ($p_password !== "NONE") {
+        $p_password = password_hash($p_password, PASSWORD_DEFAULT);
+        if ($p_password === false) {
+            $error = $lang['error'] ?? 'Password hashing failed.';
+            goto OutPut;
+        }
+    }
+
+    // expiry
+    $expires = match ($p_expiry) {
+        '10M' => mktime(date("H"), date("i") + 10, date("s"), date("n"), date("j"), date("Y")),
+        '1H'  => mktime(date("H") + 1, date("i"), date("s"), date("n"), date("j"), date("Y")),
+        '1D'  => mktime(date("H"), date("i"), date("s"), date("n"), date("j") + 1, date("Y")),
+        '1W'  => mktime(date("H"), date("i"), date("s"), date("n"), date("j") + 7, date("Y")),
+        '2W'  => mktime(date("H"), date("i"), date("s"), date("n"), date("j") + 14, date("Y")),
+        '1M'  => mktime(date("H"), date("i"), date("s"), date("n") + 1, date("j"), date("Y")),
+        'self'=> "SELF",
+        default => "NULL",
+    };
+
+    // insert
+    try {
+        $stmt = $pdo->prepare("INSERT INTO pastes (title, content, visible, code, expiry, password, encrypt, member, date, ip, now_time, s_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$p_title, $p_content, $p_visible, $p_code, $expires, $p_password, $p_encrypt, $p_member, $p_date, $ip, $now_time, $s_date]);
+        $paste_id = $pdo->lastInsertId();
+
+        // sitemap for public
+        if ($p_visible === '0') {
+            addToSitemap($pdo, (int)$paste_id, $priority, $changefreq, $mod_rewrite == '1');
+        }
+
+        // redirect to paste
+        $paste_url = ($mod_rewrite == '1') ? ($baseurl . $paste_id) : ($baseurl . 'paste.php?id=' . $paste_id);
+        header("Location: " . $paste_url);
+        exit;
+    } catch (PDOException $e) {
+        error_log("index.php: insert err ".$e->getMessage());
+        $error = ($lang['paste_db_error'] ?? 'Database error.') . ': ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+        goto OutPut;
     }
 }
 
+// output: render theme
 OutPut:
-require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
-require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/main.php');
-require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/footer.php');
-?>
+$themeDir = 'theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8');
+
+require_once $themeDir . '/header.php';
+
+/**
+ * Decide which view to render.
+ * Hard errors -> errors.php
+ * Soft form errors -> $error
+ */
+$error_text = $error ?? '';
+$notfound   = $notfound ?? '';
+$needs_pw   = !empty($require_password);
+
+// classify hard vs soft
+$error_hard = false;
+if ($notfound !== '' || $needs_pw) {
+    $error_hard = true; // 404 / password
+} elseif ($error_text !== '') {
+    $hard_markers = [
+        'banned', 'Database error', 'Encryption failed',
+        'Password hashing failed', 'Server configuration error',
+    ];
+    foreach ($hard_markers as $m) {
+        if (stripos($error_text, $m) !== false) { $error_hard = true; break; }
+    }
+}
+
+if ($error_hard) {
+    // HARD: render errors.php between header & footer
+    $err = $themeDir . '/errors.php';
+    if (is_file($err)) {
+        $error_msg = $error_text;   // expose to partial
+        require $err;
+    } else {
+        echo '<main class="container py-4"><div class="alert alert-danger" role="alert">'
+            . htmlspecialchars($error_text ?: ($notfound ?: ($lang['error'] ?? 'An error occurred.')), ENT_QUOTES, 'UTF-8')
+            . '</div></main>';
+    }
+} else {
+    // SOFT: show form with inline alert
+    if ($error_text !== '') { $flash_error = $error_text; }
+    require_once $themeDir . '/main.php';
+}
+
+require_once $themeDir . '/footer.php';

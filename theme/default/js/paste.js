@@ -1,241 +1,295 @@
-function getElementsByClassName(e, t) {
-    if (e.getElementsByClassName) {
-        return e.getElementsByClassName(t);
+(function () {
+  // ---------- small utils ----------
+  function px(v){ return v ? (parseFloat(v) || 0) : 0; }
+  function lineStart(value, i){ while (i > 0 && value.charCodeAt(i - 1) !== 10) i--; return i; }
+  function lineEnd(value, i){ while (i < value.length && value.charCodeAt(i) !== 10) i++; return i; }
+  function triggerInput(el){ try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch(_) {} }
+
+  // ---------- lightweight editor (gutter + textarea) ----------
+  function initLiteEditor(ta, opts){
+    if (!ta || ta.dataset.liteInit === '1') return;
+    const readOnly = !!(opts && opts.readOnly);
+
+    // structure
+    const wrap = document.createElement('div');
+    wrap.className = 'editor-wrap';
+
+    const gutter = document.createElement('div');
+    gutter.className = 'editor-gutter';
+    gutter.setAttribute('aria-hidden','true');
+
+    const rail = document.createElement('div');
+    rail.className = 'editor-gutter-inner';
+    gutter.appendChild(rail);
+
+    ta.parentNode.insertBefore(wrap, ta);
+    wrap.appendChild(gutter);
+    wrap.appendChild(ta);
+    ta.classList.add('editor-ta', 'form-control');      // keep Bootstrap sizing, but we’ll neutralize its ring
+    ta.dataset.liteInit = '1';
+
+    // ----- force identical metrics between TA and gutter -----
+    const csTA = getComputedStyle(ta);
+
+    // set explicit pixel line-height to avoid browser rounding drift
+    const fs = parseFloat(csTA.fontSize) || 14;
+    const lhPx = (csTA.lineHeight && csTA.lineHeight !== 'normal')
+      ? parseFloat(csTA.lineHeight)
+      : Math.round(fs * 1.5);
+
+    // lock textarea line-height so we know exact pixel step
+    ta.style.lineHeight = lhPx + 'px';
+
+    // clone font metrics to gutter so numbers align perfectly
+    gutter.style.fontFamily = csTA.fontFamily;
+    gutter.style.fontSize   = csTA.fontSize;
+    gutter.style.lineHeight = lhPx + 'px';
+    // match vertical padding so first number aligns with first text line
+    gutter.style.paddingTop    = csTA.paddingTop;
+    gutter.style.paddingBottom = csTA.paddingBottom;
+
+    // neutralize Bootstrap focus ring for this textarea
+    ta.style.boxShadow  = 'none';
+    ta.style.outline    = '0';
+    ta.addEventListener('focus', function(){
+      ta.style.boxShadow = 'none';
+      ta.style.outline   = '0';
+    });
+
+    // render numbers (capped)
+    let lastCount = -1;
+    let rafId = 0;
+
+    function lineCount(str){ return (str.match(/\n/g) || []).length + 1; }
+
+    function renderNumbers(count){
+      if (count === lastCount) return;
+      lastCount = count;
+      const cap = Math.min(count, 50000);
+      let out = '';
+      for (let i = 1; i <= cap; i++) out += i + '\n';
+      if (count > cap) out += '…\n';
+      rail.textContent = out;
+    }
+
+    function syncHeights(){
+      // Match the *visual box* height of the textarea (borders included)
+      gutter.style.height = ta.offsetHeight + 'px';
+    }
+
+    function syncScroll(){
+      // Move the inner rail so numbers appear to scroll with the textarea
+      rail.style.transform = 'translateY(' + (-ta.scrollTop) + 'px)';
+    }
+
+    function update(){
+      rafId = 0;
+      renderNumbers(lineCount(ta.value));
+      syncHeights();
+      syncScroll();
+    }
+
+    function schedule(){ if (!rafId) rafId = requestAnimationFrame(update); }
+
+    // events
+    ta.addEventListener('scroll', syncScroll);
+    ['input','change','cut','paste'].forEach(ev => ta.addEventListener(ev, schedule));
+
+    // tab / shift+tab (skip when readOnly)
+    if (!readOnly){
+      ta.addEventListener('keydown', function(e){
+        if (e.key !== 'Tab') return;
+        e.preventDefault();
+
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        const v = ta.value, before = v.slice(0,start), sel = v.slice(start,end), after = v.slice(end);
+
+        if (e.shiftKey){
+          // unindent
+          const lines = sel.split('\n');
+          const newSel = lines.map(l=>{
+            if (l.startsWith('    ')) return l.slice(4);
+            if (l.startsWith('\t'))   return l.slice(1);
+            return l.replace(/^ {1,3}/,'');
+          }).join('\n');
+
+          // compute removed on first affected line (for caret)
+          const firstLineStart = before.lastIndexOf('\n') + 1;
+          let removed = 0;
+          const head = v.slice(firstLineStart, firstLineStart+4);
+          if (head.startsWith('\t')) removed = 1;
+          else if (head.startsWith('    ')) removed = 4;
+          else { const m = head.match(/^ {1,3}/); removed = m ? m[0].length : 0; }
+
+          ta.value = before + newSel + after;
+          const newStart = start - Math.min(removed, start - firstLineStart);
+          const diff = sel.length - newSel.length;
+          ta.setSelectionRange(newStart, end - diff);
+        } else {
+          // indent
+          if (sel.indexOf('\n') !== -1){
+            const ind = sel.replace(/^/gm, '    ');
+            ta.value = before + ind + after;
+            ta.setSelectionRange(start + 4, end + (ind.length - sel.length));
+          } else {
+            ta.value = before + '    ' + sel + after;
+            const caret = start + 4;
+            ta.setSelectionRange(caret, caret);
+          }
+        }
+        schedule();
+      });
     } else {
-        return function n(e, t) {
-            if (t == null) t = document;
-            var n = [], r = t.getElementsByTagName("*"), i = r.length, s = new RegExp("(^|\\s)" + e + "(\\s|$)"), o, u;
-            for (o = 0, u = 0; o < i; o++) {
-                if (s.test(r[o].className)) { n[u] = r[o]; u++; }
-            }
-            return n;
-        }(t, e);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('paste.js loaded at', new Date().toISOString());
-
-    // Check if CodeMirror is loaded
-    if (typeof CodeMirror === 'undefined') {
-        console.error('CodeMirror library not loaded');
-        return;
+      ta.setAttribute('readonly','readonly');
     }
 
-    // Initialize CodeMirror for #code (view.php, read-only)
-    const codeTextArea = document.getElementById('code');
-    if (codeTextArea && !codeTextArea.classList.contains('cm-initialized')) {
-        console.log('Initializing CodeMirror for #code');
-        try {
-            CodeMirror.fromTextArea(codeTextArea, {
-                mode: 'markdown',
-                theme: 'monokai',
-                lineNumbers: true,
-                readOnly: true
-            });
-            codeTextArea.classList.add('cm-initialized');
-            console.log('CodeMirror initialized for #code');
-        } catch (e) {
-            console.error('Failed to initialize CodeMirror for #code:', e);
-        }
+    // keep in sync if user resizes textarea (drag handle)
+    if ('ResizeObserver' in window){
+      new ResizeObserver(()=>{ syncHeights(); syncScroll(); }).observe(ta);
+    } else {
+      window.addEventListener('resize', ()=>{ syncHeights(); syncScroll(); });
     }
 
-    // Initialize CodeMirror for #edit-code (view.php, editable)
-    const editCodeTextArea = document.getElementById('edit-code');
-    if (editCodeTextArea && !editCodeTextArea.classList.contains('cm-initialized')) {
-        console.log('Initializing CodeMirror for #edit-code');
-        try {
-            const editCodeEditor = CodeMirror.fromTextArea(editCodeTextArea, {
-                mode: 'markdown',
-                theme: 'monokai',
-                lineNumbers: true,
-                readOnly: false
-            });
-            editCodeTextArea.classList.add('cm-initialized');
-            console.log('CodeMirror initialized for #edit-code');
-        } catch (e) {
-            console.error('Failed to initialize CodeMirror for #edit-code:', e);
-        }
-    }
+    update();
+  }
 
-    // Function to show notification with optional fade-out
-    function showNotification(message, isError = false, fadeOut = true) {
-        console.log('Attempting to show notification:', message);
+  // ---------- notifications (used by tools) ----------
+  function showNotification(message, isError = false, fadeOut = true) {
+    const notification = document.getElementById('notification');
+    if (!notification) return;
+    notification.textContent = message;
+    notification.className = 'notification' + (isError ? ' error' : '');
+    notification.style.display = 'block';
+    if (fadeOut) {
+      setTimeout(() => {
+        notification.classList.add('fade-out');
         setTimeout(() => {
-            const notification = document.getElementById('notification');
-            if (notification) {
-                console.log('Notification element found, displaying message');
-                notification.textContent = message;
-                notification.className = 'notification' + (isError ? ' error' : '');
-                notification.style.display = 'block';
-                if (fadeOut) {
-                    setTimeout(() => {
-                        console.log('Fading out notification');
-                        notification.classList.add('fade-out');
-                        setTimeout(() => {
-                            console.log('Hiding notification');
-                            notification.style.display = 'none';
-                            notification.classList.remove('fade-out');
-                            notification.textContent = '';
-                        }, 500);
-                    }, 3000);
-                } else {
-                    // Add a close button for manual dismissal
-                    if (!notification.querySelector('.close-btn')) {
-                        const closeBtn = document.createElement('button');
-                        closeBtn.textContent = '×';
-                        closeBtn.className = 'close-btn';
-                        closeBtn.addEventListener('click', () => {
-                            console.log('Closing notification manually');
-                            notification.style.display = 'none';
-                            notification.textContent = '';
-                        });
-                        notification.appendChild(closeBtn);
-                    }
-                }
-            } else {
-                console.error('Notification element not found');
-            }
-        }, 100);
+          notification.style.display = 'none';
+          notification.classList.remove('fade-out');
+          notification.textContent = '';
+        }, 500);
+      }, 3000);
+    } else {
+      if (!notification.querySelector('.close-btn')) {
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        closeBtn.className = 'close-btn';
+        closeBtn.addEventListener('click', () => {
+          notification.style.display = 'none';
+          notification.textContent = '';
+        });
+        notification.appendChild(closeBtn);
+      }
+    }
+  }
+
+  // ---------- tools used in view.php ----------
+  // Toggle line numbers for GeSHi-rendered block (ordered list)
+  window.togglev = function(){
+    const olElement = document.getElementsByTagName("ol")[0];
+    if (!olElement) { showNotification('Code list element not found.', true); return; }
+    const currentStyle = olElement.style.listStyle || getComputedStyle(olElement).listStyle;
+    olElement.style.listStyle = (currentStyle.substr(0,4) === 'none') ? 'decimal' : 'none';
+  };
+
+  // Fullscreen modal (Bootstrap)
+  window.toggleFullScreen = function(){
+    const modalElement = document.getElementById('fullscreenModal');
+    if (!modalElement) { showNotification('Fullscreen modal not available.', true); return; }
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    bsModal.show();
+    modalElement.addEventListener('hidden.bs.modal', function handler() {
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+      document.body.classList.remove('modal-open');
+      modalElement.removeEventListener('hidden.bs.modal', handler);
+    }, { once: true });
+  };
+
+  // Copy from raw textarea (#code)
+  window.copyToClipboard = function(){
+    const ta = document.getElementById('code');
+    const text = ta ? ta.value : '';
+    if (!text) { showNotification('No code to copy.', true); return; }
+    navigator.clipboard.writeText(text).then(
+      () => showNotification('Copied to clipboard!'),
+      () => showNotification('Failed to copy.', true)
+    );
+  };
+
+  // Show embed code in a notification (sticky)
+  window.showEmbedCode = function(embedCode){
+    if (embedCode) showNotification('Embed code: ' + embedCode, false, false);
+    else showNotification('Could not generate embed code.', true);
+  };
+
+  // ---------- native textarea highlight tool ----------
+  window.highlightLine = function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    var ta = document.getElementById('edit-code');
+    if (!ta) return;
+
+    var prefix = '!highlight!';
+    var value  = ta.value;
+    var start  = ta.selectionStart || 0;
+    var end    = ta.selectionEnd   || start;
+    var keepScroll = ta.scrollTop;
+
+    // Expand to full lines covering selection (or current line if caret)
+    var ls = lineStart(value, start);
+    var le = lineEnd(value, end);
+
+    var before = value.slice(0, ls);
+    var middle = value.slice(ls, le);
+    var after  = value.slice(le);
+
+    // Prefix each selected line if not already highlighted
+    var lines = middle.split('\n');
+    var addedTotal = 0;
+    var addedPerLine = [];
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith(prefix)) {
+        addedPerLine[i] = 0;
+      } else {
+        lines[i] = prefix + lines[i];
+        addedPerLine[i] = prefix.length;
+        addedTotal += prefix.length;
+      }
+    }
+    var newMiddle = lines.join('\n');
+    ta.value = before + newMiddle + after;
+
+    if (start === end) {
+      // single caret: keep caret on same visual column
+      var caretOffset = (addedPerLine[0] || 0);
+      ta.selectionStart = ta.selectionEnd = start + caretOffset;
+    } else {
+      // selection: keep covering the same logical block
+      ta.selectionStart = ls;
+      ta.selectionEnd   = le + addedTotal;
     }
 
-    // Toggle line numbers (GeSHi only, view.php)
-    window.togglev = function() {
-        console.log('Toggling line numbers for GeSHi in view.php');
-        const olElement = document.getElementsByTagName("ol")[0];
-        if (olElement) {
-            const currentStyle = olElement.style.listStyle || getComputedStyle(olElement).listStyle;
-            console.log('Current list-style:', currentStyle);
-            if (currentStyle.substr(0, 4) == "none") {
-                olElement.style.listStyle = "decimal";
-                console.log('Set list-style to decimal on first ol');
-            } else {
-                olElement.style.listStyle = "none";
-                console.log('Set list-style to none on first ol');
-            }
-        } else {
-            console.error('ol element not found in document');
-            showNotification('Error: Code list element not found.', true);
-        }
-    };
+    ta.scrollTop = keepScroll;
+    triggerInput(ta); // let gutter update
+    ta.focus();
+  };
 
-    // Toggle full screen
-    window.toggleFullScreen = function() {
-        console.log('Toggling full screen');
-        const modalElement = document.getElementById('fullscreenModal');
-        if (modalElement) {
-            const bsModal = bootstrap.Modal.getOrCreateInstance(modalElement);
-            bsModal.show();
-            modalElement.addEventListener('hidden.bs.modal', function handler() {
-                console.log('Fullscreen modal hidden, removing backdrop');
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) {
-                    backdrop.remove();
-                }
-                document.body.classList.remove('modal-open');
-                modalElement.removeEventListener('hidden.bs.modal', handler);
-            }, { once: true });
-        } else {
-            console.error('fullscreenModal not found');
-            showNotification('Error: Fullscreen modal not available.', true);
-        }
-    };
+  // ---------- boot ----------
+  document.addEventListener('DOMContentLoaded', function(){
+    // init editors (editable and read-only)
+    const edit = document.getElementById('edit-code');
+    if (edit) initLiteEditor(edit, { readOnly:false });
 
-    // Copy to clipboard
-    window.copyToClipboard = function() {
-        console.log('Copy to Clipboard button clicked in copyToClipboard');
-        const codeText = document.getElementById('code').value;
-        if (!codeText) {
-            console.error('No text found in #code');
-            showNotification('Error: No code to copy.', true);
-            return;
-        }
-        navigator.clipboard.writeText(codeText).then(() => {
-            console.log('Successfully copied to clipboard');
-            showNotification('Copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-            showNotification('Failed to copy.', true);
-        });
-    };
+    const raw = document.getElementById('code');
+    if (raw) initLiteEditor(raw, { readOnly:true });
 
-    // Show embed code
-    window.showEmbedCode = function(embedCode) {
-        console.log('Embed Tool button clicked in showEmbedCode, embedCode:', embedCode);
-        if (embedCode) {
-            showNotification(`Embed code: ${embedCode}`, false, false); // No fade-out, add close button
-        } else {
-            console.error('Embed code not provided');
-            showNotification('Error: Could not generate embed code.', true);
-        }
-    };
-
-	// Highlight line
-	window.highlightLine = function(event) {
-		console.log('Attempting to highlight line at cursor');
-		const editCodeTextArea = document.getElementById('edit-code');
-		if (editCodeTextArea && editCodeTextArea.classList.contains('cm-initialized')) {
-			const cmInstance = editCodeTextArea.nextSibling.CodeMirror;
-			if (cmInstance) {
-				console.log('Adding !highlight! to line at cursor in #edit-code');
-				cmInstance.operation(() => {
-					// Get the cursor position
-					const cursor = cmInstance.getCursor();
-					const lineNumber = cursor.line;
-					const lineContent = cmInstance.getLine(lineNumber);
-
-					// Check if line already starts with !highlight!
-					if (!lineContent.startsWith('!highlight!')) {
-						// Prepend !highlight! at the start of the line
-						cmInstance.replaceRange(
-							'!highlight!',
-							{ line: lineNumber, ch: 0 }, // Insert at the start of the line
-							{ line: lineNumber, ch: 0 }  // No range to replace, just insert
-						);
-						// Adjust cursor position to account for the added text
-						const newCursorPos = {
-							line: lineNumber,
-							ch: cursor.ch + '!highlight!'.length
-						};
-						cmInstance.setCursor(newCursorPos);
-					}
-				});
-				cmInstance.focus();
-			} else {
-				console.error('CodeMirror instance not found for #edit-code');
-				showNotification('Error: CodeMirror editor not initialized.', true);
-			}
-		} else {
-			console.error('edit-code textarea not found or not initialized');
-			showNotification('Error: Edit mode not available.', true);
-		}
-	};
-	
-    // Add event listeners
-    const toggleFullscreenBtn = document.querySelector('.toggle-fullscreen');
-    if (toggleFullscreenBtn) {
-        toggleFullscreenBtn.addEventListener('click', function(e) {
-            console.log('Toggle Fullscreen button clicked');
-            e.preventDefault();
-            window.toggleFullScreen();
-        });
-    }
-
-    const copyClipboardBtn = document.querySelector('.copy-clipboard');
-    if (copyClipboardBtn) {
-        copyClipboardBtn.addEventListener('click', function(e) {
-            console.log('Copy to Clipboard button clicked');
-            e.preventDefault();
-            window.copyToClipboard();
-        });
-    }
-
-    const highlightLineBtn = document.querySelector('.highlight-line');
-    if (highlightLineBtn) {
-        highlightLineBtn.addEventListener('click', function(e) {
-            console.log('Highlight Line button clicked');
-            e.preventDefault();
-            window.highlightLine(e);
-        });
-    }
-});
+    // action buttons (delegate to keep it simple)
+    document.addEventListener('click', function (ev) {
+      const t = ev.target;
+      if (t.closest && t.closest('.highlight-line'))   { ev.preventDefault(); window.highlightLine(ev); }
+      if (t.closest && t.closest('.toggle-fullscreen')){ ev.preventDefault(); window.toggleFullScreen(); }
+      if (t.closest && t.closest('.copy-clipboard'))   { ev.preventDefault(); window.copyToClipboard(); }
+    }, { capture: true });
+  });
+})();

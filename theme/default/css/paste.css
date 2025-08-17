@@ -100,28 +100,6 @@ body {
     margin: 0 !important;
 }
 
-/* CodeMirror styles */
-.CodeMirror {
-    height: 400px;
-    background-color: #222 !important;
-    border: none !important;
-    color: #fff !important;
-}
-
-.CodeMirror-gutters {
-    background-color: #222 !important;
-    border-right: 1px solid #fff !important;
-}
-
-.CodeMirror-fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1050;
-}
-
 /* Other existing styles */
 .list-group-item-dark {
     background-color: #343a40;
@@ -206,11 +184,6 @@ body {
     font-family: Menlo, Monaco, 'Courier New', monospace;
     font-size: 0.9rem; /* geshi */
 }
-.CodeMirror {
-	font-family: Menlo, Monaco, 'Courier New', monospace;
-	font-size: 0.7rem; /* raw/new paste */
-}
-
 .code-content.no-line-numbers ol, .code-content.no-line-numbers pre, .code-content.no-line-numbers ol li, .code-content.no-line-numbers pre span {
     list-style: none !important;
     margin-left: 0 !important;
@@ -236,14 +209,6 @@ body {
 .syntax-select {
     width: 200px;
 }
-
-.cm-keyword { color: #ff79c6 !important; }
-.cm-string { color: #8be9fd !important; }
-.cm-comment { color: #6272a4 !important; }
-.cm-number { color: #f1fa8c !important; }
-.cm-variable { color: #50fa7b !important; }
-.cm-bracket { color: #ffffff !important; }
-.cm-operator { color: #ffb86c !important; }
 
 .input-group-text {
     background-color: #333;
@@ -287,4 +252,77 @@ body {
 .notification.fade-out {
     opacity: 0;
     transition: opacity 0.5s;
+}
+
+/* === Editor (gutter + textarea) ======================================= */
+.editor-wrap{
+  position: relative;
+  display: grid;
+  grid-template-columns: max-content 1fr; /* gutter auto-width + textarea */
+  align-items: stretch;                   /* <- same height for both columns */
+  gap: 0;
+  overflow: hidden;                       /* clip both sides together */
+    box-shadow: none !important;
+
+}
+
+/* Gutter (left) */
+.editor-gutter{
+  display: flex;                          /* let inner rail fill height */
+  overflow: hidden;                       /* no own scrollbar */
+  text-align: right;
+  user-select: none;
+  white-space: pre;
+  color: #8a8f98;
+  background: #111418;
+  border: 1px solid #2a2f36;
+  border-right: none;
+  border-radius: 0.5rem 0 0 0.5rem;       /* rounded left corners */
+  box-sizing: border-box;
+  line-height: 1.5;
+  font-size: 14px;
+  padding: 8px 6px;                       /* match textarea vertical padding */
+  min-width: 2rem;                     /* base width; grows if digits need */
+}
+
+/* Numbers rail (scrolls via JS transform; no absolute needed here) */
+.editor-gutter-inner{
+  white-space: pre;
+  padding: 2px 2px 2px 4px;
+  align-self: flex-start;
+}
+
+/* Textarea (right) */
+.editor-ta{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #e6edf3;
+  background: #0d1117;
+  border: 1px solid #2a2f36;
+  border-left: none;
+  border-radius: 0 0.5rem 0.5rem 0;       /* rounded right corners only */
+  outline: none !important;
+  box-shadow: none !important;
+  resize: vertical;                       /* user can drag; grid keeps heights equal */
+  padding: 8px 10px;
+  width: 100%;
+  caret-color: #e6edf3;
+}
+
+/* subtle dark scrollbar */
+.editor-ta::-webkit-scrollbar { width: 12px; }
+.editor-ta::-webkit-scrollbar-track { background: #0d1117; }
+.editor-ta::-webkit-scrollbar-thumb {
+  background-color: #2b3037;
+  border-radius: 6px;
+  border: 3px solid #0d1117;
+}
+
+/* our editor textarea should never get the Bootstrap blue ring */
+.form-control.editor-ta,
+.form-control.editor-ta:focus {
+  box-shadow: none !important;
+  border-color: #2a2f36 !important;
+  outline: 0 !important;
 }

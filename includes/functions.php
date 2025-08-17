@@ -1,11 +1,19 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * Licensed under GNU General Public License, version 3 or later.
- * See LICENCE for details.
+ * https://phpaste.sourceforge.io/
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License in LICENCE for more details.
  */
 declare(strict_types=1);
 
@@ -93,7 +101,7 @@ if (isset($_POST['delete']) && isset($_SESSION['username']) && isset($paste_id))
         $paste = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($paste && $paste['member'] === $_SESSION['username']) {
             if (deleteMyPaste($pdo, $paste_id)) {
-                header("Location: " . ($mod_rewrite ? $protocol . $baseurl . "/archive" : $protocol . $baseurl . "/archive.php"));
+                header("Location: " . ($mod_rewrite ? $baseurl . "/profile" : $baseurl . "/profile.php"));
                 exit;
             } else {
                 $error = "Failed to delete paste.";
@@ -111,7 +119,7 @@ function getRecent(PDO $pdo, int $count = 5, int $offset = 0, string $sortColumn
     try {
         $sortColumn = in_array($sortColumn, ['date', 'title', 'code', 'views']) ? $sortColumn : 'date';
         $sortDirection = in_array($sortDirection, ['ASC', 'DESC']) ? $sortDirection : 'DESC';
-        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, views 
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt 
                   FROM pastes WHERE visible = '0' AND password = 'NONE' ORDER BY $sortColumn $sortDirection LIMIT :count OFFSET :offset";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':count', $count, PDO::PARAM_INT);
@@ -135,7 +143,7 @@ function getRecent(PDO $pdo, int $count = 5, int $offset = 0, string $sortColumn
 function getUserRecent(PDO $pdo, string $username, int $count = 5): array
 {
     try {
-        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, views 
+        $query = "SELECT id, title, content, visible, code, expiry, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt 
                   FROM pastes WHERE member = :username ORDER BY id DESC LIMIT :count";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':username', $username, PDO::PARAM_STR);
@@ -159,8 +167,16 @@ function getUserRecent(PDO $pdo, string $username, int $count = 5): array
 function getUserPastes(PDO $pdo, string $username): array
 {
     try {
-        $query = "SELECT id, title, content, visible, code, password, member, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, views, expiry 
-                  FROM pastes WHERE member = :username ORDER BY id DESC";
+        $query = "
+            SELECT p.id, p.title, p.content, p.visible, p.code, p.password, p.member, p.date, 
+                   UNIX_TIMESTAMP(p.date) AS now_time, p.encrypt, p.expiry, 
+                   COALESCE(COUNT(pv.id), 0) AS views
+            FROM pastes p
+            LEFT JOIN paste_views pv ON p.id = pv.paste_id
+            WHERE p.member = :username
+            GROUP BY p.id, p.title, p.content, p.visible, p.code, p.password, p.member, p.date, p.encrypt, p.expiry
+            ORDER BY p.id DESC
+        ";
         $stmt = $pdo->prepare($query);
         $stmt->bindValue(':username', $username, PDO::PARAM_STR);
         $stmt->execute();
@@ -210,49 +226,73 @@ function existingUser(PDO $pdo, string $username): bool
     }
 }
 
+// Function to get paste view count from paste_views
+function getPasteViewCount(PDO $pdo, int $paste_id): int
+{
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM paste_views WHERE paste_id = :paste_id");
+        $stmt->execute(['paste_id' => $paste_id]);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Failed to get view count for paste ID {$paste_id}: " . $e->getMessage());
+        return 0;
+    }
+}
+
+function pageViewTrack(PDO $pdo, string $ip): void {
+    $date = date('Y-m-d');
+    try {
+        $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
+        $stmt->execute([$date]);
+        $row = $stmt->fetch();
+
+        if ($row) {
+            $page_view_id = $row['id'];
+            $tpage = (int)$row['tpage'] + 1;
+            $tvisit = (int)$row['tvisit'];
+
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+            $stmt->execute([$ip, $date]);
+            if ($stmt->fetchColumn() == 0) {
+                $tvisit += 1;
+                $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+                $stmt->execute([$ip, $date]);
+            }
+
+            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+            $stmt->execute([$tpage, $tvisit, $page_view_id]);
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+            $stmt->execute([$date, 1, 1]);
+
+            $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+            $stmt->execute([$ip, $date]);
+        }
+    } catch (PDOException $e) {
+        error_log("Page view tracking error: " . $e->getMessage());
+    }
+}
+
 function updateMyView(PDO $pdo, int $paste_id): bool
 {
     try {
         $ip = $_SERVER['REMOTE_ADDR'];
-        $log_file = 'tmp/views_log.txt';
-        $current_time = time();
-        $unique_view = true;
+        $view_date = date('Y-m-d');
 
-        // Load existing view log
-        $view_log = file_exists($log_file) ? file($log_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
-        foreach ($view_log as $index => $entry) {
-            [$logged_paste_id, $logged_ip, $timestamp] = explode(':', $entry);
-            if ($logged_paste_id == $paste_id && $logged_ip == $ip && $current_time - $timestamp < 86400) { // 24 hours
-                $unique_view = false;
-                break;
-            }
-            // Clean up old entries (older than 24 hours)
-            if ($current_time - $timestamp >= 86400) {
-                unset($view_log[$index]);
-            }
+        // Check if this IP has viewed the paste today
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM paste_views WHERE paste_id = :paste_id AND ip = :ip AND view_date = :view_date");
+        $stmt->execute(['paste_id' => $paste_id, 'ip' => $ip, 'view_date' => $view_date]);
+        $has_viewed = $stmt->fetchColumn() > 0;
+
+        if (!$has_viewed) {
+            // Log the unique view in paste_views table
+            $stmt = $pdo->prepare("INSERT INTO paste_views (paste_id, ip, view_date) VALUES (:paste_id, :ip, :view_date)");
+            $stmt->execute(['paste_id' => $paste_id, 'ip' => $ip, 'view_date' => $view_date]);
+            return true;
         }
 
-        if ($unique_view) {
-            $pdo->beginTransaction();
-            $query = "SELECT views FROM pastes WHERE id = :paste_id FOR UPDATE";
-            $stmt = $pdo->prepare($query);
-            $stmt->execute(['paste_id' => $paste_id]);
-            $p_view = (int) ($stmt->fetchColumn() ?? 0);
-            $p_view++;
-            $query = "UPDATE pastes SET views = :views WHERE id = :paste_id";
-            $stmt = $pdo->prepare($query);
-            $success = $stmt->execute(['views' => $p_view, 'paste_id' => $paste_id]);
-            $pdo->commit();
-
-            // Log the new unique view
-            file_put_contents($log_file, "$paste_id:$ip:$current_time\n", FILE_APPEND | LOCK_EX);
-            // Update view_log to remove old entries and add the new one
-            file_put_contents($log_file, implode("\n", $view_log) . "\n$paste_id:$ip:$current_time\n");
-        }
-
-        return $unique_view;
+        return false; // Not a unique view
     } catch (PDOException $e) {
-        $pdo->rollBack();
         error_log("Failed to update view count for paste ID {$paste_id}: " . $e->getMessage());
         return false;
     }
@@ -451,23 +491,17 @@ function getEmbedUrl($paste_id, $mod_rewrite, $baseurl) {
     if ($mod_rewrite) {
         return $baseurl . 'embed/' . $paste_id;
     } else {
-        return $baseurl . 'embed.php?id=' . $paste_id;
+        return $baseurl . 'paste.php?embed&id=' . $paste_id;
     }
-}
-
-function paste_protocol(): string
-{
-    return isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
 }
 
 function addToSitemap(PDO $pdo, int $paste_id, string $priority, string $changefreq, bool $mod_rewrite): bool
 {
     try {
-        $c_date = date('Y-m-d');
-        $protocol = paste_protocol();
+        $c_date = date('Y-m-d H:i:s');
         $server_name = $mod_rewrite
-            ? $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/" . $paste_id
-            : $protocol . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/paste.php?id=" . $paste_id;
+            ? $baseurl . "/" . $paste_id
+            : $baseurl . "/paste.php?id=" . $paste_id;
         $site_data = file_exists('sitemap.xml') ? file_get_contents('sitemap.xml') : '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         $site_data = rtrim($site_data, "</urlset>");
         $c_sitemap = "\t<url>\n\t\t<loc>" . htmlspecialchars($server_name, ENT_QUOTES, 'UTF-8') . "</loc>\n\t\t<priority>$priority</priority>\n\t\t<changefreq>$changefreq</changefreq>\n\t\t<lastmod>$c_date</lastmod>\n\t</url>\n</urlset>";
@@ -491,4 +525,189 @@ function is_banned(PDO $pdo, string $ip): bool
         return false;
     }
 }
+
+// Get a single page by its slug-like name (pages.page_name), only if active.
+function getPageByName(PDO $pdo, string $page_name): ?array
+{
+    try {
+        $stmt = $pdo->prepare("
+            SELECT id, last_date, page_name, page_title, page_content, location, nav_parent, sort_order, is_active
+            FROM pages
+            WHERE page_name = :name AND is_active = 1
+            LIMIT 1
+        ");
+        $stmt->execute(['name' => $page_name]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    } catch (PDOException $e) {
+        error_log("getPageByName failed for {$page_name}: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Build a page URL that respects mod_rewrite.
+ * With mod_rewrite:  {$baseurl}page/{page_name}
+ * Without:          {$baseurl}page.php?p={page_name}
+ */
+function getPageUrl(string $page_name): string
+{
+    global $baseurl, $mod_rewrite;
+
+    $safe = rawurlencode($page_name);
+    if (!empty($mod_rewrite) && $mod_rewrite === "1") {
+        return rtrim($baseurl, '/') . '/page/' . $safe;
+    }
+    return rtrim($baseurl, '/') . '/pages.php?p=' . $safe;
+}
+
+/**
+ * Fetch pages for a given location (header|footer).
+ * Returns a hierarchical array: each item has keys: id, name, title, url, children[]
+ */
+function getNavLinks(PDO $pdo, string $location): array
+{
+    $location = in_array($location, ['header', 'footer'], true) ? $location : 'header';
+
+    try {
+        // Get all active pages that match this location or are marked for both
+        $stmt = $pdo->prepare("
+            SELECT id, page_name, page_title, nav_parent, sort_order
+            FROM pages
+            WHERE is_active = 1
+              AND (location = :loc OR location = 'both')
+            ORDER BY sort_order ASC, page_title ASC
+        ");
+        $stmt->execute(['loc' => $location]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Index by id, pre-fill structure
+        $items = [];
+        foreach ($rows as $r) {
+            $items[(int)$r['id']] = [
+                'id'       => (int)$r['id'],
+                'name'     => (string)$r['page_name'],
+                'title'    => (string)$r['page_title'],
+                'parent'   => $r['nav_parent'] !== null ? (int)$r['nav_parent'] : null,
+                'order'    => (int)$r['sort_order'],
+                'url'      => getPageUrl((string)$r['page_name']),
+                'children' => [],
+            ];
+        }
+
+        // Build tree
+        $tree = [];
+        foreach ($items as $id => &$node) {
+            if ($node['parent'] !== null && isset($items[$node['parent']])) {
+                $items[$node['parent']]['children'][] = &$node;
+            } else {
+                $tree[] = &$node;
+            }
+        }
+        unset($node); // break reference
+
+        // Ensure children are sorted (by sort_order then title)
+        $sortFn = static function (&$list) use (&$sortFn) {
+            usort($list, static function ($a, $b) {
+                return ($a['order'] <=> $b['order']) ?: strcasecmp($a['title'], $b['title']);
+            });
+            foreach ($list as &$i) {
+                if (!empty($i['children'])) {
+                    $sortFn($i['children']);
+                }
+            }
+            unset($i);
+        };
+        $sortFn($tree);
+
+        return $tree;
+    } catch (PDOException $e) {
+        error_log("getNavLinks failed for {$location}: " . $e->getMessage());
+        return [];
+    }
+}
+
+
+// Simple HTML renderer for nav links.
+function renderNavListSimple(array $links, string $separator = ''): string
+{
+    // Render a flat inline list if separator provided, else nested <ul>
+    if ($separator !== '') {
+        $flat = [];
+        $stack = $links;
+        while ($stack) {
+            $node = array_shift($stack);
+            $flat[] = '<a href="' . htmlspecialchars($node['url'], ENT_QUOTES, 'UTF-8') . '">' .
+                      htmlspecialchars($node['title'], ENT_QUOTES, 'UTF-8') . '</a>';
+            foreach ($node['children'] as $child) {
+                $stack[] = $child;
+            }
+        }
+        return implode($separator, $flat);
+    }
+
+    $render = static function (array $nodes) use (&$render): string {
+        $html = "<ul>";
+        foreach ($nodes as $n) {
+            $html .= '<li><a href="' . htmlspecialchars($n['url'], ENT_QUOTES, 'UTF-8') . '">' .
+                     htmlspecialchars($n['title'], ENT_QUOTES, 'UTF-8') . '</a>';
+            if (!empty($n['children'])) {
+                $html .= $render($n['children']);
+            }
+            $html .= '</li>';
+        }
+        $html .= "</ul>";
+        return $html;
+    };
+    return $render($links);
+}
+
+// Fetch only the content of a page by name if active (helper for page.php).
+function getPageContentByName(PDO $pdo, string $page_name): ?array
+{
+    try {
+        $stmt = $pdo->prepare("
+            SELECT page_title, page_content, last_date
+            FROM pages
+            WHERE page_name = :name AND is_active = 1
+            LIMIT 1
+        ");
+        $stmt->execute(['name' => $page_name]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    } catch (PDOException $e) {
+        error_log("getPageContentByName failed for {$page_name}: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Bootstrap 5 nav renderer (supports one dropdown level).
+ * Returns <li> items ready to live inside <ul class="navbar-nav">.
+ */
+function renderBootstrapNav(array $links): string
+{
+    $html = '';
+    foreach ($links as $item) {
+        $title = htmlspecialchars($item['title'], ENT_QUOTES, 'UTF-8');
+        $url   = htmlspecialchars($item['url'],   ENT_QUOTES, 'UTF-8');
+
+        if (!empty($item['children'])) {
+            $id = 'dd_' . $item['id'];
+            $html .= '<li class="nav-item dropdown">';
+            $html .= '<a class="nav-link dropdown-toggle" href="#" id="'. $id .'" role="button" data-bs-toggle="dropdown" aria-expanded="false">'. $title .'</a>';
+            $html .= '<ul class="dropdown-menu" aria-labelledby="'. $id .'">';
+            foreach ($item['children'] as $child) {
+                $ctitle = htmlspecialchars($child['title'], ENT_QUOTES, 'UTF-8');
+                $curl   = htmlspecialchars($child['url'],   ENT_QUOTES, 'UTF-8');
+                $html  .= '<li><a class="dropdown-item" href="'. $curl .'">'. $ctitle .'</a></li>';
+            }
+            $html .= '</ul></li>';
+        } else {
+            $html .= '<li class="nav-item"><a class="nav-link" href="'. $url .'">'. $title .'</a></li>';
+        }
+    }
+    return $html;
+}
+
 ?>

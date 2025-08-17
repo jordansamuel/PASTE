@@ -1,11 +1,18 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * Licensed under GNU General Public License, version 3 or later.
- * See LICENCE for details.
+ * https://phpaste.sourceforge.io/
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See LICENCE for details.
  */
 
 // Start output buffering
@@ -18,27 +25,38 @@ header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
+// --- PHP Version Check (require 8.1+) ---
+if (version_compare(PHP_VERSION, '8.1', '<')) {
+    ob_end_clean();
+    echo json_encode([
+        'status'  => 'error',
+        'message' => 'PHP 8.1 or higher is required. Current version: ' . PHP_VERSION
+    ]);
+    exit;
+}
+
 // Check required PHP extensions
 $required_extensions = ['pdo_mysql', 'openssl', 'curl'];
-$missing_required = array_filter($required_extensions, fn($ext) => !extension_loaded($ext));
+$missing_required = array_filter($required_extensions, static fn($ext) => !extension_loaded($ext));
 if (!empty($missing_required)) {
     ob_end_clean();
     error_log("configure.php: Missing required PHP extensions: " . implode(', ', $missing_required));
     echo json_encode([
-        'status' => 'error',
+        'status'  => 'error',
         'message' => 'Missing required PHP extensions: ' . implode(', ', $missing_required) . '. Enable them in php.ini.'
     ]);
     exit;
 }
 
 // Sanitize and validate POST data
-$dbhost = isset($_POST['data_host']) ? filter_var(trim($_POST['data_host']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
-$dbname = isset($_POST['data_name']) ? filter_var(trim($_POST['data_name']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
-$dbuser = isset($_POST['data_user']) ? filter_var(trim($_POST['data_user']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
-$dbpassword = isset($_POST['data_pass']) ? $_POST['data_pass'] : ''; // Password may contain special chars
-$enablegoog = isset($_POST['enablegoog']) && $_POST['enablegoog'] === 'yes' ? 'yes' : 'no';
-$enablefb = isset($_POST['enablefb']) && $_POST['enablefb'] === 'yes' ? 'yes' : 'no';
-$enablesmtp = isset($_POST['enablesmtp']) && $_POST['enablesmtp'] === 'yes' ? 'yes' : 'no';
+$dbhost     = isset($_POST['data_host']) ? filter_var(trim($_POST['data_host']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
+$dbname     = isset($_POST['data_name']) ? filter_var(trim($_POST['data_name']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
+$dbuser     = isset($_POST['data_user']) ? filter_var(trim($_POST['data_user']), FILTER_SANITIZE_SPECIAL_CHARS) : '';
+$dbpassword = isset($_POST['data_pass']) ? (string)$_POST['data_pass'] : ''; // Password may contain special chars
+
+$enablegoog = (isset($_POST['enablegoog']) && $_POST['enablegoog'] === 'yes') ? 'yes' : 'no';
+$enablefb   = (isset($_POST['enablefb'])   && $_POST['enablefb']   === 'yes') ? 'yes' : 'no';
+$enablesmtp = (isset($_POST['enablesmtp']) && $_POST['enablesmtp'] === 'yes') ? 'yes' : 'no';
 
 // Validate database name (alphanumeric and underscore only)
 if (!preg_match('/^[a-zA-Z0-9_]+$/', $dbname)) {
@@ -58,9 +76,11 @@ if (empty($dbhost) || empty($dbname) || empty($dbuser)) {
 // Test database connection
 try {
     $dsn = "mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4";
-    $pdo = new PDO($dsn, $dbuser, $dbpassword);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+    $pdo = new PDO($dsn, $dbuser, $dbpassword, [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
     error_log("configure.php: Database connection successful");
 } catch (PDOException $e) {
     ob_end_clean();
@@ -81,64 +101,77 @@ try {
 }
 
 // Calculate redirect URI for OAuth
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
+$protocol  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
 $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME'], 2), '/\\'); // Adjust for /install directory
-$baseurl = $protocol . $_SERVER['SERVER_NAME'] . $base_path . '/';
-$redirect_uri = $baseurl . 'oauth/google.php';
+$baseurl   = $protocol . $_SERVER['SERVER_NAME'] . $base_path . '/';
+$redirect_uri  = $baseurl . 'oauth/google.php';
 $https_warning = ($enablegoog === 'yes' || $enablefb === 'yes') && $protocol === 'http://' ? 'Warning: OAuth is enabled without HTTPS. This is insecure and may cause issues with OAuth providers.' : '';
 
-// Check permissions
+// --- File Permission Check for config.php and its directory ---
 $config_file = '../config.php';
-$parent_dir = dirname($config_file);
-$tmp_dir = '../tmp';
-$current_user = posix_getpwuid(posix_geteuid())['name'] ?? 'unknown';
-$web_user = $_SERVER['USER'] ?? 'www-data'; // Default to common web server user
+$parent_dir  = dirname($config_file);
 
-// Ensure tmp directory exists
-if (!is_dir($tmp_dir)) {
-    if (!mkdir($tmp_dir, 0775, true)) {
+// Try to guess web server user for help text only
+$web_user = $_SERVER['USER']
+    ?? getenv('APACHE_RUN_USER')
+    ?? getenv('USER')
+    ?? 'www-data';
+
+// Helpers for POSIX info if available
+$fmt_perms = static function (string $path): string {
+    $st = @stat($path);
+    return $st ? sprintf("%o", $st['mode'] & 0777) : '???';
+};
+$owner_name = static function (string $path): string {
+    $st = @stat($path);
+    if (!$st) return 'unknown';
+    if (function_exists('posix_getpwuid')) {
+        $pw = @posix_getpwuid($st['uid']);
+        return $pw['name'] ?? (string)$st['uid'];
+    }
+    return (string)$st['uid'];
+};
+$group_name = static function (string $path): string {
+    $st = @stat($path);
+    if (!$st) return 'unknown';
+    if (function_exists('posix_getgrgid')) {
+        $gr = @posix_getgrgid($st['gid']);
+        return $gr['name'] ?? (string)$st['gid'];
+    }
+    return (string)$st['gid'];
+};
+
+// If config.php exists, require it to be writable; else require its directory be writable
+if (file_exists($config_file)) {
+    if (!is_writable($config_file)) {
         ob_end_clean();
-        error_log("configure.php: Failed to create tmp directory: $tmp_dir");
+        error_log("configure.php: config.php exists but is not writable (owner: {$owner_name($config_file)}, group: {$group_name($config_file)}, perms: {$fmt_perms($config_file)})");
         echo json_encode([
-            'status' => 'error',
-            'message' => "Failed to create tmp directory: $tmp_dir. Run: <code>mkdir -p " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chmod 775 " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . "</code>"
+            'status'  => 'error',
+            'message' => "config.php exists but is not writable.<br>Run: <code>chmod 664 " .
+                htmlspecialchars($config_file, ENT_QUOTES, 'UTF-8') .
+                "</code> or adjust ownership: <code>chown $web_user " .
+                htmlspecialchars($config_file, ENT_QUOTES, 'UTF-8') . "</code>"
         ]);
         exit;
     }
-    error_log("configure.php: Created tmp directory: $tmp_dir");
+} else {
+    if (!is_dir($parent_dir) || !is_writable($parent_dir)) {
+        ob_end_clean();
+        error_log("configure.php: Parent directory not writable: $parent_dir (owner: {$owner_name($parent_dir)}, group: {$group_name($parent_dir)}, perms: {$fmt_perms($parent_dir)})");
+        echo json_encode([
+            'status'  => 'error',
+            'message' => "Cannot create <code>config.php</code> in <code>" .
+                htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') .
+                "</code>. Grant the web server write access to the directory.<br>" .
+                "Example:<br><code>chmod 775 " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') .
+                "</code><br><code>chown $web_user " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code>"
+        ]);
+        exit;
+    }
 }
 
-// Check parent directory permissions
-$dir_stat = stat($parent_dir);
-$dir_owner = posix_getpwuid($dir_stat['uid'])['name'] ?? 'unknown';
-$dir_group = posix_getgrgid($dir_stat['gid'])['name'] ?? 'unknown';
-$dir_perms = sprintf("%o", $dir_stat['mode'] & 0777);
-
-if (!is_writable($parent_dir)) {
-    ob_end_clean();
-    error_log("configure.php: Parent directory is not writable: $parent_dir (owner: $dir_owner, group: $dir_group, permissions: $dir_perms, current user: $current_user)");
-    echo json_encode([
-        'status' => 'error',
-        'message' => "Parent directory is not writable: $parent_dir. Run: <code>chmod 775 " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code>"
-    ]);
-    exit;
-}
-
-if (file_exists($config_file) && !is_writable($config_file)) {
-    $file_stat = stat($config_file);
-    $file_owner = posix_getpwuid($file_stat['uid'])['name'] ?? 'unknown';
-    $file_group = posix_getgrgid($file_stat['gid'])['name'] ?? 'unknown';
-    $file_perms = sprintf("%o", $file_stat['mode'] & 0777);
-    ob_end_clean();
-    error_log("configure.php: config.php exists but is not writable (owner: $file_owner, group: $file_group, permissions: $file_perms, current user: $current_user)");
-    echo json_encode([
-        'status' => 'error',
-        'message' => "config.php exists but is not writable. Run: <code>chmod 644 " . htmlspecialchars($config_file, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($config_file, ENT_QUOTES, 'UTF-8') . "</code>"
-    ]);
-    exit;
-}
-
-// config.php content
+// Build config.php content
 $config_content = <<<EOD
 <?php
 /*
@@ -150,7 +183,7 @@ $config_content = <<<EOD
  * See LICENCE for details.
  */
 
-\$currentversion = 3.0;
+\$currentversion = 3.1;
 \$pastelimit = "10"; // 10 MB
 
 // OAuth settings (for signups)
@@ -173,7 +206,6 @@ define('G_SCOPES', [
 EOD;
 }
 
-// Database and other settings
 $config_content .= <<<EOD
 
 // Database information
@@ -186,6 +218,8 @@ $config_content .= <<<EOD
 \$sec_key = "$sec_key";
 define('SECRET', \$sec_key);
 
+// set to 1 to enable tidy urls
+// see docs for an example nginx conf, or .htaccess
 \$mod_rewrite = "0";
 
 // Optional: Enable SMTP debug logging
@@ -434,15 +468,21 @@ define('SECRET', \$sec_key);
 ?>
 EOD;
 
+// Write config.php
 if (file_put_contents($config_file, $config_content, LOCK_EX) === false) {
     ob_end_clean();
     error_log("configure.php: Failed to write config.php");
-    echo json_encode(['status' => 'error', 'message' => "Failed to write config.php. Run: <code>chmod 775 " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code>"]);
+    echo json_encode([
+        'status'  => 'error',
+        'message' => "Failed to write config.php.<br>Ensure the directory is writable.<br>Example:<br><code>chmod 775 " .
+            htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code><br><code>chown $web_user " .
+            htmlspecialchars($parent_dir, ENT_QUOTES, 'UTF-8') . "</code>"
+    ]);
     exit;
 }
 
-// Set config.php permissions
-chmod($config_file, 0600);
+// Set config.php permissions (owner read/write only)
+@chmod($config_file, 0600);
 error_log("configure.php: Successfully wrote config.php");
 
 // Prepare success message
@@ -462,7 +502,6 @@ $success_message .= 'Ensure HTTPS is enabled for secure OAuth redirects.';
 // Clean output buffer and send success response
 ob_end_clean();
 echo json_encode([
-    'status' => 'success',
+    'status'  => 'success',
     'message' => $success_message
 ]);
-?>

@@ -1,5 +1,18 @@
-# Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 07/08/2025)
-New version - 3.0
+# Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 14/08/2025)
+New version 3.1
+* Account deletion
+* reCAPTCHA v3 with server side integration and token handling (and v2 support)
+* 	Select reCAPTCHA in admin/configuration.php
+*	Select v2 or v3 depending on your keys
+* If signed up with OAuth2, ability to change username once in /profile.php
+* Search feature, archive/pagination
+* Improved admin panel with Bootstrap 5
+* Ability to add/remove admins
+* Fixed SMTP for user emails - Plain SMTP server or use OAuth2 for Google Mail
+* PHP version must be 8.1 or above
+* Clean up the codebase, remove obsolete functions and add more comments
+
+Previous version - 3.0
 * PHP 8.4> compatibility
 * Replace mysqli with pdo
 * New default theme, upgrade paste2 theme from bootstrap 3 to 5
@@ -13,7 +26,7 @@ New version - 3.0
 * All pastes encrypted in the database with AES-256 by default
 
 
-New version - 2.2
+Previous version - 2.2
 -
 
 Frontend changes
@@ -27,7 +40,7 @@ Other changes
 * Fix php7 compatibility problems
 * Code cleanup
 
-New version - 2.1
+Previous version - 2.1
 -
 Frontend changes
 * User pages has been added and 'My Pastes' have been streamlined into this

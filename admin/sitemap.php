@@ -1,235 +1,429 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * Paste Admin https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * Licensed under GNU General Public License, version 3 or later.
- * See LICENCE for details.
+ * https://phpaste.sourceforge.io/
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License in LICENCE for more details.
  */
 session_start();
 
-// Check session and validate admin
+// Guard: admin session
 if (!isset($_SESSION['admin_login']) || !isset($_SESSION['admin_id'])) {
-    error_log("admin.php: Session validation failed - admin_login or admin_id not set. Session: " . json_encode($_SESSION));
     header("Location: ../index.php");
     exit();
 }
 
-$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
-$ip = $_SERVER['REMOTE_ADDR'];
-require_once('../config.php');
-require_once('../includes/functions.php');
+$date = date('Y-m-d H:i:s');
+$ip   = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+require_once('../config.php'); // expects $dbhost,$dbuser,$dbpassword,$dbname,$mod_rewrite
 
 try {
-    $pdo = new PDO("mysql:host=$dbhost;dbname=$dbname", $dbuser, $dbpassword);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = new PDO(
+        "mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4",
+        $dbuser,
+        $dbpassword,
+        [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]
+    );
+
+    // Fetch baseurl
+    $row = $pdo->query("SELECT baseurl FROM site_info WHERE id=1")->fetch();
+    if (!$row || empty($row['baseurl'])) {
+        throw new Exception("Base URL not found in site_info. Go to /admin/configuration.php");
+    }
+    $baseurl = rtrim((string)$row['baseurl'], '/');
+
+    // Validate admin
+    $st = $pdo->prepare("SELECT id, user FROM admin WHERE id=?");
+    $st->execute([$_SESSION['admin_id']]);
+    $adm = $st->fetch();
+    if (!$adm || $adm['user'] !== $_SESSION['admin_login']) {
+        unset($_SESSION['admin_login'], $_SESSION['admin_id']);
+        header("Location: " . htmlspecialchars($baseurl . '/admin/index.php', ENT_QUOTES, 'UTF-8'));
+        exit();
+    }
 
     // Log admin activity
-    $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM admin_history");
-    $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['last_id'] ?? null;
-
+    $st = $pdo->query("SELECT MAX(id) last_id FROM admin_history");
+    $last_id = $st->fetch()['last_id'] ?? null;
+    $last_ip = $last_date = null;
     if ($last_id) {
-        $stmt = $pdo->prepare("SELECT last_date, ip FROM admin_history WHERE id = ?");
-        $stmt->execute([$last_id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $last_date = $row['last_date'] ?? null;
-        $last_ip = $row['ip'] ?? null;
+        $st = $pdo->prepare("SELECT ip,last_date FROM admin_history WHERE id=?");
+        $st->execute([$last_id]);
+        $h = $st->fetch();
+        $last_ip = $h['ip'] ?? null;
+        $last_date = $h['last_date'] ?? null;
     }
-
     if ($last_ip !== $ip || $last_date !== $date) {
-        $stmt = $pdo->prepare("INSERT INTO admin_history (last_date, ip) VALUES (?, ?)");
-        $stmt->execute([$date, $ip]);
+        $st = $pdo->prepare("INSERT INTO admin_history(last_date,ip) VALUES(?,?)");
+        $st->execute([$date,$ip]);
     }
 
-    // Fetch sitemap options
-    $stmt = $pdo->prepare("SELECT priority, changefreq FROM sitemap_options WHERE id = ?");
-    $stmt->execute([1]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $priority = $row['priority'] ?? '';
-    $changefreq = $row['changefreq'] ?? '';
+    // Load current sitemap options (create row if missing)
+    $st = $pdo->prepare("SELECT priority, changefreq FROM sitemap_options WHERE id=1");
+    $st->execute();
+    $opt = $st->fetch() ?: ['priority'=>'0.5','changefreq'=>'weekly'];
+    $priority   = (string)($opt['priority'] ?? '0.5');
+    $changefreq = (string)($opt['changefreq'] ?? 'weekly');
 
-    // Handle sitemap options update
     $msg = '';
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $priority = filter_var(trim($_POST['priority'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
-        $changefreq = filter_var(trim($_POST['changefreq'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
-        $stmt = $pdo->prepare("UPDATE sitemap_options SET priority = ?, changefreq = ? WHERE id = ?");
-        $stmt->execute([$priority, $changefreq, 1]);
-        $msg = '<div class="paste-alert alert3" style="text-align: center;">Sitemap options saved</div>';
+    $msg_type = 'info';
+    $written_count = null;
+
+    // Save options
+    if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['save_options'])) {
+        // validate priority
+        $p = trim((string)($_POST['priority'] ?? '0.5'));
+        if ($p === '' || !is_numeric($p)) $p = '0.5';
+        $p = max(0.0, min(1.0, (float)$p));
+
+        // validate changefreq
+        $allowed_cf = ['always','hourly','daily','weekly','monthly','yearly','never'];
+        $cf = strtolower(trim((string)($_POST['changefreq'] ?? 'weekly')));
+        if (!in_array($cf, $allowed_cf, true)) $cf = 'weekly';
+
+        // upsert options
+        $pdo->beginTransaction();
+        $exists = $pdo->query("SELECT 1 FROM sitemap_options WHERE id=1")->fetchColumn();
+        if ($exists) {
+            $st = $pdo->prepare("UPDATE sitemap_options SET priority=?, changefreq=? WHERE id=1");
+            $st->execute([number_format($p,1,'.',''), $cf]);
+        } else {
+            $st = $pdo->prepare("INSERT INTO sitemap_options(id,priority,changefreq) VALUES(1,?,?)");
+            $st->execute([number_format($p,1,'.',''), $cf]);
+        }
+        $pdo->commit();
+
+        $priority = number_format($p,1,'.','');
+        $changefreq = $cf;
+        $msg = 'Sitemap options saved.';
+        $msg_type = 'success';
     }
 
-    // Handle sitemap rebuild
-    if (isset($_GET['re'])) {
-        // Pagination for pastes
-        $per_page = 20;
-        $page = isset($_GET['page']) ? max(1, filter_var($_GET['page'], FILTER_SANITIZE_NUMBER_INT)) : 1;
-        $offset = ($page - 1) * $per_page;
+    // Rebuild sitemap
+    if (isset($_GET['rebuild'])) {
+        $today = date('Y-m-d');
 
-        // Count total public pastes
-        $stmt = $pdo->prepare("SELECT COUNT(id) AS total FROM pastes WHERE visible = '0'");
-        $stmt->execute();
-        $total_pastes = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        $total_pages = max(1, ceil($total_pastes / $per_page));
+        // prepare temp file
+        $tmp_path   = dirname(__DIR__) . '/sitemap.xml.tmp';
+        $final_path = dirname(__DIR__) . '/sitemap.xml';
 
-        // Initialize sitemap
-        if (file_exists('../sitemap.xml')) {
-            unlink('../sitemap.xml');
+        $fh = fopen($tmp_path, 'wb');
+        if (!$fh) {
+            throw new Exception("Unable to open temporary sitemap file for writing.");
         }
-        $protocol = paste_protocol();
-        $levelup = dirname(dirname($_SERVER['PHP_SELF']));
-        $c_date = date('Y-m-d');
-        $data = '<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url>
-        <loc>' . $protocol . $_SERVER['SERVER_NAME'] . $levelup . '/</loc>
-        <priority>1.0</priority>
-        <changefreq>daily</changefreq>
-        <lastmod>' . $c_date . '</lastmod>
-    </url>
-</urlset>';
-        file_put_contents("../sitemap.xml", $data);
 
-        // Fetch public pastes for current page
-        $per_page_safe = (int)$per_page;
-        $offset_safe = (int)$offset;
-        $stmt = $pdo->prepare("SELECT id FROM pastes WHERE visible = '0' ORDER BY id DESC LIMIT $per_page_safe OFFSET $offset_safe");
-        $stmt->execute();
-        $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // XML header + open urlset
+        fwrite($fh, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        fwrite($fh, "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
 
-        // Append pastes to sitemap
-        foreach ($pastes as $row) {
-            $paste_id = $row['id'];
-            $site_data = file_get_contents("../sitemap.xml");
-            $site_data = str_replace("</urlset>", "", $site_data);
-            $server_name = $mod_rewrite == "1" ? 
-                $protocol . $_SERVER['SERVER_NAME'] . $levelup . "/" . $paste_id :
-                $protocol . $_SERVER['SERVER_NAME'] . $levelup . "/paste.php?id=" . $paste_id;
-            $c_sitemap = '
-    <url>
-        <loc>' . htmlspecialchars($server_name) . '</loc>
-        <priority>' . htmlspecialchars($priority) . '</priority>
-        <changefreq>' . htmlspecialchars($changefreq) . '</changefreq>
-        <lastmod>' . $c_date . '</lastmod>
-    </url>
-</urlset>';
-            file_put_contents("../sitemap.xml", $site_data . $c_sitemap);
+        // Homepage
+        $home = htmlspecialchars($baseurl . '/', ENT_QUOTES, 'UTF-8');
+        fwrite($fh, "  <url>\n");
+        fwrite($fh, "    <loc>{$home}</loc>\n");
+        fwrite($fh, "    <priority>1.0</priority>\n");
+        fwrite($fh, "    <changefreq>daily</changefreq>\n");
+        fwrite($fh, "    <lastmod>{$today}</lastmod>\n");
+        fwrite($fh, "  </url>\n");
+
+        // Pull options fresh (in case just saved)
+        $st = $pdo->prepare("SELECT priority, changefreq FROM sitemap_options WHERE id=1");
+        $st->execute();
+        $opt = $st->fetch() ?: ['priority'=>'0.5','changefreq'=>'weekly'];
+        $item_priority   = number_format((float)$opt['priority'],1,'.','');
+        $item_changefreq = in_array($opt['changefreq'], ['always','hourly','daily','weekly','monthly','yearly','never'], true)
+            ? $opt['changefreq'] : 'weekly';
+
+        // Count public pastes
+        $total_public = (int)$pdo->query("SELECT COUNT(*) FROM pastes WHERE visible='0'")->fetchColumn();
+
+        // Stream in chunks
+        $limit   = 500;
+        $written = 1; // homepage
+        for ($offset=0; $offset < $total_public; $offset += $limit) {
+            $st = $pdo->prepare("SELECT id FROM pastes WHERE visible='0' ORDER BY id DESC LIMIT :lim OFFSET :off");
+            $st->bindValue(':lim', $limit, PDO::PARAM_INT);
+            $st->bindValue(':off', $offset, PDO::PARAM_INT);
+            $st->execute();
+            $rows = $st->fetchAll();
+
+            foreach ($rows as $r) {
+                $id = (int)$r['id'];
+                if ((string)$mod_rewrite === "1") {
+                    $url = $baseurl . '/' . rawurlencode((string)$id);
+                } else {
+                    $url = $baseurl . '/paste.php?id=' . urlencode((string)$id);
+                }
+                $loc = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+                fwrite($fh, "  <url>\n");
+                fwrite($fh, "    <loc>{$loc}</loc>\n");
+                fwrite($fh, "    <priority>{$item_priority}</priority>\n");
+                fwrite($fh, "    <changefreq>{$item_changefreq}</changefreq>\n");
+                fwrite($fh, "    <lastmod>{$today}</lastmod>\n");
+                fwrite($fh, "  </url>\n");
+                $written++;
+            }
         }
-        $msg = '<div class="paste-alert alert3" style="text-align: center;">sitemap.xml rebuilt</div>';
+
+        // Close urlset
+        fwrite($fh, "</urlset>\n");
+        fclose($fh);
+
+        // Atomic replace
+        if (!rename($tmp_path, $final_path)) {
+            @unlink($tmp_path);
+            throw new Exception("Failed to move temporary sitemap into place.");
+        }
+
+        $msg = 'sitemap.xml rebuilt successfully. URLs written: ' . number_format($written);
+        $msg_type = 'success';
+        $written_count = $written;
     }
+
 } catch (PDOException $e) {
-    die("Unable to connect to database: " . $e->getMessage());
+    die("Unable to connect to database: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+} catch (Exception $e) {
+    $msg = htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+    $msg_type = 'danger';
 }
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Paste - Sitemap</title>
-    <link rel="shortcut icon" href="favicon.ico">
-    <link href="css/paste.css" rel="stylesheet" type="text/css" />
-    <link href="css/bootstrap-select.min.css" rel="stylesheet" type="text/css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Paste - Sitemap</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0f1115;
+    --card:#141821;
+    --muted:#7f8da3;
+    --border:#1f2633;
+    --accent:#0d6efd;
+  }
+  body{background:var(--bg);color:#fff;}
+  .navbar{background:#121826!important;position:sticky;top:0;z-index:1030}
+  .navbar .navbar-brand{font-weight:600}
+
+  /* Desktop sidebar */
+  .sidebar-desktop{
+    position:sticky; top:1rem;
+    background:#121826;border:1px solid var(--border);
+    border-radius:12px;padding:12px;
+  }
+  .sidebar-desktop .list-group-item{
+    background:transparent;color:#dbe5f5;border:0;border-radius:10px;padding:.65rem .8rem;
+  }
+  .sidebar-desktop .list-group-item:hover{background:#0e1422}
+  .sidebar-desktop .list-group-item.active{background:#0d6efd;color:#fff}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px}
+  .form-control,.form-select{background:#0e1422;border-color:var(--border);color:#e6edf3}
+  .form-control:focus,.form-select:focus{border-color:var(--accent);box-shadow:0 0 0 .25rem rgba(13,110,253,.25)}
+  .table{color:#e6edf3}
+  .table thead th{background:#101521;color:#c6d4f0;border-color:var(--border)}
+  .table td,.table th{border-color:var(--border)}
+  .pagination .page-link{color:#c6d4f0;background:#101521;border-color:var(--border)}
+  .pagination .page-item.active .page-link{background:#0d6efd;border-color:#0d6efd}
+  .btn-soft{background:#101521;border:1px solid var(--border);color:#dbe5f5}
+  .btn-soft:hover{background:#0e1422;color:#fff}
+
+  /* Offcanvas */
+  .offcanvas-nav{width:280px;background:#0f1523;color:#dbe5f5}
+  .offcanvas-nav .list-group-item{background:transparent;border:0;color:#dbe5f5}
+  .offcanvas-nav .list-group-item:hover{background:#0e1422}
+
+  .stat-chip{display:inline-flex; align-items:center; gap:.5rem; padding:.4rem .6rem; background:#222733; border:1px solid #31384a; border-radius:10px}
+  .stat-chip i{opacity:.9}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const btn = document.getElementById('rebuildBtn');
+  if (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (confirm('Rebuild sitemap.xml now? This will overwrite the existing file.')) {
+        const u = new URL(window.location.href);
+        u.searchParams.set('rebuild', '1');
+        window.location.href = u.toString();
+      }
+    });
+  }
+});
+</script>
 </head>
 <body>
-    <div id="top" class="clearfix">
-        <div class="applogo">
-            <a href="../" class="logo">Paste</a>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container-fluid">
+    <div class="d-flex align-items-center gap-2">
+      <!-- Mobile: open offcanvas -->
+      <button class="btn btn-soft d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#navOffcanvas" aria-controls="navOffcanvas">
+        <i class="bi bi-list"></i>
+      </button>
+      <a class="navbar-brand" href="../">Paste</a>
+    </div>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <?php echo htmlspecialchars($_SESSION['admin_login']); ?>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="admin.php">Settings</a></li>
+            <li><a class="dropdown-item" href="?logout">Logout</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile offcanvas nav -->
+<div class="offcanvas offcanvas-start offcanvas-nav" tabindex="-1" id="navOffcanvas">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Admin Menu</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="list-group">
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/dashboard.php'); ?>"><i class="bi bi-house me-2"></i>Dashboard</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/configuration.php'); ?>"><i class="bi bi-gear me-2"></i>Configuration</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/interface.php'); ?>"><i class="bi bi-eye me-2"></i>Interface</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/admin.php'); ?>"><i class="bi bi-person me-2"></i>Admin Account</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/pastes.php'); ?>"><i class="bi bi-clipboard me-2"></i>Pastes</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/users.php'); ?>"><i class="bi bi-people me-2"></i>Users</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/ipbans.php'); ?>"><i class="bi bi-ban me-2"></i>IP Bans</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/stats.php'); ?>"><i class="bi bi-graph-up me-2"></i>Statistics</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/ads.php'); ?>"><i class="bi bi-currency-pound me-2"></i>Ads</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/pages.php'); ?>"><i class="bi bi-file-earmark me-2"></i>Pages</a>
+      <a class="list-group-item active" href="<?php echo htmlspecialchars($baseurl.'/admin/sitemap.php'); ?>"><i class="bi bi-map me-2"></i>Sitemap</a>
+      <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/tasks.php'); ?>"><i class="bi bi-list-task me-2"></i>Tasks</a>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid my-2">
+  <div class="row g-2">
+    <!-- Desktop sidebar -->
+    <div class="col-lg-2 d-none d-lg-block">
+      <div class="sidebar-desktop">
+        <div class="list-group">
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/dashboard.php'); ?>"><i class="bi bi-house me-2"></i>Dashboard</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/configuration.php'); ?>"><i class="bi bi-gear me-2"></i>Configuration</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/interface.php'); ?>"><i class="bi bi-eye me-2"></i>Interface</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/admin.php'); ?>"><i class="bi bi-person me-2"></i>Admin Account</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/pastes.php'); ?>"><i class="bi bi-clipboard me-2"></i>Pastes</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/users.php'); ?>"><i class="bi bi-people me-2"></i>Users</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/ipbans.php'); ?>"><i class="bi bi-ban me-2"></i>IP Bans</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/stats.php'); ?>"><i class="bi bi-graph-up me-2"></i>Statistics</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/ads.php'); ?>"><i class="bi bi-currency-pound me-2"></i>Ads</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/pages.php'); ?>"><i class="bi bi-file-earmark me-2"></i>Pages</a>
+          <a class="list-group-item active" href="<?php echo htmlspecialchars($baseurl.'/admin/sitemap.php'); ?>"><i class="bi bi-map me-2"></i>Sitemap</a>
+          <a class="list-group-item" href="<?php echo htmlspecialchars($baseurl.'/admin/tasks.php'); ?>"><i class="bi bi-list-task me-2"></i>Tasks</a>
         </div>
-        <ul class="top-right">
-            <li class="dropdown link">
-                <a href="#" data-toggle="dropdown" class="dropdown-toggle profilebox"><b><?php echo htmlspecialchars($_SESSION['admin_login']); ?></b><span class="caret"></span></a>
-                <ul class="dropdown-menu dropdown-menu-list dropdown-menu-right">
-                    <li><a href="admin.php">Settings</a></li>
-                    <li><a href="?logout">Logout</a></li>
-                </ul>
-            </li>
-        </ul>
+      </div>
     </div>
 
-    <div class="content">
-        <div class="container-widget">
-            <div class="row">
-                <div class="col-md-12">
-                    <ul class="panel quick-menu clearfix">
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="dashboard.php"><i class="fa fa-home"></i>Dashboard</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="configuration.php"><i class="fa fa-cogs"></i>Configuration</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="interface.php"><i class="fa fa-eye"></i>Interface</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="admin.php"><i class="fa fa-user"></i>Admin Account</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="pastes.php"><i class="fa fa-clipboard"></i>Pastes</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="users.php"><i class="fa fa-users"></i>Users</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="ipbans.php"><i class="fa fa-ban"></i>IP Bans</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="stats.php"><i class="fa fa-line-chart"></i>Statistics</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="ads.php"><i class="fa fa-gbp"></i>Ads</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="pages.php"><i class="fa fa-file"></i>Pages</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1 menu-active"><a href="sitemap.php"><i class="fa fa-map-signs"></i>Sitemap</a></li>
-                        <li class="col-xs-3 col-sm-2 col-md-1"><a href="tasks.php"><i class="fa fa-tasks"></i>Tasks</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="panel panel-widget">
-                        <div class="panel-body">
-                            <h4>Sitemap</h4>
-                            <?php if ($msg) echo $msg; ?>
-                            <form method="POST" action="sitemap.php">
-                                <div class="form-group">
-                                    <label for="changefreq">Change Frequency</label>
-                                    <input type="text" placeholder="Enter frequency range" name="changefreq" id="changefreq" value="<?php echo htmlspecialchars($changefreq); ?>" class="form-control">
-                                </div>
-                                <div class="form-group">
-                                    <label for="priority">Priority Level</label>
-                                    <input type="text" placeholder="Enter priority..." id="priority" name="priority" value="<?php echo htmlspecialchars($priority); ?>" class="form-control">
-                                </div>
-                                <button class="btn btn-default" type="submit">Submit</button>
-                            </form>
-                            <br />
-                            <form method="GET" action="sitemap.php">
-                                <button class="btn btn-default" name="re" id="re" type="submit">Generate sitemap.xml</button>
-                            </form>
-                            <?php if (isset($_GET['re']) && $total_pages > 1) { ?>
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination">
-                                        <?php
-                                        if ($page > 1) {
-                                            echo "<li><a href='?re&page=" . ($page - 1) . "' aria-label='Previous'><span aria-hidden='true'>&laquo;</span></a></li>";
-                                        } else {
-                                            echo "<li class='disabled'><span aria-hidden='true'>&laquo;</span></li>";
-                                        }
-                                        for ($i = 1; $i <= $total_pages; $i++) {
-                                            echo "<li" . ($i == $page ? " class='active'" : "") . "><a href='?re&page=$i'>$i</a></li>";
-                                        }
-                                        if ($page < $total_pages) {
-                                            echo "<li><a href='?re&page=" . ($page + 1) . "' aria-label='Next'><span aria-hidden='true'>&raquo;</span></a></li>";
-                                        } else {
-                                            echo "<li class='disabled'><span aria-hidden='true'>&raquo;</span></li>";
-                                        }
-                                        ?>
-                                    </ul>
-                                </nav>
-                            <?php } ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row footer">
-                <div class="col-md-6 text-left">
-                    <a href="https://github.com/jordansamuel/PASTE" target="_blank">Updates</a> &mdash; <a href="https://github.com/jordansamuel/PASTE/issues" target="_blank">Bugs</a>
-                </div>
-                <div class="col-md-6 text-right">
-                    Powered by <a href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
-                </div>
-            </div>
+    <div class="col-lg-10">
+      <?php if (!empty($msg)): ?>
+        <div class="alert alert-<?php echo htmlspecialchars($msg_type); ?> alert-dismissible fade show" role="alert">
+          <?php echo $msg; ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </div>
+      <?php endif; ?>
 
-    <script type="text/javascript" src="js/jquery.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap-select.js"></script>
+      <div class="card mb-3">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Sitemap Options</h4>
+          <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+            <div class="row g-2">
+              <div class="col-md-4">
+                <label class="form-label">Change Frequency</label>
+                <select name="changefreq" class="form-select">
+                  <?php
+                  $opts = ['always','hourly','daily','weekly','monthly','yearly','never'];
+                  foreach ($opts as $o) {
+                      $sel = ($changefreq === $o) ? 'selected' : '';
+                      echo '<option value="'.htmlspecialchars($o).'" '.$sel.'>'.ucfirst($o).'</option>';
+                  }
+                  ?>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Priority (0.0 – 1.0)</label>
+                <input type="number" step="0.1" min="0" max="1" name="priority" class="form-control"
+                       value="<?php echo htmlspecialchars($priority); ?>">
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" name="save_options" class="btn btn-primary w-100">
+                  <i class="bi bi-save"></i> Save Options
+                </button>
+              </div>
+            </div>
+          </form>
+          <hr class="border-secondary my-4">
+          <div class="d-flex flex-wrap gap-2">
+            <div class="stat-chip"><i class="bi bi-globe2"></i> <span>Base URL:</span> <strong><?php echo htmlspecialchars($baseurl); ?></strong></div>
+            <div class="stat-chip"><i class="bi bi-sliders"></i> <span>Rewrite:</span> <strong><?php echo ((string)$mod_rewrite==="1"?'On':'Off'); ?></strong></div>
+            <?php if ($written_count !== null): ?>
+              <div class="stat-chip"><i class="bi bi-list-check"></i> <span>URLs written:</span> <strong><?php echo number_format($written_count); ?></strong></div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h4 class="card-title mb-3">Generate</h4>
+          <p class="text-muted">Rebuilds <code>sitemap.xml</code> with public pastes and the homepage. Existing file will be replaced.</p>
+          <div class="row g-2">
+            <div class="col-sm-6 d-grid">
+              <a href="#" id="rebuildBtn" class="btn btn-soft"><i class="bi bi-arrow-repeat"></i> Rebuild sitemap.xml</a>
+            </div>
+            <div class="col-sm-6 d-grid">
+              <a class="btn btn-outline-primary" href="../sitemap.xml" target="_blank"><i class="bi bi-box-arrow-up-right"></i> View sitemap.xml</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-muted small mt-3">
+        Powered by <a class="text-decoration-none" href="https://phpaste.sourceforge.io" target="_blank">Paste</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<?php
+// Handle logout from dropdown
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    session_destroy();
+    header('Location: index.php');
+    exit();
+}
+$pdo = null;
+?>
 </body>
 </html>
-<?php $pdo = null; ?>

@@ -1,6 +1,9 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE> - Default theme
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ *
+ * https://phpaste.sourceforge.io/
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,7 +13,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * GNU General Public License in LICENCE for more details.
  */
 ?>
 
@@ -20,7 +23,7 @@
     <!-- Start Row -->
     <div class="row">
       <!-- Start Card -->
-      <div class="col-lg-10">
+      <div class="col-lg-12">
         <div class="card">
           <div class="card-header text-center">
             <h6><?php echo htmlspecialchars($page_title ?? ''); ?></h6>
@@ -30,7 +33,7 @@
             if (isset($stats)) {
               echo htmlspecialchars_decode($page_content ?? '');
             } else {
-              echo '<div class="alert alert-danger text-center"><p>' . htmlspecialchars($lang['notfound'] ?? 'Not found') . '</p></div>';
+              echo '<div class="alert alert-dark text-center"><p>' . htmlspecialchars($lang['notfound'] ?? '404 Not Found') . '</p></div>';
             }
             ?>
           </div>

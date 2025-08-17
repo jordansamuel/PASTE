@@ -7,7 +7,7 @@
  * Licensed under GNU General Public License, version 3 or later.
  * See LICENCE for details.
  */
-session_start();
+require_once 'includes/session.php';
 
 require_once('config.php');
 require_once('includes/functions.php');
@@ -20,9 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 
 $date = date('Y-m-d H:i:s'); // Use DATETIME format for database
 $ip = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
 
-// Database Connection (PDO from config.php)
+// Database Connection
 global $pdo;
 
 try {
@@ -69,46 +68,47 @@ try {
     }
 
     // Page views
-    $stmt = $pdo->query("SELECT MAX(id) AS last_id FROM page_view");
-    $row = $stmt->fetch();
-    $last_id = $row['last_id'];
+    $date = date('Y-m-d');
+    $ip = $_SERVER['REMOTE_ADDR'];
 
-    if ($last_id) {
-        $stmt = $pdo->prepare("SELECT * FROM page_view WHERE id = ?");
-        $stmt->execute([$last_id]);
-        $row = $stmt->fetch();
-        $last_date = $row['date'];
-
-        if ($last_date == $date) {
-            if (str_contains_polyfill($data_ip, $ip)) {
-                $stmt = $pdo->prepare("SELECT tpage FROM page_view WHERE id = ?");
-                $stmt->execute([$last_id]);
-                $last_tpage = trim($stmt->fetchColumn()) + 1;
-                $stmt = $pdo->prepare("UPDATE page_view SET tpage = ? WHERE id = ?");
-                $stmt->execute([$last_tpage, $last_id]);
-            } else {
-                $stmt = $pdo->prepare("SELECT tpage, tvisit FROM page_view WHERE id = ?");
-                $stmt->execute([$last_id]);
-                $row = $stmt->fetch();
-                $last_tpage = trim($row['tpage']) + 1;
-                $last_tvisit = trim($row['tvisit']) + 1;
-                $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
-                $stmt->execute([$last_tpage, $last_tvisit, $last_id]);
-                file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-            }
-        } else {
-            unlink("tmp/temp.tdata");
-            $data_ip = "";
-            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
-            $stmt->execute([$date]);
-            file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-        }
-    } else {
-        unlink("tmp/temp.tdata");
-        $data_ip = "";
-        $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, '1', '1')");
+    try {
+        // Fetch or create the page_view record for today
+        $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
         $stmt->execute([$date]);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+        $row = $stmt->fetch();
+
+        if ($row) {
+            // Record exists for today
+            $page_view_id = $row['id'];
+            $tpage = (int)$row['tpage'] + 1; // Increment total page views
+            $tvisit = (int)$row['tvisit'];
+
+            // Check if this IP has visited today
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+            $stmt->execute([$ip, $date]);
+            if ($stmt->fetchColumn() == 0) {
+                // New unique visitor
+                $tvisit += 1;
+                $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+                $stmt->execute([$ip, $date]);
+            }
+
+            // Update page_view with new counts
+            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+            $stmt->execute([$tpage, $tvisit, $page_view_id]);
+        } else {
+            // No record for today: create one
+            $tpage = 1;
+            $tvisit = 1;
+            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+            $stmt->execute([$date, $tpage, $tvisit]);
+
+            // Log the visitor's IP
+            $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+            $stmt->execute([$ip, $date]);
+        }
+    } catch (PDOException $e) {
+        error_log("Page view tracking error: " . $e->getMessage());
     }
 
     // Ads
@@ -126,34 +126,34 @@ try {
     $offset = ($page - 1) * $perPage;
 
     // Determine sort column and direction
-    $sortColumn = 'date';
+    $sortColumn = 'p.date';
     $sortDirection = 'DESC';
     switch ($sort) {
         case 'date_asc':
             $sortDirection = 'ASC';
             break;
         case 'title_asc':
-            $sortColumn = 'title';
+            $sortColumn = 'p.title';
             $sortDirection = 'ASC';
             break;
         case 'title_desc':
-            $sortColumn = 'title';
+            $sortColumn = 'p.title';
             $sortDirection = 'DESC';
             break;
         case 'code_asc':
-            $sortColumn = 'code';
+            $sortColumn = 'p.code';
             $sortDirection = 'ASC';
             break;
         case 'code_desc':
-            $sortColumn = 'code';
+            $sortColumn = 'p.code';
             $sortDirection = 'DESC';
             break;
         case 'views_desc':
-            $sortColumn = 'views';
+            $sortColumn = 'view_count';
             $sortDirection = 'DESC';
             break;
         case 'views_asc':
-            $sortColumn = 'views';
+            $sortColumn = 'view_count';
             $sortDirection = 'ASC';
             break;
     }
@@ -164,25 +164,42 @@ try {
     $totalPages = 1;
     $error = '';
 
+    // Base query with LEFT JOIN to paste_views
+    $baseQuery = "SELECT p.id, p.title, p.code, p.date, UNIX_TIMESTAMP(p.date) AS now_time, p.encrypt, p.member, COUNT(pv.id) AS view_count 
+                  FROM pastes p 
+                  LEFT JOIN paste_views pv ON p.id = pv.paste_id 
+                  WHERE p.visible = '0' AND p.password = 'NONE'";
+    $countQuery = "SELECT COUNT(*) 
+                   FROM pastes p 
+                   WHERE p.visible = '0' AND p.password = 'NONE'";
+    $params = [];
+
     if ($search_query && strlen($search_query) >= 3) { // Search query provided
         $search_term = '%' . $search_query . '%';
-        $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member, views FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?) ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
-        $stmt->execute([$search_term, $search_term, $perPage, $offset]);
+        $baseQuery .= " AND (p.title LIKE ? OR p.content LIKE ?)";
+        $countQuery .= " AND (p.title LIKE ? OR p.content LIKE ?)";
+        $params = [$search_term, $search_term];
+    }
+
+    // Add GROUP BY and ORDER BY
+    $baseQuery .= " GROUP BY p.id, p.title, p.code, p.date, p.encrypt, p.member ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?";
+    $params[] = $perPage;
+    $params[] = $offset;
+
+    // Execute main query
+    try {
+        $stmt = $pdo->prepare($baseQuery);
+        $stmt->execute($params);
         $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Count total matching pastes for pagination
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE' AND (title LIKE ? OR content LIKE ?)");
-        $stmt->execute([$search_term, $search_term]);
+        $stmt = $pdo->prepare($countQuery);
+        $stmt->execute($search_query ? [$search_term, $search_term] : []);
         $totalItems = $stmt->fetchColumn();
-    } else { // No search query, show recent public pastes
-        $stmt = $pdo->prepare("SELECT id, title, code, date, UNIX_TIMESTAMP(date) AS now_time, encrypt, member, views FROM pastes WHERE visible = '0' AND password = 'NONE' ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?");
-        $stmt->execute([$perPage, $offset]);
-        $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Count total public pastes for pagination
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE visible = '0' AND password = 'NONE'");
-        $stmt->execute();
-        $totalItems = $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Paste query error: " . $e->getMessage());
+        $pastes = [];
+        $totalItems = 0;
     }
 
     $totalPages = $totalItems > 0 ? ceil($totalItems / $perPage) : 1;
@@ -195,6 +212,7 @@ try {
         $row['time_display'] = formatRealTime($row['date']);
         $row['url'] = $mod_rewrite == '1' ? $baseurl . $row['id'] : $baseurl . 'paste.php?id=' . $row['id'];
         $row['title'] = truncate($row['title'], 20, 50);
+        $row['views'] = $row['view_count'];
     }
     unset($row);
 
@@ -211,9 +229,9 @@ try {
     }
 
     // Set archives title
-    $archives_title = htmlspecialchars($lang['archives'] ?? 'Archives');
+    $archives_title = htmlspecialchars($lang['archives'] ?? 'Archives', ENT_QUOTES, 'UTF-8');
     if ($search_query && !empty($search_query)) {
-        $archives_title .= ' - ' . htmlspecialchars($lang['search_results_for'] ?? 'Search Results for') . ' "' . htmlspecialchars($search_query) . '"';
+        $archives_title .= ' - ' . htmlspecialchars($lang['search_results_for'] ?? 'Search Results for', ENT_QUOTES, 'UTF-8') . ' "' . htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8') . '"';
     }
 
     // Theme
@@ -221,6 +239,6 @@ try {
     require_once('theme/' . $default_theme . '/archive.php');
     require_once('theme/' . $default_theme . '/footer.php');
 } catch (PDOException $e) {
-    die("Database error: " . $e->getMessage());
+    die("Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 ?>

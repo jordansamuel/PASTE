@@ -1,13 +1,20 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * Licensed under GNU General Public License, version 3 or later.
- * See LICENCE for details.
+ * https://phpaste.sourceforge.io/
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License in LICENCE for more details.
  */
-declare(strict_types=1);
 ?>
 <div class="col-lg-12 sidebar-container">
     <?php if (isset($_SESSION['username'])): ?>
@@ -25,8 +32,12 @@ declare(strict_types=1);
                         </small>
                     </h6>
                 </div>
+
+                <!-- // ajax message; "paste deleted" -->
+                <div id="sidebar-msg" class="px-3 py-2" style="display:none;"></div>
+
                 <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
+                    <div class="list-group list-group-flush" id="sidebar-paste-list">
                         <?php
                         $username = (string) ($_SESSION['username'] ?? '');
                         if ($username === '') {
@@ -39,16 +50,16 @@ declare(strict_types=1);
                                 } else {
                                     foreach ($pastes as $row) {
                                         $title = (string) ($row['title'] ?? 'Untitled');
-                                        $p_id = (string) ($row['id'] ?? '');
-                                        $p_date = (string) ($row['date'] ?? '');
-                                        $p_time = (int) ($row['now_time'] ?? 0);
-                                        $p_code = (string) ($row['code'] ?? 'Unknown');
+                                        $p_id  = (string) ($row['id'] ?? '');
+                                        $p_time= (int) ($row['now_time'] ?? 0);
+                                        $p_code= (string) ($row['code'] ?? 'Unknown');
                                         $p_time_ago = conTime($p_time);
                                         $title = truncate($title, 6, 15);
-                                        $p_delete_link = $mod_rewrite ? "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id)
-                                                                    : "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id);
+                                        // // controller delete link (same for rewrite)
+                                        $p_delete_link = "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id);
                                         ?>
-                                        <div class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light"
+                                             id="paste-item-<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>">
                                             <a href="<?php echo htmlspecialchars(
                                                 $baseurl . ($mod_rewrite ? $p_id : 'paste.php?id=' . $p_id),
                                                 ENT_QUOTES,
@@ -57,10 +68,16 @@ declare(strict_types=1);
                                                 <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
                                             </a>
                                             <div class="ms-2">
-                                                <a class="btn btn-sm btn-outline-danger me-1 py-0 px-1" href="<?php echo htmlspecialchars($baseurl . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>" data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>" title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <a class="btn btn-sm btn-outline-danger me-1 py-0 px-1 js-del"
+                                                   href="<?php echo htmlspecialchars($baseurl . $p_delete_link, ENT_QUOTES, 'UTF-8'); ?>"
+                                                   data-paste-id="<?php echo htmlspecialchars($p_id, ENT_QUOTES, 'UTF-8'); ?>"
+                                                   title="Delete <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>">
                                                     <i class="bi bi-trash" aria-hidden="true"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago.<br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>" title="Paste Details">
+                                                <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1"
+                                                        data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left"
+                                                        data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago.<br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        title="Paste Details">
                                                     <i class="bi bi-clock"></i>
                                                 </button>
                                             </div>
@@ -88,6 +105,7 @@ declare(strict_types=1);
             </div>
         </div>
     <?php endif; ?>
+
     <?php if (!isset($privatesite) || $privatesite !== 'on'): ?>
         <!-- Recent Public Pastes -->
         <div class="col-12">
@@ -105,10 +123,9 @@ declare(strict_types=1);
                             } else {
                                 foreach ($pastes as $row) {
                                     $title = (string) ($row['title'] ?? 'Untitled');
-                                    $p_id = (string) ($row['id'] ?? '');
-                                    $p_date = (string) ($row['date'] ?? '');
-                                    $p_time = (int) ($row['now_time'] ?? 0);
-                                    $p_code = (string) ($row['code'] ?? 'Unknown');
+                                    $p_id  = (string) ($row['id'] ?? '');
+                                    $p_time= (int) ($row['now_time'] ?? 0);
+                                    $p_code= (string) ($row['code'] ?? 'Unknown');
                                     $p_time_ago = conTime($p_time);
                                     $title = truncate($title, 6, 15);
                                     ?>
@@ -121,7 +138,10 @@ declare(strict_types=1);
                                             <?php echo htmlspecialchars(ucfirst($title), ENT_QUOTES, 'UTF-8'); ?>
                                         </a>
                                         <div class="ms-2">
-                                            <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1" data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left" data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago.<br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>" title="Paste Details">
+                                            <button type="button" class="btn btn-outline-light btn-sm popover-clock py-0 px-1"
+                                                    data-bs-container="body" data-bs-toggle="popover" data-bs-placement="left"
+                                                    data-bs-content="Posted: <?php echo htmlspecialchars($p_time_ago, ENT_QUOTES, 'UTF-8'); ?> ago.<br>Syntax: <?php echo htmlspecialchars(strtoupper($p_code), ENT_QUOTES, 'UTF-8'); ?>"
+                                                    title="Paste Details">
                                                 <i class="bi bi-clock"></i>
                                             </button>
                                         </div>
@@ -138,6 +158,7 @@ declare(strict_types=1);
             </div>
         </div>
     <?php endif; ?>
+
     <?php if (!isset($_SESSION['username']) && (!isset($privatesite) || $privatesite !== 'on')): ?>
         <div class="col-12 text-center mt-3">
             <?php echo $ads_1 ?? ''; ?>
@@ -146,38 +167,96 @@ declare(strict_types=1);
 </div>
 
 <script>
+// // popovers
 document.addEventListener('DOMContentLoaded', function() {
     var popoverTriggerList = [].slice.call(document.querySelectorAll('.popover-clock'));
-    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl, {
+    var popoverList = popoverTriggerList.map(function (el) {
+        return new bootstrap.Popover(el, {
             trigger: 'click',
             container: 'body',
             placement: 'left',
             html: true,
             customClass: 'touch-popover',
-            content: popoverTriggerEl.getAttribute('data-bs-content'),
-            title: popoverTriggerEl.getAttribute('title')
+            content: el.getAttribute('data-bs-content'),
+            title: el.getAttribute('title')
         });
     });
-
     document.addEventListener('click', function (e) {
-        popoverList.forEach(function (popover) {
-            if (!popover._element.contains(e.target) && popover._isShown()) {
-                popover.hide();
-            }
+        popoverList.forEach(function (p) {
+            if (!p._element.contains(e.target) && p._isShown && p._isShown()) p.hide();
         });
     });
-
     popoverTriggerList.forEach(function (el) {
         el.addEventListener('touchstart', function (e) {
             e.preventDefault();
-            var popover = bootstrap.Popover.getInstance(el);
-            if (popover && popover._isShown()) {
-                popover.hide();
-            } else if (popover) {
-                popover.show();
-            }
+            var p = bootstrap.Popover.getInstance(el);
+            if (p && p._isShown && p._isShown()) p.hide(); else if (p) p.show();
         }, { passive: false });
     });
 });
+
+// // ajax delete
+(function(){
+    function msg(type, text) {
+        var box = document.getElementById('sidebar-msg');
+        if (!box) return;
+        box.style.display = 'block';
+        box.className = 'px-3 py-2 ' + (type === 'ok' ? 'text-bg-success' : 'text-bg-danger');
+        box.textContent = text;
+        setTimeout(function(){ box.style.display = 'none'; }, 2500);
+    }
+    function findItem(el) {
+        while (el && el !== document) {
+            if (el.classList && el.classList.contains('list-group-item')) return el;
+            el = el.parentNode;
+        }
+        return null;
+    }
+    document.addEventListener('click', function(e){
+        var t = e.target;
+        while (t && t !== document && !(t.tagName === 'A' && t.classList.contains('js-del'))) t = t.parentNode;
+        if (!t || t === document) return;
+        e.preventDefault();
+
+        var href = t.getAttribute('href');
+        var pid  = t.getAttribute('data-paste-id') || '';
+        if (!href || !pid) { window.location.href = href; return; }
+
+        if (!confirm('Delete this paste? This cannot be undone.')) return;
+
+        var row = findItem(t);
+        var old = t.innerHTML;
+        t.classList.add('disabled');
+        t.setAttribute('aria-disabled', 'true');
+        t.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        if (row) row.style.opacity = '0.5';
+
+        var fd = new FormData();
+        fd.set('ajax', '1');
+
+        fetch(href, { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function(res){ return res.json().catch(function(){ return null; }); })
+            .then(function(data){
+                if (data && typeof data.success !== 'undefined') {
+                    if (data.success) {
+                        if (row) row.remove();
+                        msg('ok', data.message || 'Paste deleted.');
+                        return;
+                    } else {
+                        if (row) row.style.opacity = '';
+                        t.innerHTML = old;
+                        t.classList.remove('disabled');
+                        t.removeAttribute('aria-disabled');
+                        msg('err', data.message || 'Delete failed.');
+                        return;
+                    }
+                }
+                // // non-json: fall back to navigation
+                window.location.href = href;
+            })
+            .catch(function(){
+                window.location.href = href;
+            });
+    });
+})();
 </script>

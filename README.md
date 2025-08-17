@@ -1,5 +1,34 @@
-Paste 3
+Paste 3.1
 =======
+New version 3.1
+* Account deletion
+* reCAPTCHA v3 with server side integration and token handling (and v2 support)
+* 	Select reCAPTCHA in admin/configuration.php
+*	Select v2 or v3 depending on your keys
+* 	Default score can be set in /includes/recaptcha.php but 0.8 will catch 99% of bots, balancing false negatives.
+* 	Pastes and user account login/register are gated, with v3 users are no longer required to enter a captcha.
+* If signed up with OAuth2, ability to change username once in /profile.php - Support more platforms in future.
+* Search feature, archive/pagination
+* Improved admin panel with Bootstrap 5
+* Ability to add/remove admins
+* Fixed SMTP for user account emails/verification - Plain SMTP server or use OAuth2 for Google Mail
+* CSRF session tokens, improve security, stay logged in for 30 days with "Remember Me"
+* PHP version must be 8.1 or above - time to drag Paste into the future. 
+* Clean up the codebase, remove obsolete functions and added more comments
+* /tmp folder has gone bye bye - improved admin panel statistics, daily unique paste views
+
+Previous version - 3.0
+* PHP 8.4> compatibility
+* Replace mysqli with pdo
+* New default theme, upgrade paste2 theme from bootstrap 3 to 5
+* Dark mode
+* Admin panel changes
+* Google OAuth2 SMTP/User accounts
+* Security and bug fixes 
+* Improved installer, checks for existing database and updates schema as appropriate.
+* Improved database schema
+* Update Parsedown for Markdown
+* All pastes encrypted in the database with AES-256 by default
 
 [![Download PASTE](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
@@ -25,7 +54,7 @@ https://github.com/boxlabss/PASTE/issues/new
 
 Requirements
 ===
- - PHP 7.4 or higher with `pdo_mysql`, `openssl`, and `curl` extensions
+ - PHP 8.1 or higher with `pdo_mysql`, `openssl`, and `curl` extensions
   - MySQL or MariaDB
   - Composer for dependency management
   - Web server (e.g., Apache/Nginx) with HTTPS enabled (if OAuth enabled as below)
@@ -83,7 +112,7 @@ Now you can start coding and send in pull requests.
 
 Upgrading
 ===
-3.0 schema changes
+3.0/3.1 schema changes
 run the installer to update database
 (backup first)
 

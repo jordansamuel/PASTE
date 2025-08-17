@@ -1,29 +1,36 @@
 <?php
 /*
- * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
- * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * Licensed under GNU General Public License, version 3 or later.
- * See LICENCE for details.
+ * https://phpaste.sourceforge.io/
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See LICENCE for more details.
  */
 
 $date = date('jS F Y');
-$ip = $_SERVER['REMOTE_ADDR'];
+$ip   = $_SERVER['REMOTE_ADDR'] ?? '';
 
 // Security headers
 header("Content-Security-Policy: default-src 'self'; script-src 'self' https://code.jquery.com https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-// PHP version check
+// PHP version check (require 8.1+)
 $php_version = phpversion();
-$php_ok = version_compare($php_version, '7.0', '>=');
+$php_ok      = version_compare($php_version, '8.1', '>=');
 
 // Extension checks
 $required_extensions = ['pdo_mysql'];
 $optional_extensions = ['openssl', 'curl'];
-$extension_status = [];
+$extension_status    = [];
 foreach ($required_extensions as $ext) {
     $extension_status[$ext] = extension_loaded($ext) ? 'Enabled' : 'Missing';
 }
@@ -31,14 +38,11 @@ foreach ($optional_extensions as $ext) {
     $extension_status[$ext] = extension_loaded($ext) ? 'Enabled' : 'Missing (required for OAuth/SMTP)';
 }
 
-// Ensure tmp directory exists
-$tmp_dir = '../tmp';
-$web_user = $_SERVER['USER'] ?? 'www-data';
-if (!is_dir($tmp_dir)) {
-    if (!mkdir($tmp_dir, 0775, true)) {
-        die("Failed to create tmp directory: $tmp_dir. Run: <code>mkdir -p " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chmod 775 " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . " && chown $web_user " . htmlspecialchars($tmp_dir, ENT_QUOTES, 'UTF-8') . "</code>");
-    }
-}
+// Guess web user (for help text)
+$web_user = $_SERVER['USER']
+    ?? getenv('APACHE_RUN_USER')
+    ?? getenv('USER')
+    ?? 'www-data';
 ?>
 
 <!DOCTYPE html>
@@ -47,7 +51,7 @@ if (!is_dir($tmp_dir)) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Paste 3 - Install</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link href="//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link href="install.css" rel="stylesheet">
 </head>
 <body>
@@ -74,8 +78,7 @@ if (!is_dir($tmp_dir)) {
                                             <?php echo htmlspecialchars($php_version); ?>
                                         </span>
                                         <?php if (!$php_ok): ?>
-                                            <br><small class="text-danger">PHP 7.0 or higher is required. Please upgrade your PHP version.</small>
-                                        </td>
+                                            <br><small class="text-danger">PHP 8.1 or higher is required. Please upgrade your PHP version.</small>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -83,7 +86,7 @@ if (!is_dir($tmp_dir)) {
                                     <tr>
                                         <th><?php echo htmlspecialchars($ext); ?></th>
                                         <td>
-                                            <span class="badge <?php echo strpos($status, 'Enabled') !== false ? 'bg-success' : 'bg-danger'; ?>">
+                                            <span class="badge <?php echo (strpos($status, 'Enabled') !== false) ? 'bg-success' : 'bg-danger'; ?>">
                                                 <?php echo htmlspecialchars($status); ?>
                                             </span>
                                         </td>
@@ -94,7 +97,8 @@ if (!is_dir($tmp_dir)) {
                                     <th>Status</th>
                                 </tr>
                                 <?php
-                                $files = ['../config.php', '../tmp/temp.tdata', '../sitemap.xml'];
+                                // Only check config.php and sitemap.xml (no tmp)
+                                $files = ['../config.php', '../sitemap.xml'];
                                 foreach ($files as $filename) {
                                     echo "<tr><td>" . htmlspecialchars(basename($filename)) . "</td>";
                                     $dir = dirname($filename);
@@ -103,7 +107,7 @@ if (!is_dir($tmp_dir)) {
                                     } elseif (is_writable($filename) || (!file_exists($filename) && is_writable($dir))) {
                                         echo '<td><span class="badge bg-success">Writable</span></td>';
                                     } else {
-                                        echo '<td><span class="badge bg-danger">Not Writable</span> Run: <code>chmod 644 ' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . ' && chown ' . htmlspecialchars($web_user, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '</code></td>';
+                                        echo '<td><span class="badge bg-danger">Not Writable</span> Run: <code>chmod 664 ' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '</code> or <code>chown ' . htmlspecialchars($web_user, ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '</code></td>';
                                     }
                                     echo "</tr>";
                                 }
@@ -168,8 +172,8 @@ if (!is_dir($tmp_dir)) {
                             </div>
                         </form>
                         <?php if (!$php_ok): ?>
-                            <div class="alert alert-warning">
-                                Installation is disabled because your PHP version (<?php echo htmlspecialchars($php_version); ?>) is too low. Please upgrade to PHP 7.0 or higher.
+                            <div class="alert alert-warning mt-3">
+                                Installation is disabled because your PHP version (<?php echo htmlspecialchars($php_version); ?>) is too low. Please upgrade to PHP 8.1 or higher.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -236,8 +240,8 @@ if (!is_dir($tmp_dir)) {
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+<script src="//code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="install.js"></script>
 </body>
 </html>
