@@ -171,4 +171,4 @@ Credits
 * **[Viktoria Rei Bauer](https://github.com/ToeiRei)** for her contributions to the project.
 * Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
-The Paste theme was built using Bootstrap 5 and CodeMirror (https://github.com/codemirror/dev/)
+The Paste theme was built using Bootstrap 5
