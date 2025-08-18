@@ -41,7 +41,7 @@
       </div>
       
       <?php require_once('theme/' . $default_theme . '/sidebar.php'); ?>
-      <?php echo htmlspecialchars($ads_2 ?? '', ENT_QUOTES, 'UTF-8'); ?>
+            <?php echo $ads_1 ?? ''; ?>
     </div>
   </div>
 </div>

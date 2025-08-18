@@ -47,26 +47,46 @@ try {
     exit;
 }
 
-// Check critical files and Composer autoload
+// Check critical files
 $required_files = [
-    '../oauth/vendor/autoload.php' => ['google/apiclient:^2.12', 'league/oauth2-client:^2.6'],
-    '../mail/vendor/autoload.php'  => ['phpmailer/phpmailer:^6.9'],
-    '../theme/default/login.php'   => [],
-    '../oauth/google.php'          => [],
-    '../oauth/google_smtp.php'     => [],
-    '../mail/mail.php'             => []
+    '../oauth/vendor/autoload.php',
+    '../mail/vendor/autoload.php',
+    '../theme/default/login.php',
+    '../oauth/google.php',
+    '../oauth/google_smtp.php',
+    '../mail/mail.php'
 ];
-foreach ($required_files as $file => $packages) {
+foreach ($required_files as $file) {
     if (!file_exists($file)) {
         ob_end_clean();
-        $message = empty($packages)
-            ? "Missing required file: $file"
-            : "Missing Composer dependencies in " . dirname($file) . ". Run: <code>cd " . dirname($file) . " && composer require " . implode(' ', $packages) . "</code>";
+        $message = "Missing required file: $file";
         error_log("install.php: $message");
         echo json_encode(['status' => 'error', 'message' => $message]);
         exit;
     }
 }
+
+//
+// Check critical files and Composer autoload
+//$required_files = [
+//    '../oauth/vendor/autoload.php' => ['google/apiclient:^2.12', 'league/oauth2-client:^2.6'],
+//    '../mail/vendor/autoload.php'  => ['phpmailer/phpmailer:^6.9'],
+//    '../theme/default/login.php'   => [],
+//    '../oauth/google.php'          => [],
+//    '../oauth/google_smtp.php'     => [],
+//    '../mail/mail.php'             => []
+//];
+//foreach ($required_files as $file => $packages) {
+//    if (!file_exists($file)) {
+//        ob_end_clean();
+//        $message = empty($packages)
+//            ? "Missing required file: $file"
+//            : "Missing Composer dependencies in " . dirname($file) . ". Run: <code>cd " . dirname($file) . " && composer require " . implode(' ', $packages) . "</code>";
+//        error_log("install.php: $message");
+//        echo json_encode(['status' => 'error', 'message' => $message]);
+//        exit;
+//    }
+//}
 
 // Sanitize input
 $admin_user = isset($_POST['admin_user']) ? filter_var(trim($_POST['admin_user']), FILTER_SANITIZE_STRING) : '';

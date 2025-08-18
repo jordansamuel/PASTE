@@ -488,11 +488,10 @@ error_log("configure.php: Successfully wrote config.php");
 // Prepare success message
 $success_message = 'Configuration saved successfully. Proceed above with your admin account and click submit to install the database.<br>';
 if ($enablegoog === 'yes' || $enablefb === 'yes') {
-    $success_message .= 'Install OAuth dependencies: <code>cd oauth && composer require google/apiclient:^2.12 league/oauth2-client</code><br>';
+    $success_message .= 'Install OAuth dependencies: <code>cd oauth && composer require google/apiclient:^2.12 league/oauth2-client</code><br>Ensure HTTPS is enabled for secure OAuth redirects.';
 }
-$success_message .= 'Install SMTP dependencies: <code>cd mail && composer require phpmailer/phpmailer</code><br>';
 if ($enablesmtp === 'yes') {
-    $success_message .= 'SMTP enabled. Configure SMTP settings in admin panel after installation.<br>';
+    $success_message .= 'SMTP enabled. Install SMTP dependencies: <code>cd mail && composer require phpmailer/phpmailer</code><br>Configure SMTP settings in admin panel after installation.<br>';
 }
 if ($https_warning) {
     $success_message .= $https_warning . '<br>';
