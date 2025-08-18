@@ -426,66 +426,84 @@ function rawView(int $paste_id, string $p_title, string $p_content, string $p_co
     return true;
 }
 
-function embedView(int $paste_id, string $p_title, string $p_content, string $p_code, string $title, string $baseurl, string $ges_style, array $lang): bool
-{
-    if (!$paste_id || !$p_content) {
-        header('HTTP/1.1 404 Not Found');
-        return false;
+function embedView( $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang ) {
+    $stats = false;
+    if ( $p_content ) {
+        $output = "<div class='paste_embed_container'>";
+        $output .= "<style>
+            .paste_embed_container {
+                font-family: monospace;
+                font-size: 13px;
+                color: #333;
+                background: #fff;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 1px solid #ccc;
+                margin-bottom: 1em;
+                position: relative;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                direction: ltr;
+            }
+            /* Footer with black gradient */
+            .paste_embed_footer {
+                font-size: 12px;
+                padding: 8px;
+                background: linear-gradient(90deg, #000000, #333333);
+                color: #ffffff;
+                border-top: 1px solid #ccc;
+            }
+            .paste_embed_footer a {
+                color: #ffffff;
+                text-decoration: none;
+            }
+            .paste_embed_footer a:hover {
+                text-decoration: underline;
+            }
+            .paste_embed_code {
+                margin: 0;
+                padding: 12px;
+                max-height: 300px;
+                overflow-y: auto;
+                overflow-x: auto;
+                scroll-behavior: smooth;
+                position: relative;
+                background: #fafafa;
+            }
+            /* Fade effect */
+            .fade-out {
+                position: absolute;
+                bottom: 38px;
+                left: 0;
+                right: 0;
+                height: 40px;
+                background: linear-gradient(to bottom, rgba(250,250,250,0) 0%, rgba(250,250,250,1) 100%);
+                pointer-events: none;
+            }
+            $ges_style
+        </style>";
+
+        // Code content
+        $output .= "<div class='paste_embed_code'>" . $p_content . "</div>";
+        $output .= "<div class='fade-out'></div>";
+
+        // Footer
+        $output .= "<div class='paste_embed_footer'>
+            <a href='$baseurl/$paste_id'>$p_title</a> {$lang['embed-hosted-by']}
+            <a href='$baseurl'>$title</a> | 
+            <a href='$baseurl/raw/$paste_id'>" . strtolower($lang['view-raw']) . "</a>
+        </div>";
+
+        $output .= "</div>";
+
+        header( 'Content-type: text/javascript; charset=utf-8;' );
+        echo 'document.write(' . json_encode( $output ) . ')';
+        $stats = true;
+    } else {
+        header( 'HTTP/1.1 404 Not Found' );
     }
-    $output = "<div class='paste_embed_container'>";
-    $output .= "<style>
-        .paste_embed_container {
-            font-size: 12px;
-            color: #333;
-            text-align: left;
-            margin-bottom: 1em;
-            border: 1px solid #ddd;
-            background-color: #f7f7f7;
-            border-radius: 3px;
-        }
-        .paste_embed_container a {
-            font-weight: bold;
-            color: #666;
-            text-decoration: none;
-            border: 0;
-        }
-        .paste_embed_container ol {
-            color: white;
-            background-color: #f7f7f7;
-            border-right: 1px solid #ccc;
-            margin: 0;
-        }
-        .paste_embed_footer {
-            font-size: 14px;
-            padding: 10px;
-            overflow: hidden;
-            color: #767676;
-            background-color: #f7f7f7;
-            border-radius: 0 0 2px 2px;
-            border-top: 1px solid #ccc;
-        }
-        .de1, .de2 {
-            -moz-user-select: text;
-            -webkit-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
-            padding: 0 8px;
-            color: #000;
-            border-left: 1px solid #ddd;
-            background: #ffffff;
-            line-height: 20px;
-        }
-    </style>";
-    $output .= $ges_style;
-    $output .= $p_content;
-    $output .= "<div class='paste_embed_footer'>";
-    $output .= "<a href='$baseurl/$paste_id'>" . htmlspecialchars($p_title, ENT_QUOTES, 'UTF-8') . "</a> " . htmlspecialchars($lang['embed-hosted-by'], ENT_QUOTES, 'UTF-8') . " <a href='$baseurl'>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</a> | <a href='$baseurl/raw/$paste_id'>" . htmlspecialchars(strtolower($lang['view-raw']), ENT_QUOTES, 'UTF-8') . "</a>";
-    $output .= "</div>";
-    $output .= "</div>";
-    header('Content-Type: text/javascript; charset=utf-8');
-    echo 'document.write(' . json_encode($output) . ')';
-    return true;
+    return $stats;
 }
+
 
 function getEmbedUrl($paste_id, $mod_rewrite, $baseurl) {
     if ($mod_rewrite) {
