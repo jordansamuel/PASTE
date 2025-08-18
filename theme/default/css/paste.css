@@ -324,9 +324,9 @@ body {
 .form-control.editor-ta:focus {
   box-shadow: none !important;
   border-color: #2a2f36 !important;
-  outline: 0 !im
-  portant;
+  outline: 0 !important;
 }
+
 /* Force GeSHi line numbers to render and be visible */
 .code-content ol {
   list-style-type: decimal !important;   /* make sure markers exist */
