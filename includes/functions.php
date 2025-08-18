@@ -728,4 +728,81 @@ function renderBootstrapNav(array $links): string
     return $html;
 }
 
+/**
+ * sanitizer for Markdown output.
+ * Keeps only common Markdown tags + safe attributes, strips on* and style, validates href/src.
+ */
+if (!function_exists('sanitize_allowlist_html')) {
+    function sanitize_allowlist_html(string $html): string {
+        $allowedTags = [
+            'p','br','hr','em','strong','i','b','u','s','del','ins','code','pre','kbd','samp',
+            'blockquote','ul','ol','li','dl','dt','dd',
+            'h1','h2','h3','h4','h5','h6',
+            'table','thead','tbody','tfoot','tr','th','td',
+            'a','img'
+        ];
+        $allowedAttrs = [
+            'a'   => ['href','title'],
+            'img' => ['src','alt','title'],
+            '*'   => [] // no other attributes anywhere
+        ];
+
+        $prev = libxml_use_internal_errors(true);
+        $doc = new DOMDocument();
+        $doc->loadHTML('<?xml encoding="utf-8" ?>'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+
+        $walker = function(DOMNode $node) use (&$walker, $allowedTags, $allowedAttrs) {
+            for ($i = $node->childNodes->length - 1; $i >= 0; $i--) {
+                $child = $node->childNodes->item($i);
+                if (!($child instanceof DOMElement)) continue;
+
+                $tag = strtolower($child->nodeName);
+                if (!in_array($tag, $allowedTags, true)) {
+                    // unwrap unknown element but keep its children/text
+                    while ($child->firstChild) {
+                        $node->insertBefore($child->firstChild, $child);
+                    }
+                    $node->removeChild($child);
+                    continue;
+                }
+
+                // clean attributes
+                $allowed = $allowedAttrs[$tag] ?? $allowedAttrs['*'];
+                $toRemove = [];
+                foreach (iterator_to_array($child->attributes) as $attr) {
+                    $name = strtolower($attr->name);
+                    $val  = $attr->value;
+
+                    // nuke event handlers and inline styles entirely
+                    if (str_starts_with($name, 'on') || $name === 'style') { $toRemove[] = $name; continue; }
+
+                    // enforce allowlist
+                    if (!in_array($name, $allowed, true)) { $toRemove[] = $name; continue; }
+
+                    // validate href/src values
+                    if ($tag === 'a' && $name === 'href') {
+                        if (!preg_match('#^(https?://|mailto:)#i', $val)) { $toRemove[] = $name; continue; }
+                        // add safe rel/target
+                        $child->setAttribute('rel', 'nofollow noopener noreferrer');
+                        $child->setAttribute('target', '_blank');
+                    }
+                    if ($tag === 'img' && $name === 'src') {
+                        // allow only http/https images, disallow svg (can execute scripts)
+                        if (!preg_match('#^https?://#i', $val)) { $toRemove[] = $name; continue; }
+                        $path = parse_url($val, PHP_URL_PATH) ?? '';
+                        if (preg_match('#\.svg(\?.*)?$#i', (string)$path)) { $toRemove[] = $name; continue; }
+                    }
+                }
+                foreach ($toRemove as $r) { $child->removeAttribute($r); }
+
+                $walker($child);
+            }
+        };
+        $walker($doc);
+
+        return $doc->saveHTML() ?: '';
+    }
+}
 ?>

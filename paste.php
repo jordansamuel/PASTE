@@ -267,45 +267,68 @@ try {
         $p_content = rtrim($p_content);
     }
 
-	// transform content
-	$p_content = htmlspecialchars_decode($p_content);
-	if ($p_code === "markdown") {
-		include($parsedown_path);
-		$Parsedown = new Parsedown();
-		$p_content = $Parsedown->text($p_content);
-	} else {
-		$geshi = new GeSHi($p_content, $p_code, $path);
-		$geshi->enable_classes();
-		$geshi->set_header_type(GESHI_HEADER_DIV);
-		$geshi->set_line_style('color:#aaaaaa; width:auto;');
-		$geshi->set_code_style('color:#757584;');
+    // transform content 
+    if ($p_code === "markdown") {
+        require_once $parsedown_path;
+        $Parsedown = new Parsedown();
 
-		// Prefer NORMAL line numbers — avoids the 00/01 rollover bug
-		if (!empty($highlight)) {
-			$geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-			$geshi->highlight_lines_extra($highlight);
-			$geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
-		} else {
-			$geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-		}
+        // Don't globally decode into HTML; Parsedown SafeMode will handle raw tags
+        $md_input = htmlspecialchars_decode($p_content);
 
-		// force plain integer formatting
-		if (method_exists($geshi, 'set_line_number_format')) {
-			// '%d' => no padding, no modulo; second arg 0 = no wrap width
-			$geshi->set_line_number_format('%d', 0);
-		}
+        // 1) Disable raw HTML and sanitize URLs during Markdown rendering
+        if (method_exists($Parsedown, 'setSafeMode')) {
+            $Parsedown->setSafeMode(true);
+            if (method_exists($Parsedown, 'setMarkupEscaped')) {
+                $Parsedown->setMarkupEscaped(true);
+            }
+        } else {
+            // Fallback for very old Parsedown: escape raw HTML tags BEFORE parsing
+            $md_input = preg_replace_callback('/<[^>]*>/', static function($m){
+                return htmlspecialchars($m[0], ENT_QUOTES, 'UTF-8');
+            }, $md_input);
+        }
 
-		// Parse HTML
-		$p_content = $geshi->parse_code();
+        // 2) Render Markdown
+        $rendered = $Parsedown->text($md_input);
 
-		// Get stylesheet and remove any leading-zero list style some themes emit
-		$css = $geshi->get_stylesheet();
-		$css = str_replace('list-style-type: decimal-leading-zero;', 'list-style-type: decimal;', $css);
+        // 3) Defense-in-depth: allowlist-clean the resulting HTML
+        $p_content = '<div class="md-body">'.sanitize_allowlist_html($rendered).'</div>';
 
-		// $css .= ".li1, .li2 { list-style-type: decimal !important; }";
+    } else {
+        // Non-Markdown: GeSHi path
+        $code_input = htmlspecialchars_decode($p_content);
+        $geshi = new GeSHi($code_input, $p_code, $path);
+        if (method_exists($geshi, 'enable_classes')) $geshi->enable_classes();
+        if (method_exists($geshi, 'set_header_type')) $geshi->set_header_type(GESHI_HEADER_DIV);
+        if (method_exists($geshi, 'set_line_style')) $geshi->set_line_style('color:#aaaaaa; width:auto;');
+        if (method_exists($geshi, 'set_code_style')) $geshi->set_code_style('color:#757584;');
 
-		$ges_style = '<style>' . $css . '</style>';
-	}
+        // Prefer NORMAL line numbers — avoids the 00/01 rollover bug
+        if (!empty($highlight)) {
+            if (method_exists($geshi, 'enable_line_numbers')) $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+            if (method_exists($geshi, 'highlight_lines_extra')) $geshi->highlight_lines_extra($highlight);
+            if (method_exists($geshi, 'set_highlight_lines_extra_style')) $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+        } else {
+            if (method_exists($geshi, 'enable_line_numbers')) $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+        }
+
+        // force plain integer formatting
+        if (method_exists($geshi, 'set_line_number_format')) {
+            // '%d' => no padding, no modulo; second arg 0 = no wrap width
+            $geshi->set_line_number_format('%d', 0);
+        }
+
+        // Parse HTML
+        $p_content = $geshi->parse_code();
+
+        // Get stylesheet and remove any leading-zero list style some themes emit
+        $css = $geshi->get_stylesheet();
+        $css = str_replace('list-style-type: decimal-leading-zero;', 'list-style-type: decimal;', $css);
+
+        $css .= ".li1, .li2 { list-style-type: decimal !important; }";
+
+        $ges_style = '<style>' . $css . '</style>';
+    }
 
     // header
     $theme = 'theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8');
