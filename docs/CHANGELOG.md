@@ -1,4 +1,11 @@
-# Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 14/08/2025)
+# Changelog for **[Paste](https://phpaste.sourceforge.io/)** (Updated on 21/08/2025)
+In progress: 3.2
+* improvements
+* integration of https://github.com/scrivo/highlight.php
+* theme picker if enabled (see example config)
+* improved the layout for paste views, fixed some line number css bugs
+* added a "we has cookies" footer/just comment it out in /theme/default/footer.php if not required
+
 New version 3.1
 * Account deletion
 * reCAPTCHA v3 with server side integration and token handling (and v2 support)

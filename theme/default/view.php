@@ -1,6 +1,6 @@
 <?php
 /*
- * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * Paste $v3.2 2025/08/21 https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
  *
  * https://phpaste.sourceforge.io/
@@ -16,19 +16,63 @@
  * GNU General Public License in LICENCE for more details.
  */
 
-// Function to format file size in a human-readable format
-function formatSize($bytes) {
-    if ($bytes >= 1024 * 1024) {
-        return number_format($bytes / (1024 * 1024), 2) . ' MB';
-    } elseif ($bytes >= 1024) {
-        return number_format($bytes / 1024, 2) . ' KB';
-    } else {
-        return $bytes . ' bytes';
+// Calculate paste size based on $op_content
+$paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
+// highlight.php theme switcher - only if $highlighter = 'highlight' in config.php
+$showThemeSwitcher = (($highlighter ?? 'geshi') === 'highlight') && (($p_code ?? 'text') !== 'markdown');
+$hl_theme_options = [];
+$initialTheme     = null;
+
+if ($showThemeSwitcher) {
+    $candidatesWeb = [
+        'includes/Highlight/styles'
+    ];
+    $stylesRel = null;
+    foreach ($candidatesWeb as $rel) {
+        $abs = __DIR__ . '/../../' . $rel;
+        if (is_dir($abs)) { $stylesRel = $rel; break; }
+    }
+
+    if ($stylesRel) {
+        $stylesAbs = __DIR__ . '/../../' . $stylesRel;
+        // accept both .css and .min.css; prefer unique themes by basename
+        $seen = [];
+        foreach (glob($stylesAbs . '/*.css') ?: [] as $f) {
+            $file = basename($f);
+            $base = preg_replace('~\.min\.css$~', '.css', $file);   // normalize
+            $id   = basename($base, '.css');                        // e.g. "atelier-estuary-dark"
+            if (isset($seen[$id])) continue;
+            $seen[$id] = true;
+
+            $name = ucwords(str_replace(['-', '_'], ' ', $id));
+            $hl_theme_options[] = [
+                'id'   => $id,
+                'name' => $name,
+                'href' => rtrim($baseurl ?? '/', '/') . '/' . $stylesRel . '/' . $file,
+            ];
+        }
+        usort($hl_theme_options, fn($a,$b) => strnatcasecmp($a['name'], $b['name']));
+    }
+
+	/*
+	* if highlighter.php is enabled - 
+	* bring the stylesheets from includes/Highlighter/styles 
+	* https://github.com/scrivo/highlight.php/tree/master/src/Highlight/styles
+	* we can use "?id=1&theme=dracula" OR "?id=1&theme=atelier estuary dark" OR "?id=1&theme=atelier-estuary-dark"
+	*/
+    if (isset($_GET['theme'])) {
+        $g = (string) $_GET['theme'];
+        $g = strtolower($g);
+        $g = str_replace(['+', ' '], '-', $g);
+        $g = str_replace('_', '-', $g);
+        $g = preg_replace('~-+~', '-', $g);
+        $g = preg_replace('~\.css$~', '', $g);
+        $g = preg_replace('~[^a-z0-9.-]~', '', $g);
+        $initialTheme = $g;
     }
 }
 
-// Calculate paste size based on $op_content
-$paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
+// Main theme below
 ?>
 
 <!-- Content -->
@@ -73,7 +117,19 @@ $paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
                                 </div>
                             </div>
                             <!-- Paste Actions: Buttons -->
-                            <div class="btn-group ms-auto" role="group" aria-label="Paste actions">
+							<div class="btn-group btn-group-sm ms-auto" role="group" aria-label="Paste actions">
+							  <?php if (!empty($showThemeSwitcher) && !empty($hl_theme_options)): ?>
+								<select id="hljs-theme-select"
+										class="form-select form-select-sm btn-select order-first me-0"
+										title="Code Theme">
+								  <?php foreach ($hl_theme_options as $opt): ?>
+									<option value="<?php echo htmlspecialchars($opt['id']); ?>">
+									  <?php echo htmlspecialchars($opt['name']); ?>
+									</option>
+								  <?php endforeach; ?>
+								</select>
+
+							  <?php endif; ?>  <!-- close the theme-switcher if -->
                                 <?php if (($p_code ?? 'text') !== "markdown"): ?>
                                     <button type="button" class="btn btn-outline-secondary toggle-line-numbers" title="Toggle Line Numbers" onclick="togglev()">
                                         <i class="bi bi-list-ol"></i>
@@ -257,7 +313,18 @@ $paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
                             </div>
                         </div>
                         <!-- Paste Actions: Buttons -->
-                        <div class="btn-group ms-auto" role="group" aria-label="Paste actions">
+						<div class="btn-group btn-group-sm ms-auto" role="group" aria-label="Paste actions">
+						  <?php if (!empty($showThemeSwitcher) && !empty($hl_theme_options)): ?>
+							<select id="hljs-theme-select"
+									class="form-select form-select-sm btn-select order-first me-0"
+									title="Code Theme">
+							  <?php foreach ($hl_theme_options as $opt): ?>
+								<option value="<?php echo htmlspecialchars($opt['id']); ?>">
+								  <?php echo htmlspecialchars($opt['name']); ?>
+								</option>
+							  <?php endforeach; ?>
+							</select>
+							<?php endif; ?>  <!-- close the theme-switcher if -->
                             <?php if (($p_code ?? 'text') !== "markdown"): ?>
                                 <button type="button" class="btn btn-outline-secondary toggle-line-numbers" title="Toggle Line Numbers" onclick="togglev()">
                                     <i class="bi bi-list-ol"></i>
@@ -405,6 +472,15 @@ $paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title" id="fullscreenModalLabel"><?php echo htmlspecialchars($p_title ?? 'Untitled'); ?></h5>
+										<?php if (!empty($showThemeSwitcher) && !empty($hl_theme_options)): ?>
+										  <div class="ms-2" style="min-width:180px">
+											<select id="hljs-theme-select" class="form-select form-select-sm" title="Code Theme">
+											  <?php foreach ($hl_theme_options as $opt): ?>
+												<option value="<?php echo htmlspecialchars($opt['id']); ?>"><?php echo htmlspecialchars($opt['name']); ?></option>
+											  <?php endforeach; ?>
+											</select>
+										  </div>
+										<?php endif; ?>  <!-- close the theme-switcher if -->
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
@@ -421,4 +497,3 @@ $paste_size = isset($op_content) ? formatSize(strlen($op_content)) : '0 bytes';
             <?php endif; ?>
         </div>
     </div>
-<?php require_once('theme/' . ($default_theme ?? 'default') . '/footer.php'); ?>

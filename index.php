@@ -32,7 +32,6 @@ require_once 'includes/session.php';
 // production-style error handling
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
-error_log("index.php boot");
 
 // timezone
 date_default_timezone_set('UTC');

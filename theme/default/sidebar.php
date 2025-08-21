@@ -55,7 +55,7 @@
                                         $p_code= (string) ($row['code'] ?? 'Unknown');
                                         $p_time_ago = conTime($p_time);
                                         $title = truncate($title, 6, 15);
-                                        // // controller delete link (same for rewrite)
+                                        // controller delete link (same for rewrite)
                                         $p_delete_link = "user.php?del&user=" . urlencode($username) . "&id=" . urlencode($p_id);
                                         ?>
                                         <div class="list-group-item d-flex justify-content-between align-items-center bg-dark text-light"

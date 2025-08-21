@@ -218,7 +218,7 @@
         </div>
       </div>
       <?php } ?>
-      <?php echo $ads_2; ?>
+     <?php echo $ads_2 ?? ''; ?>
     </div>
     <!-- End Sidebar -->
   </div>

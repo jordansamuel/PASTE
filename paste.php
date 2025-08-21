@@ -1,6 +1,6 @@
 <?php
 /*
- * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * Paste $v3.1 2025/08/21 https://github.com/boxlabss/PASTE
  * demo: https://paste.boxlabs.uk/
  *
  * https://phpaste.sourceforge.io/
@@ -15,33 +15,112 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License in LICENCE for more details.
  */
- 
 declare(strict_types=1);
 
 require_once 'includes/session.php';
 require_once 'config.php';
-require_once 'includes/geshi.php';
+
+// Load highlighter engine libs conditionally
+if (($highlighter ?? 'geshi') === 'geshi') {
+    require_once 'includes/geshi.php';
+} else {
+    require_once __DIR__ . '/includes/Highlight/bootstrap.php';
+}
+
 require_once 'includes/functions.php';
 
 // ensure these are visible to all included templates (header/footer/sidebar)
 global $pdo, $mod_rewrite;
 
-// default to avoid notices if config hasn’t set it (DB can override later)
+// default to avoid notices if config hasn't set it (DB can override later)
 if (!isset($mod_rewrite)) {
-    $mod_rewrite = '1';
+    $mod_rewrite = '0';
 }
 
-$path             = 'includes/geshi/';
-$parsedown_path   = 'includes/Parsedown/Parsedown.php';
-$ges_style        = '';
+$path             = 'includes/geshi/';                        // GeSHi language files
+$parsedown_path   = 'includes/Parsedown/Parsedown.php';       // Markdown
+$ges_style        = '';                                       // no inline CSS injection
 $require_password = false; // errors.php shows password box when true
+
+// ---------------- Helpers ----------------
+
+// --- highlight theme override (?theme= or ?highlight=) ---
+if (($highlighter ?? 'geshi') === 'highlight') {
+    $param = $_GET['theme'] ?? $_GET['highlight'] ?? null;
+    if ($param !== null) {
+        // normalize: accept "dracula", "dracula.css", or "atelier estuary dark"
+        $t = strtolower((string)$param);
+        $t = str_replace(['+', ' ', '_'], '-', $t);
+        $t = preg_replace('~\.css$~', '', $t);
+        $t = preg_replace('~[^a-z0-9.-]~', '', $t);
+
+        $stylesRel = 'includes/Highlight/styles';
+        $fs = __DIR__ . '/' . $stylesRel . '/' . $t . '.css';
+        if (is_file($fs)) {
+            // header.php will read this to seed the initial <link>
+            $hl_style = $t . '.css';
+        }
+    }
+}
+
+// Map some legacy/GeSHi-style names to highlight.js ids
+function map_to_hl_lang(string $code): string {
+    static $map = [
+        'text'        => 'plaintext',
+        'html5'       => 'xml',
+        'html4strict' => 'xml',
+        'php-brief'   => 'php',
+        'pycon'       => 'python',
+        'postgresql'  => 'pgsql',   // fallback to sql below if missing
+        'dos'         => 'dos',
+        'vb'          => 'vbnet',
+    ];
+    $code = strtolower($code);
+    return $map[$code] ?? $code;
+}
+
+// Wrap hljs tokens in a line-numbered <ol> so togglev() works
+function hl_wrap_with_lines(string $value, string $hlLang, array $highlight_lines): string {
+    $lines  = explode("\n", $value);
+    $digits = max(2, strlen((string) count($lines))); // how many digits do we need?
+    $hlset  = $highlight_lines ? array_flip($highlight_lines) : [];
+
+    $out   = [];
+    $out[] = '<pre class="hljs"><code class="hljs language-' . htmlspecialchars($hlLang, ENT_QUOTES, 'UTF-8') . '">';
+    // expose digits to CSS so gutter is fixed (no JS needed)
+    $out[] = '<ol class="hljs-ln" style="--ln-digits:' . (int)$digits . '">';
+    foreach ($lines as $i => $lineHtml) {
+        $ln  = $i + 1;
+        $cls = isset($hlset[$ln]) ? ' class="hljs-ln-line hljs-hl"' : ' class="hljs-ln-line"';
+        $out[] = '<li' . $cls . '><span class="hljs-ln-n">' . $ln . '</span><span class="hljs-ln-c">' . $lineHtml . '</span></li>';
+    }
+    $out[] = '</ol></code></pre>';
+    return implode('', $out);
+}
+
+// Add a class to specific <li> lines in GeSHi output (no inline styles)
+function geshi_add_line_highlight_class(string $html, array $highlight_lines, string $class = 'hljs-hl'): string {
+    if (!$highlight_lines) return $html;
+    $targets = array_flip($highlight_lines);
+    $i = 0;
+    return preg_replace_callback('/<li\b([^>]*)>/', static function($m) use (&$i, $targets, $class) {
+        $i++;
+        $attrs = $m[1];
+        if (!isset($targets[$i])) return '<li' . $attrs . '>';
+        if (preg_match('/\bclass="([^"]*)"/i', $attrs, $cm)) {
+            $new = trim($cm[1] . ' ' . $class);
+            $attrs = preg_replace('/\bclass="[^"]*"/i', 'class="' . htmlspecialchars($new, ENT_QUOTES, 'UTF-8') . '"', $attrs, 1);
+        } else {
+            $attrs .= ' class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '"';
+        }
+        return '<li' . $attrs . '>';
+    }, $html) ?? $html;
+}
 
 // --- Safe themed error renderers (header -> errors -> footer) ---
 function themed_error_render(string $msg, int $http_code = 404, bool $show_password_form = false): void {
-    // Use globals that header/footer expect
     global $default_theme, $lang, $baseurl, $site_name, $pdo, $mod_rewrite, $require_password, $paste_id;
 
-    // Minimal header vars
     $site_name   = $site_name   ?? '';
     $p_title     = $lang['error'] ?? 'Error';
     $enablegoog  = 'no';
@@ -57,7 +136,7 @@ function themed_error_render(string $msg, int $http_code = 404, bool $show_passw
 
     $theme = 'theme/' . htmlspecialchars($default_theme ?? 'default', ENT_QUOTES, 'UTF-8');
     require_once $theme . '/header.php';
-    require_once $theme . '/errors.php';   // partial: no exit/no <html>
+    require_once $theme . '/errors.php';
     require_once $theme . '/footer.php';
     exit;
 }
@@ -68,8 +147,7 @@ function render_error_and_exit(string $msg, string $http = '404'): void {
 }
 
 function render_password_required_and_exit(string $msg): void {
-    // 401 is semantically closer, but we keep 403 to avoid auth dialogs
-    themed_error_render($msg, 403, true);
+    themed_error_render($msg, 403, true); // 401 invites browser auth dialogs
 }
 
 // --- Inputs ---
@@ -241,6 +319,7 @@ try {
 
     if (isset($_GET['embed'])) {
         if ($p_password === "NONE" || (isset($_GET['password']) && password_verify((string) $_GET['password'], $p_password))) {
+            // Embed view is standalone; we pass empty $ges_style as we don't inject CSS here.
             embedView((int) $paste_id, $p_title, $p_content, $p_code, $title, $baseurl, $ges_style, $lang);
             exit;
         }
@@ -269,13 +348,13 @@ try {
 
     // transform content 
     if ($p_code === "markdown") {
+        // ---------- Markdown (keep using Parsedown, safe) ----------
         require_once $parsedown_path;
         $Parsedown = new Parsedown();
 
-        // Don't globally decode into HTML; Parsedown SafeMode will handle raw tags
         $md_input = htmlspecialchars_decode($p_content);
 
-        // 1) Disable raw HTML and sanitize URLs during Markdown rendering
+        // Disable raw HTML and sanitize URLs during Markdown rendering
         if (method_exists($Parsedown, 'setSafeMode')) {
             $Parsedown->setSafeMode(true);
             if (method_exists($Parsedown, 'setMarkupEscaped')) {
@@ -288,46 +367,70 @@ try {
             }, $md_input);
         }
 
-        // 2) Render Markdown
-        $rendered = $Parsedown->text($md_input);
-
-        // 3) Defense-in-depth: allowlist-clean the resulting HTML
+        $rendered  = $Parsedown->text($md_input);
         $p_content = '<div class="md-body">'.sanitize_allowlist_html($rendered).'</div>';
 
     } else {
-        // Non-Markdown: GeSHi path
+        // ---------- Code (choose engine) ----------
         $code_input = htmlspecialchars_decode($p_content);
-        $geshi = new GeSHi($code_input, $p_code, $path);
-        if (method_exists($geshi, 'enable_classes')) $geshi->enable_classes();
-        if (method_exists($geshi, 'set_header_type')) $geshi->set_header_type(GESHI_HEADER_DIV);
-        if (method_exists($geshi, 'set_line_style')) $geshi->set_line_style('color:#aaaaaa; width:auto;');
-        if (method_exists($geshi, 'set_code_style')) $geshi->set_code_style('color:#757584;');
 
-        // Prefer NORMAL line numbers — avoids the 00/01 rollover bug
-        if (!empty($highlight)) {
-            if (method_exists($geshi, 'enable_line_numbers')) $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-            if (method_exists($geshi, 'highlight_lines_extra')) $geshi->highlight_lines_extra($highlight);
-            if (method_exists($geshi, 'set_highlight_lines_extra_style')) $geshi->set_highlight_lines_extra_style('color:#399bff;background:rgba(38,92,255,0.14);');
+        if (($highlighter ?? 'geshi') === 'highlight') {
+            // ---- Highlight.php (no Composer) ----
+            $hlLang = map_to_hl_lang($p_code);
+            try {
+                $hl = function_exists('make_highlighter') ? make_highlighter() : null;
+                if (!$hl) { throw new \RuntimeException('Highlighter not available'); }
+
+                try {
+                    $res = $hl->highlight($hlLang, $code_input);
+                } catch (\Throwable $e) {
+                    // Fallback: autodetect + generic SQL if pgsql missing, etc.
+                    if ($hlLang === 'pgsql') {
+                        $res = $hl->highlight('sql', $code_input);
+                    } else {
+                        $res = $hl->highlightAuto($code_input);
+                    }
+                }
+                $inner = $res->value;                 // HTML with <span> tokens, content escaped
+                $detectedLang = $res->language ?? $hlLang;     // whatever highlight chose
+                $p_content = hl_wrap_with_lines($inner, $detectedLang, $highlight);
+            } catch (\Throwable $t) {
+                // Last resort: plain escaped
+                $esc = htmlspecialchars($code_input, ENT_QUOTES, 'UTF-8');
+                $p_content = hl_wrap_with_lines($esc, 'plaintext', $highlight);
+            }
+
         } else {
+            // ---- GeSHi (legacy) ----
+            $geshi = new GeSHi($code_input, $p_code, $path);
+
+            // Use classes, not inline CSS; let theme CSS style everything
+            if (method_exists($geshi, 'enable_classes')) $geshi->enable_classes();
+            if (method_exists($geshi, 'set_header_type')) $geshi->set_header_type(GESHI_HEADER_DIV);
+
+            // Line numbers (NORMAL to avoid rollovers). No inline style.
             if (method_exists($geshi, 'enable_line_numbers')) $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+            if (!empty($highlight) && method_exists($geshi, 'highlight_lines_extra')) {
+                // We only mark lines via an extra pass to add a class; no inline style.
+                $geshi->highlight_lines_extra($highlight);
+            }
+
+            // force plain integer formatting
+            if (method_exists($geshi, 'set_line_number_format')) {
+                $geshi->set_line_number_format('%d', 0);
+            }
+
+            // Parse HTML (class-based markup)
+            $p_content = $geshi->parse_code();
+
+            // Add a class to the requested lines so theme CSS can style them
+            if (!empty($highlight)) {
+                $p_content = geshi_add_line_highlight_class($p_content, $highlight, 'hljs-hl');
+            }
+
+            // No stylesheet injection here; theme CSS handles it.
+            $ges_style = '';
         }
-
-        // force plain integer formatting
-        if (method_exists($geshi, 'set_line_number_format')) {
-            // '%d' => no padding, no modulo; second arg 0 = no wrap width
-            $geshi->set_line_number_format('%d', 0);
-        }
-
-        // Parse HTML
-        $p_content = $geshi->parse_code();
-
-        // Get stylesheet and remove any leading-zero list style some themes emit
-        $css = $geshi->get_stylesheet();
-        $css = str_replace('list-style-type: decimal-leading-zero;', 'list-style-type: decimal;', $css);
-
-        $css .= ".li1, .li2 { list-style-type: decimal !important; }";
-
-        $ges_style = '<style>' . $css . '</style>';
     }
 
     // header

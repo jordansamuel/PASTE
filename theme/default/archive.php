@@ -148,7 +148,7 @@
     </div>
     <?php if ($privatesite != "on"): ?>
         <div class="text-center my-4">
-            <?php echo htmlspecialchars($ads_2 ?? '', ENT_QUOTES, 'UTF-8'); ?>
+            <?php echo $ads_2 ?? ''; ?>
         </div>
     <?php endif; ?>
 </div>

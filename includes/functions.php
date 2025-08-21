@@ -298,6 +298,17 @@ function updateMyView(PDO $pdo, int $paste_id): bool
     }
 }
 
+// Function to format file size in a human-readable format for view.php
+function formatSize($bytes) {
+    if ($bytes >= 1024 * 1024) {
+        return number_format($bytes / (1024 * 1024), 2) . ' MB';
+    } elseif ($bytes >= 1024) {
+        return number_format($bytes / 1024, 2) . ' KB';
+    } else {
+        return $bytes . ' bytes';
+    }
+}
+
 function conTime(int $timestamp): string
 {
     if ($timestamp <= 0) {
@@ -516,10 +527,11 @@ function getEmbedUrl($paste_id, $mod_rewrite, $baseurl) {
 function addToSitemap(PDO $pdo, int $paste_id, string $priority, string $changefreq, bool $mod_rewrite): bool
 {
     try {
+	    global $baseurl, $mod_rewrite;
         $c_date = date('Y-m-d H:i:s');
         $server_name = $mod_rewrite
-            ? $baseurl . "/" . $paste_id
-            : $baseurl . "/paste.php?id=" . $paste_id;
+            ? $baseurl . $paste_id
+            : $baseurl . "paste.php?id=" . $paste_id;
         $site_data = file_exists('sitemap.xml') ? file_get_contents('sitemap.xml') : '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         $site_data = rtrim($site_data, "</urlset>");
         $c_sitemap = "\t<url>\n\t\t<loc>" . htmlspecialchars($server_name, ENT_QUOTES, 'UTF-8') . "</loc>\n\t\t<priority>$priority</priority>\n\t\t<changefreq>$changefreq</changefreq>\n\t\t<lastmod>$c_date</lastmod>\n\t</url>\n</urlset>";
@@ -805,4 +817,5 @@ if (!function_exists('sanitize_allowlist_html')) {
         return $doc->saveHTML() ?: '';
     }
 }
+
 ?>

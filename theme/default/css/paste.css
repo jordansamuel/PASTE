@@ -92,6 +92,42 @@ body {
     width: 150px;
     margin-top: 1.5rem !important; /* Space above submit button */
 }
+/* Make the select look/behave like a small outline button inside .btn-group */
+.btn-group .btn-select{
+  width:auto;
+  padding:.25rem .75rem;
+  border:1px solid var(--bs-secondary);
+  color:var(--bs-secondary);
+  border-radius:0;          /* so it fuses between neighbours */
+  appearance:none;
+}
+
+/* Round the outer corners when it's the first/last in the group */
+.btn-group > .btn-select:first-child{
+  border-top-left-radius:var(--bs-border-radius-sm);
+  border-bottom-left-radius:var(--bs-border-radius-sm);
+}
+.btn-group > .btn-select:last-child{
+  border-top-right-radius:var(--bs-border-radius-sm);
+  border-bottom-right-radius:var(--bs-border-radius-sm);
+}
+/* hover & active already handled by your earlier vars;
+   add explicit rules for the toggled/pressed states */
+.btn-outline-secondary:active,
+.btn-outline-secondary.active,
+.btn-check:checked + .btn-outline-secondary,
+.show > .btn-outline-secondary.dropdown-toggle {
+  background-color: rgba(var(--bs-secondary-rgb), .2); /* slightly lighter */
+  color: var(--bs-secondary);
+  border-color: var(--bs-secondary);
+}
+
+/* optional: clearer keyboard focus */
+.btn-outline-secondary:focus-visible {
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-secondary-rgb), .25);
+}
+/* Collapse the shared border between the select and the next .btn */
+.btn-group .btn-select + .btn{ margin-left:-1px; }
 
 /* Form container */
 .form-group, .card-body {
@@ -164,24 +200,54 @@ body {
     flex-shrink: 0;
 }
 
-.code-content .de1, .paste .de2, .paste .li1, .paste .li2 { color: #ffffff !important; }
-.code-content .kw1, .paste .sy1 { color: #ff79c6 !important; }
-.code-content .kw2 { color: #bd93f9 !important; }
-.code-content .st0 { color: #8be9fd !important; }
-.code-content .co1, .paste .coMULTI { color: #6272a4 !important; }
-.code-content .nu0 { color: #f1fa8c !important; }
-.code-content .me1, .code-content .me2 { color: #50fa7b !important; }
-.code-content .br0 { color: #eee !important; }
-.code-content .sy0 { color: #ffb86c !important; }
-.code-content .re0 { color: #eee !important; }
-.code-content .st_h { color: green !important; }
+/* container + defaults */
+.code-content, .paste, .geshi {
+  background: #212529;
+  color: #e6e6e6;
+}
+
+/* GeSHi colours */
+.code-content .de1,
+.paste .de2,
+.paste .li1,
+.paste .li2 { color: #e8e8e8 !important; }                  /* base text */
+.code-content .kw1,
+.paste .sy1 { color: #4aa3ff !important; }                  /* keywords (if sy1 used that way) */
+.code-content .kw2 { color: #2ec4b6 !important; }           /* types / built-ins */
+.code-content .st0 { color: #9fe870 !important; }           /* strings */
+.code-content .co1,
+.paste .coMULTI { color: #7a8597 !important; font-style: italic; }  /* comments */
+.code-content .nu0 { color: #f8d66d !important; }           /* numbers */
+.code-content .me1,
+.code-content .me2 { color: #7dd3fc !important; }           /* methods/functions */
+.code-content .br0 { color: #e5e7eb !important; }           /* brackets/punctuation */
+.code-content .sy0 { color: #f59e0b !important; }           /* symbols/operators */
+.code-content .re0 { color: #ffd166 !important; }           /* regex */
+.code-content .st_h { color: #86efac !important; }          /* here-strings */
+
+/* Mirror for .geshi outputs that don't sit under .code-content */
+.geshi .kw1  { color: #4aa3ff !important; }
+.geshi .kw2  { color: #2ec4b6 !important; }
+.geshi .st0  { color: #9fe870 !important; }
+.geshi .co1  { color: #7a8597 !important; font-style: italic; }
+.geshi .nu0  { color: #f8d66d !important; }
+.geshi .sy0  { color: #f59e0b !important; }
+.geshi .br0  { color: #e5e7eb !important; }
+.geshi .re0  { color: #ffd166 !important; }
+.geshi .me1,
+.geshi .me2  { color: #7dd3fc !important; }
+
+/* Line numbers */
+.geshi ol.geshi-ln { color: #5a6073; }
+.geshi.geshi-fancy ol.geshi-ln > li { border-left-color: #2a2f3d; }
+
 
 .code-content {
     overflow-x: auto;
     max-width: 100%;
     border-radius: 4px;
     margin-bottom: 1rem;
-    font-family: Menlo, Monaco, 'Courier New', monospace;
+    font-family: 'Fira Code', monospace;
     font-size: 0.9rem; /* geshi */
 }
 .code-content.no-line-numbers ol, .code-content.no-line-numbers pre, .code-content.no-line-numbers ol li, .code-content.no-line-numbers pre span {
@@ -254,6 +320,15 @@ body {
     transition: opacity 0.5s;
 }
 
+/* GDPR banner */
+#cookieBanner{
+	font-size: 0.9em;
+	z-index:1080;
+	display:none;
+	background: rgba(var(--bs-dark-rgb), var(--bs-bg-opacity)) !important;
+    backdrop-filter: blur(3px);
+}
+
 /* === Editor (gutter + textarea) ======================================= */
 .editor-wrap{
   position: relative;
@@ -285,10 +360,13 @@ body {
   min-width: 2rem;                     /* base width; grows if digits need */
 }
 
+.editor-gutter { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
 /* Numbers rail (scrolls via JS transform; no absolute needed here) */
 .editor-gutter-inner{
   white-space: pre;
-  padding: 2px 2px 2px 4px;
+  padding: 0 6px 0 4px;
+  padding-top: 0;
   align-self: flex-start;
 }
 
@@ -319,12 +397,52 @@ body {
   border: 3px solid #0d1117;
 }
 
-/* our editor textarea should never get the Bootstrap blue ring */
-.form-control.editor-ta,
-.form-control.editor-ta:focus {
+/* no bootstrap ring */
+.editor-ta:focus,
+.search-form .form-control:focus {
   box-shadow: none !important;
   border-color: #2a2f36 !important;
   outline: 0 !important;
+}
+
+/* Outline buttons: keep borders + subtle bg on hover/active */
+.btn-outline-secondary {
+  --btn-border: rgba(var(--bs-secondary-rgb), .8);
+  border-color: var(--btn-border);
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+  border-color: var(--btn-border);
+  background-color: rgba(var(--bs-secondary-rgb), .08);
+}
+
+.btn-outline-secondary:active,
+.btn-outline-secondary.active,
+.btn-check:checked + .btn-outline-secondary,
+.show > .btn-outline-secondary.dropdown-toggle {
+  border-color: var(--btn-border);
+  background-color: rgba(var(--bs-secondary-rgb), .16);
+}
+
+/* Accessible focus ring for keyboard nav */
+.btn-outline-secondary:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-secondary-rgb), .25);
+}
+
+/* Keep active button border from being eaten */
+.btn-group .btn { position: relative; z-index: 1; }
+.btn-group .btn:focus,
+.btn-group .btn:active,
+.btn-group .btn.active { z-index: 2; }
+
+/* select disguised as a button: match behavior */
+.btn-group .btn-select {
+  border-color: var(--btn-border);
+}
+.btn-group .btn-select:focus {
+  box-shadow: none;
 }
 
 /* Force GeSHi line numbers to render and be visible */
@@ -360,3 +478,64 @@ body {
 .no-line-numbers ol {
     padding-left: 0 !important;
 }
+
+/* === highlight.php line numbers (no extra left padding) ================== */
+.code-content pre.hljs {
+  margin: 0;
+}
+.editor-wrap{ display:grid; grid-template-columns:max-content 1fr; align-items:stretch; }
+.editor-gutter{ overflow:hidden; }
+.editor-gutter-inner{ will-change: transform; }
+.editor-ta{ line-height:1.5; resize:vertical; }
+/* Kill default OL indent and decimal bullets some global rules add */
+.code-content .hljs-ln,
+.code-content .hljs-ln li {
+  list-style: none !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* Make the whole list one two-column table */
+.code-content .hljs-ln {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Each line is a table row */
+.code-content .hljs-ln-line {
+  display: table-row;
+}
+
+/* Cells: [gutter | code] */
+.code-content .hljs-ln-n,
+.code-content .hljs-ln-c {
+  display: table-cell;
+  vertical-align: top;
+  background: inherit;              /* match theme background */
+}
+
+/* Gutter cell */
+.code-content .hljs-ln-n {
+  user-select: none;
+  text-align: right;
+  padding: 0 .50rem 0 0;
+  white-space: pre;
+  opacity: .6;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  width: 1px;                       /* lets the table auto-size to content */
+}
+
+/* Code cell owns the vertical separator */
+.code-content .hljs-ln-c {
+  border-left: 1px solid rgba(255,255,255,.12);
+  padding-left: .75rem;
+  white-space: pre;
+  width: 100%;
+}
+
+/* When numbers are hidden, reclaim space cleanly */
+.code-content.no-line-numbers .hljs-ln-n { display: none; }
+.code-content.no-line-numbers .hljs-ln-c { border-left: 0; padding-left: 0; }

@@ -27,6 +27,16 @@
     <link rel="shortcut icon" href="<?php echo htmlspecialchars($baseurl . 'theme/' . ($default_theme ?? 'default') . '/img/favicon.ico', ENT_QUOTES, 'UTF-8'); ?>" />
     <link href="//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+	<?php if (($highlighter ?? 'geshi') === 'highlight'): ?>
+	  <?php
+		// Highlight.php theme CSS (only when using highlight.php)
+		$stylesRel = 'includes/Highlight/styles';
+		$styleFile = isset($hl_style) && $hl_style !== '' ? $hl_style : 'hybrid.css';
+		$href = rtrim($baseurl ?? '/', '/') . '/' . $stylesRel . '/' . $styleFile;
+	  ?>
+	  <link rel="stylesheet" id="hljs-theme-link" href="<?php echo htmlspecialchars($href, ENT_QUOTES, 'UTF-8'); ?>">
+	<?php endif; ?>
+
     <?php if (isset($ges_style)) { echo $ges_style; } ?>
     <link href="<?php echo htmlspecialchars($baseurl . 'theme/' . ($default_theme ?? 'default') . '/css/paste.css', ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet" type="text/css" />
 </head>
