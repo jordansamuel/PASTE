@@ -3,7 +3,8 @@ Paste 3.1
 In progress: 3.2
 * improvements
 * integration of https://github.com/scrivo/highlight.php
-* theme picker if enabled (see example config)
+* (geshi or highlight in config.php)
+* theme picker if highlight.php enabled 
 * improved the layout for paste views, fixed some line number css bugs
 * added a "we has cookies" footer/just comment it out in /theme/default/footer.php if not required
 
