@@ -7,7 +7,7 @@ In progress: 3.2
 * theme picker if highlight.php enabled 
 * improved the layout for paste views, fixed some line number css bugs
 * added a "we has cookies" footer/just comment it out in /theme/default/footer.php if not required
-live demo: https://paste.boxlabs.uk
+* live demo: https://paste.boxlabs.uk
 
 New version 3.1
 * Account deletion
