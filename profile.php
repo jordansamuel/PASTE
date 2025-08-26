@@ -1,6 +1,9 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ *
+ * https://phpaste.sourceforge.io/
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,206 +13,279 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * GNU General Public License in LICENCE for more details.
  */
- 
-// PHP <5.5 compatibility
-require_once('includes/password.php');
 
-session_start();
-
-require_once('config.php');
-require_once('includes/functions.php');
+require_once 'includes/session.php';
+require_once 'config.php';
+require_once 'includes/functions.php';
 
 // UTF-8
 header('Content-Type: text/html; charset=utf-8');
 
-$date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
-$con     = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+$date = date('Y-m-d H:i:s');
+$ip   = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
+global $pdo;
 
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
+try {
+    // Site info
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = '1'");
+    $row = $stmt->fetch() ?: [];
+    $title      = trim((string)($row['title'] ?? 'Paste'));
+    $des        = trim((string)($row['des'] ?? ''));
+    $baseurl    = trim((string)($row['baseurl'] ?? ''));
+    $keyword    = trim((string)($row['keyword'] ?? ''));
+    $site_name  = trim((string)($row['site_name'] ?? 'Paste'));
+    $email      = trim((string)($row['email'] ?? ''));
+    $twit       = trim((string)($row['twit'] ?? ''));
+    $face       = trim((string)($row['face'] ?? ''));
+    $gplus      = trim((string)($row['gplus'] ?? ''));
+    $ga         = trim((string)($row['ga'] ?? ''));
+    $additional_scripts = trim((string)($row['additional_scripts'] ?? ''));
 
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
+    // Theme & language
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id = '1'");
+    $row = $stmt->fetch() ?: [];
+    $default_lang  = trim((string)($row['lang'] ?? 'en.php'));
+    $default_theme = trim((string)($row['theme'] ?? 'default'));
+    require_once("langs/$default_lang");
 
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
-require_once("langs/$default_lang");
+    $p_title = $lang['myprofile'] ?? 'My Profile';
 
-$p_title = $lang['myprofile']; //"My Profile";
-
-// Check if IP is banned
-if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
-
-// Site permissions
-$query  = "SELECT * FROM site_permissions where id='1'";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-	$siteprivate	= Trim($row['siteprivate']);
-}
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-} else {
-	if ($siteprivate =="on") {
-		$privatesite = "on";
+    // IP ban
+    if (is_banned($pdo, $ip)) {
+        die($lang['banned'] ?? 'You are banned from this site.');
     }
-}
 
-// Check if already logged in
-if (isset($_SESSION['token'])) {
-} else {
-   header("Location: ./login.php");
-}
+    // Site permissions
+    $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id = '1'");
+    $row = $stmt->fetch() ?: [];
+    $siteprivate = trim((string)($row['siteprivate'] ?? 'off'));
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $siteprivate === "on") {
+        $privatesite = "on";
+    }
 
-// Logout
-if (isset($_GET['logout'])) {
-	header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
-}
+    // Must be logged in
+    if (!isset($_SESSION['token'])) {
+        header("Location: ./login.php");
+        exit;
+    }
 
+    // Logout
+    if (isset($_GET['logout'])) {
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $baseurl));
+        unset($_SESSION['token'], $_SESSION['oauth_uid'], $_SESSION['username']);
+        session_destroy();
+        exit;
+    }
 
-$user_username = htmlentities(Trim($_SESSION['username']));
-$query         = "SELECT * FROM users WHERE username='$user_username'";
-$result        = mysqli_query($con, $query);
-while ($row = mysqli_fetch_array($result)) {
-    $user_oauth_uid = $row['oauth_uid'];
-    $user_id        = $row['id'];
-    $user_email_id  = $row['email_id'];
-    $user_full_name = $row['full_name'];
-    $user_platform  = Trim($row['platform']);
-    $user_verified  = $row['verified'];
-    $user_date      = $row['date'];
-    $user_ip        = $row['ip'];
-    $user_password  = $row['password'];
-}
-if ($user_oauth_uid == '0') {
-    $user_oauth_uid = "None";
-}
+    // Load current user record
+    $sessionUsername = trim((string)($_SESSION['username'] ?? ''));
+    $stmt = $pdo->prepare("SELECT id, oauth_uid, email_id, full_name, platform, verified, date, ip, password, username_locked FROM users WHERE username = ?");
+    $stmt->execute([$sessionUsername]);
+    $row = $stmt->fetch();
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['cpassword'])) {
-        $user_new_full  = Trim(htmlspecialchars($_POST['full']));
-        $user_old_pass  = $_POST['old_password'];
-        $user_new_cpass = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        if (password_verify($user_old_pass, $user_password)) {
-            $query  = "UPDATE users SET full_name='$user_new_full', password='$user_new_cpass' WHERE username='$user_username'";
-            $result = mysqli_query($con, $query);
-            if (mysqli_errno($con)) {
-                $success = $lang['profileerror']; //"  Unable to update the profile information ";
-            } else {
-                $success = $lang['profileupdated']; //"  Your profile information is updated ";  
-            }
+    if (!$row) {
+        // Session user vanished; log them out
+        header("Location: ./login.php?action=logout");
+        exit;
+    }
+
+    $user_id          = (int)$row['id'];
+    $user_oauth_uid   = $row['oauth_uid'] == '0' ? "None" : (string)$row['oauth_uid'];
+    $user_email_id    = (string)$row['email_id'];
+    $user_full_name   = (string)$row['full_name'];
+    $user_platform    = trim((string)$row['platform']);  // 'Direct', 'Google', 'Facebook', ...
+    $user_verified    = (string)$row['verified'];
+    $user_date        = (string)$row['date'];
+    $user_ip          = (string)$row['ip'];
+    $user_password    = (string)$row['password'];
+    $username_locked  = (int)($row['username_locked'] ?? 1);
+
+    // Expose username separately (raw)
+    $user_username = $sessionUsername;
+
+    // OAuth users can change username once
+    $can_edit_username = (strcasecmp($user_platform, 'Direct') !== 0) && ($username_locked === 0);
+
+    // Handle one-time username change
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_username_once'])) {
+        // CSRF
+        if (!hash_equals($_SESSION['csrf_token'] ?? '', (string)($_POST['csrf_token'] ?? ''))) {
+            $error = $lang['wentwrong'] ?? 'Something went wrong.';
+        } elseif (!$can_edit_username) {
+            $error = $lang['usernotvalid'] ?? 'Username not allowed to change.';
         } else {
-            $error = $lang['oldpasswrong']; // "  Your old password is wrong.";
+            $new = trim((string)($_POST['new_username'] ?? ''));
+            if ($new === '' || !isValidUsername($new)) {
+                $error = $lang['usrinvalid'] ?? 'Invalid username.';
+            } else {
+                // unique?
+                $stmt = $pdo->prepare("SELECT 1 FROM users WHERE username = ?");
+                $stmt->execute([$new]);
+                if ($stmt->fetch()) {
+                    $error = $lang['userexists'] ?? 'Username already exists.';
+                } else {
+                    $old = $user_username;
+                    $pdo->beginTransaction();
+                    try {
+                        // Update user + lock username
+                        $stmt = $pdo->prepare("UPDATE users SET username = ?, username_locked = 1 WHERE id = ?");
+                        $stmt->execute([$new, $user_id]);
+
+                        // Reassign pastes to new username
+                        $stmt = $pdo->prepare("UPDATE pastes SET member = ? WHERE member = ?");
+                        $stmt->execute([$new, $old]);
+
+                        // Update session + view vars
+                        $_SESSION['username'] = $new;
+                        $user_username = $new;
+                        $can_edit_username = false;
+
+                        $pdo->commit();
+                        $success = $lang['userchanged'] ?? 'Username changed successfully.';
+                    } catch (Throwable $e) {
+                        $pdo->rollBack();
+                        error_log("profile.php: username change failed: ".$e->getMessage());
+                        $error = $lang['wentwrong'] ?? 'Something went wrong.';
+                    }
+                }
+            }
         }
-        
-    } else {
-        $error = $lang['error']; //"Something went wrong.";
     }
-    
-    
-}
 
-// Page views
-$query = "SELECT @last_id := MAX(id) FROM page_view";
+    // Handle profile changes (full name + password)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cpassword']) && empty($_POST['set_username_once'])) {
+        // Keep current full name by default if field not present in form
+        $user_new_full = isset($_POST['full']) ? trim((string)$_POST['full']) : $user_full_name;
 
-$result = mysqli_query($con, $query);
+        $user_old_pass = (string)($_POST['old_password'] ?? '');
+        $user_new_pass = (string)($_POST['password'] ?? '');
 
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['date'];
-    }
-}
-
-if ($last_date == $date) {
-    if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
+        if ($user_new_pass === '') {
+            // full_name only (no password change)
+            $stmt = $pdo->prepare("UPDATE users SET full_name = ? WHERE username = ?");
+            $stmt->execute([$user_new_full, $user_username]);
+            $user_full_name = $user_new_full;
+            $success = $lang['profileupdated'] ?? 'Profile updated.';
+        } else {
+            if (password_verify($user_old_pass, $user_password)) {
+                $user_new_cpass = password_hash($user_new_pass, PASSWORD_DEFAULT);
+                $stmt = $pdo->prepare("UPDATE users SET full_name = ?, password = ? WHERE username = ?");
+                $stmt->execute([$user_new_full, $user_new_cpass, $user_username]);
+                $user_full_name = $user_new_full;
+                $success = $lang['profileupdated'] ?? 'Profile updated.';
+            } else {
+                $error = $lang['oldpasswrong'] ?? 'Old password is wrong.';
+            }
         }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP already exists, update page views.
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-    } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
-        }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
     }
-} else {
-    // Delete the file and clear data_ip
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    
-    // New date is created
-    $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
-    // Update the IP
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
-}
-$total_pastes = getTotalPastes($con, $user_username);
 
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
+    // Handle account deletion (AJAX or normal POST)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account']) && $_POST['delete_account'] === '1') {
+        $is_ajax = (isset($_POST['ajax']) && $_POST['ajax'] === '1')
+            || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-    
+        // CSRF
+        if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', (string)$_POST['csrf_token'])) {
+            if ($is_ajax) {
+                header('Content-Type: application/json');
+                echo json_encode(['ok' => false, 'error' => ($lang['invalidtoken'] ?? 'Invalid CSRF token.')]);
+                exit;
+            }
+            $error = $lang['invalidtoken'] ?? 'Invalid CSRF token.';
+        } else {
+            try {
+                $pdo->beginTransaction();
+
+                // Delete user's pastes
+                $stmt = $pdo->prepare("DELETE FROM pastes WHERE member = ?");
+                $stmt->execute([$user_username]);
+
+                // Delete user
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+                $stmt->execute([$user_id]);
+
+                $pdo->commit();
+
+                // End session
+                session_unset();
+                session_destroy();
+
+                $redirectUrl = rtrim($baseurl, '/') . '/accountdeleted.php';
+
+                if ($is_ajax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['ok' => true, 'redirect' => $redirectUrl]);
+                    exit;
+                }
+
+                header('Location: ' . $redirectUrl);
+                exit;
+
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) { $pdo->rollBack(); }
+                error_log("GDPR delete_account failed for {$user_username}: " . $e->getMessage());
+
+                if ($is_ajax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['ok' => false, 'error' => ($lang['wentwrong'] ?? 'Something went wrong while deleting your account.')]);
+                    exit;
+                }
+
+                $error = $lang['wentwrong'] ?? 'Something went wrong while deleting your account.';
+            }
+        }
+    }
+
+    // Page views
+    $dateYmd = date('Y-m-d');
+    $ipToday = $_SERVER['REMOTE_ADDR'] ?? '';
+    try {
+        $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
+        $stmt->execute([$dateYmd]);
+        $pv = $stmt->fetch();
+
+        if ($pv) {
+            $page_view_id = (int)$pv['id'];
+            $tpage  = (int)$pv['tpage'] + 1;
+            $tvisit = (int)$pv['tvisit'];
+
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+            $stmt->execute([$ipToday, $dateYmd]);
+            if ((int)$stmt->fetchColumn() === 0) {
+                $tvisit += 1;
+                $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+                $stmt->execute([$ipToday, $dateYmd]);
+            }
+
+            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+            $stmt->execute([$tpage, $tvisit, $page_view_id]);
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+            $stmt->execute([$dateYmd, 1, 1]);
+            $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+            $stmt->execute([$ipToday, $dateYmd]);
+        }
+    } catch (PDOException $e) {
+        error_log("Page view tracking error: " . $e->getMessage());
+    }
+
+    $total_pastes = getTotalPastes($pdo, $user_username);
+
+    // Ads
+    $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
+    $row = $stmt->fetch() ?: [];
+    $text_ads = trim((string)($row['text_ads'] ?? ''));
+    $ads_1    = trim((string)($row['ads_1'] ?? ''));
+    $ads_2    = trim((string)($row['ads_2'] ?? ''));
+
+    // Render theme
+    require_once('theme/' . $default_theme . '/header.php');
+    require_once('theme/' . $default_theme . '/profile.php'); // uses $user_* and $can_edit_username
+    require_once('theme/' . $default_theme . '/footer.php');
+
+} catch (PDOException $e) {
+    die("Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
-// Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/profile.php');
-require_once('theme/' . $default_theme . '/footer.php');
-?>

@@ -1,166 +1,244 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
-session_start();
+require_once 'includes/session.php';
 
 require_once('config.php');
 require_once('includes/functions.php');
 
-// Disable access to archives from non GET requests.
+// Disable non-GET requests
 if ($_SERVER['REQUEST_METHOD'] != 'GET') {
     http_response_code(405);
     exit('405 Method Not Allowed.');
 }
 
-// UTF-8
-header('Content-Type: text/html; charset=utf-8');
+$date = date('Y-m-d H:i:s'); // Use DATETIME format for database
+$ip = $_SERVER['REMOTE_ADDR'];
 
-$date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
-$con     = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+// Database Connection
+global $pdo;
 
-// Set site originally to private.
-$privatesite = 'on';
+try {
+    // Get site info
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = '1'");
+    $row = $stmt->fetch();
+    $title = trim($row['title']);
+    $des = trim($row['des']);
+    $baseurl = trim($row['baseurl']);
+    $keyword = trim($row['keyword']);
+    $site_name = trim($row['site_name']);
+    $email = trim($row['email']);
+    $twit = trim($row['twit']);
+    $face = trim($row['face']);
+    $gplus = trim($row['gplus']);
+    $ga = trim($row['ga']);
+    $additional_scripts = trim($row['additional_scripts']);
 
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
+    // Set theme and language
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id = '1'");
+    $row = $stmt->fetch();
+    $default_lang = trim($row['lang']);
+    $default_theme = trim($row['theme']);
+    require_once("langs/$default_lang");
 
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
+    $p_title = $lang['archive'];
 
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
+    // Check if IP is banned
+    if (is_banned($pdo, $ip)) die($lang['banned']);
 
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
+    // Site permissions
+    $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id = 1 LIMIT 1");
+    $row = $stmt->fetch();
+    $siteprivate = trim($row['siteprivate']);
+    $privatesite = ($siteprivate === '0' || $siteprivate === 0) ? '0' : '1';
 
-require_once("langs/$default_lang");
-
-$p_title = $lang['archive']; // "Pastes Archive";
-
-// Check if IP is banned
-if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
-
-// Site permissions
-$query  = 'SELECT * FROM site_permissions where id = 1 LIMIT 1';
-$result = mysqli_query($con, $query);
-
-if ($row = mysqli_fetch_array($result))
-	$siteprivate = Trim($row['siteprivate']);
-
-if ($siteprivate == 'off')
-    $privatesite = 'off';
-
-// Logout
-if (isset($_GET['logout'])) {
-	header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
-}
-
-// Page views 
-$query = "SELECT @last_id := MAX(id) FROM page_view";
-
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['date'];
+    // Logout
+    if (isset($_GET['logout'])) {
+        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        unset($_SESSION['token']);
+        unset($_SESSION['oauth_uid']);
+        unset($_SESSION['username']);
+        session_destroy();
     }
-}
 
-if ($last_date == $date) {
-    if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
+    // Page views
+    $date = date('Y-m-d');
+    $ip = $_SERVER['REMOTE_ADDR'];
+
+    try {
+        // Fetch or create the page_view record for today
+        $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
+        $stmt->execute([$date]);
+        $row = $stmt->fetch();
+
+        if ($row) {
+            // Record exists for today
+            $page_view_id = $row['id'];
+            $tpage = (int)$row['tpage'] + 1; // Increment total page views
+            $tvisit = (int)$row['tvisit'];
+
+            // Check if this IP has visited today
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+            $stmt->execute([$ip, $date]);
+            if ($stmt->fetchColumn() == 0) {
+                // New unique visitor
+                $tvisit += 1;
+                $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+                $stmt->execute([$ip, $date]);
+            }
+
+            // Update page_view with new counts
+            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+            $stmt->execute([$tpage, $tvisit, $page_view_id]);
+        } else {
+            // No record for today: create one
+            $tpage = 1;
+            $tvisit = 1;
+            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+            $stmt->execute([$date, $tpage, $tvisit]);
+
+            // Log the visitor's IP
+            $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+            $stmt->execute([$ip, $date]);
         }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP already exists. Update view count.
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-    } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
-        }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+    } catch (PDOException $e) {
+        error_log("Page view tracking error: " . $e->getMessage());
     }
-} else {
-    // Delete the file and clear data_ip
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    
-    // New date is created
-    $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
-    // Update the IP
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
-}
 
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
+    // Ads
+    $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
+    $row = $stmt->fetch();
+    $text_ads = trim($row['text_ads']);
+    $ads_1 = trim($row['ads_1']);
+    $ads_2 = trim($row['ads_2']);
 
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-    
+    // Search, pagination, and sorting
+    $search_query = isset($_GET['q']) && !empty($_GET['q']) ? trim($_GET['q']) : '';
+    $sort = isset($_GET['sort']) && in_array($_GET['sort'], ['date_desc', 'date_asc', 'title_asc', 'title_desc', 'code_asc', 'code_desc', 'views_desc', 'views_asc']) ? $_GET['sort'] : 'date_desc';
+    $perPage = 50; // Increased to 50 pastes per page
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $offset = ($page - 1) * $perPage;
+
+    // Determine sort column and direction
+    $sortColumn = 'p.date';
+    $sortDirection = 'DESC';
+    switch ($sort) {
+        case 'date_asc':
+            $sortDirection = 'ASC';
+            break;
+        case 'title_asc':
+            $sortColumn = 'p.title';
+            $sortDirection = 'ASC';
+            break;
+        case 'title_desc':
+            $sortColumn = 'p.title';
+            $sortDirection = 'DESC';
+            break;
+        case 'code_asc':
+            $sortColumn = 'p.code';
+            $sortDirection = 'ASC';
+            break;
+        case 'code_desc':
+            $sortColumn = 'p.code';
+            $sortDirection = 'DESC';
+            break;
+        case 'views_desc':
+            $sortColumn = 'view_count';
+            $sortDirection = 'DESC';
+            break;
+        case 'views_asc':
+            $sortColumn = 'view_count';
+            $sortDirection = 'ASC';
+            break;
+    }
+
+    // Initialize variables
+    $pastes = [];
+    $totalItems = 0;
+    $totalPages = 1;
+    $error = '';
+
+    // Base query with LEFT JOIN to paste_views
+    $baseQuery = "SELECT p.id, p.title, p.code, p.date, UNIX_TIMESTAMP(p.date) AS now_time, p.encrypt, p.member, COUNT(pv.id) AS view_count 
+                  FROM pastes p 
+                  LEFT JOIN paste_views pv ON p.id = pv.paste_id 
+                  WHERE p.visible = '0' AND p.password = 'NONE'";
+    $countQuery = "SELECT COUNT(*) 
+                   FROM pastes p 
+                   WHERE p.visible = '0' AND p.password = 'NONE'";
+    $params = [];
+
+    if ($search_query && strlen($search_query) >= 3) { // Search query provided
+        $search_term = '%' . $search_query . '%';
+        $baseQuery .= " AND (p.title LIKE ? OR p.content LIKE ?)";
+        $countQuery .= " AND (p.title LIKE ? OR p.content LIKE ?)";
+        $params = [$search_term, $search_term];
+    }
+
+    // Add GROUP BY and ORDER BY
+    $baseQuery .= " GROUP BY p.id, p.title, p.code, p.date, p.encrypt, p.member ORDER BY $sortColumn $sortDirection LIMIT ? OFFSET ?";
+    $params[] = $perPage;
+    $params[] = $offset;
+
+    // Execute main query
+    try {
+        $stmt = $pdo->prepare($baseQuery);
+        $stmt->execute($params);
+        $pastes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Count total matching pastes for pagination
+        $stmt = $pdo->prepare($countQuery);
+        $stmt->execute($search_query ? [$search_term, $search_term] : []);
+        $totalItems = $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Paste query error: " . $e->getMessage());
+        $pastes = [];
+        $totalItems = 0;
+    }
+
+    $totalPages = $totalItems > 0 ? ceil($totalItems / $perPage) : 1;
+
+    // Decrypt titles and format time
+    foreach ($pastes as &$row) {
+        if ($row['encrypt'] == '1') {
+            $row['title'] = decrypt($row['title'], hex2bin(SECRET)) ?? $row['title'];
+        }
+        $row['time_display'] = formatRealTime($row['date']);
+        $row['url'] = $mod_rewrite == '1' ? $baseurl . $row['id'] : $baseurl . 'paste.php?id=' . $row['id'];
+        $row['title'] = truncate($row['title'], 20, 50);
+        $row['views'] = $row['view_count'];
+    }
+    unset($row);
+
+    if (isset($_GET['q']) && (empty($search_query) || strlen($search_query) < 3)) {
+        $error = "Please use a keyword to search. Here are the latest 50 pastes.";
+    }
+
+    // Pagination
+    $prev_page_query = http_build_query(array_merge($_GET, ['page' => $page > 1 ? $page - 1 : 1]));
+    $next_page_query = http_build_query(array_merge($_GET, ['page' => $page < $totalPages ? $page + 1 : $totalPages]));
+    $page_queries = [];
+    for ($i = 1; $i <= $totalPages; $i++) {
+        $page_queries[$i] = http_build_query(array_merge($_GET, ['page' => $i]));
+    }
+
+    // Set archives title
+    $archives_title = htmlspecialchars($lang['archives'] ?? 'Archives', ENT_QUOTES, 'UTF-8');
+    if ($search_query && !empty($search_query)) {
+        $archives_title .= ' - ' . htmlspecialchars($lang['search_results_for'] ?? 'Search Results for', ENT_QUOTES, 'UTF-8') . ' "' . htmlspecialchars($search_query, ENT_QUOTES, 'UTF-8') . '"';
+    }
+
+    // Theme
+    require_once('theme/' . $default_theme . '/header.php');
+    require_once('theme/' . $default_theme . '/archive.php');
+    require_once('theme/' . $default_theme . '/footer.php');
+} catch (PDOException $e) {
+    die("Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
-// Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/archive.php');
-require_once('theme/' . $default_theme . '/footer.php');
 ?>

@@ -1,160 +1,154 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE>  new: https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/  -  https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
-session_start();
-
-require_once('config.php');
-require_once('includes/functions.php');
+require_once 'includes/session.php';
+require_once 'config.php';
+require_once 'includes/functions.php';
 
 // UTF-8
 header('Content-Type: text/html; charset=utf-8');
 
-$date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
-$con     = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+$date = date('Y-m-d');
+$ip = $_SERVER['REMOTE_ADDR'];
+$data_ip = @file_get_contents('tmp/temp.tdata') ?: '';
 
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
+// Database Connection (PDO from config.php)
+global $pdo;
 
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
-}
-
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
-
-require_once("langs/$default_lang");
-
-// Check if IP is banned
-if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
-
-// Logout
-if (isset($_GET['logout'])) {
-	header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
-}
-
-// Page views 
-$query = "SELECT @last_id := MAX(id) FROM page_view";
-
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['date'];
+try {
+    // Get site info
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = '1'");
+    $row = $stmt->fetch();
+    if (!$row) {
+        throw new Exception("Site configuration not found.");
     }
-}
+    $title = trim($row['title']);
+    $des = trim($row['des']);
+    $baseurl = rtrim(trim($row['baseurl']));
+    $keyword = trim($row['keyword']);
+    $site_name = trim($row['site_name']);
+    $email = trim($row['email']);
+    $twit = trim($row['twit']);
+    $face = trim($row['face']);
+    $gplus = trim($row['gplus']);
+    $ga = trim($row['ga']);
+    $additional_scripts = trim($row['additional_scripts']);
 
-if ($last_date == $date) {
-    if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
-        }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP already exists, update page views
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
+    // Set theme and language
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id = '1'");
+    $row = $stmt->fetch();
+    if (!$row) {
+        throw new Exception("Interface configuration not found.");
+    }
+    $default_lang = trim($row['lang']);
+    $default_theme = trim($row['theme']);
+    require_once("langs/$default_lang");
+
+    // Check if IP is banned
+    if (is_banned($pdo, $ip)) die($lang['banned']);
+
+    // Logout
+    if (isset($_GET['logout'])) {
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $baseurl));
+        unset($_SESSION['token']);
+        unset($_SESSION['oauth_uid']);
+        unset($_SESSION['username']);
+        session_destroy();
+        exit;
+    }
+
+	// Page views
+	$date = date('Y-m-d');
+	$ip = $_SERVER['REMOTE_ADDR'];
+
+	try {
+		// Fetch or create the page_view record for today
+		$stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
+		$stmt->execute([$date]);
+		$row = $stmt->fetch();
+
+		if ($row) {
+			// Record exists for today
+			$page_view_id = $row['id'];
+			$tpage = (int)$row['tpage'] + 1; // Increment total page views
+			$tvisit = (int)$row['tvisit'];
+
+			// Check if this IP has visited today
+			$stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+			$stmt->execute([$ip, $date]);
+			if ($stmt->fetchColumn() == 0) {
+				// New unique visitor
+				$tvisit += 1;
+				$stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+				$stmt->execute([$ip, $date]);
+			}
+
+			// Update page_view with new counts
+			$stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+			$stmt->execute([$tpage, $tvisit, $page_view_id]);
+		} else {
+			// No record for today: create one
+			$tpage = 1;
+			$tvisit = 1;
+			$stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+			$stmt->execute([$date, $tpage, $tvisit]);
+
+			// Log the visitor's IP
+			$stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+			$stmt->execute([$ip, $date]);
+		}
+	} catch (PDOException $e) {
+		error_log("Page view tracking error: " . $e->getMessage());
+	}
+
+    // Ads
+    $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
+    $row = $stmt->fetch();
+    if (!$row) {
+        $text_ads = $ads_1 = $ads_2 = '';
     } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
-        }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+        $text_ads = trim($row['text_ads']);
+        $ads_1 = trim($row['ads_1']);
+        $ads_2 = trim($row['ads_2']);
     }
-} else {
-    // Delete the file and clear data_ip
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    
-    // New date is created!
-    $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
-    // Update IP
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
-}
 
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
+	// Accept both ?p=slug and ?page=slug (mod_rewrite typically maps to ?p=)
+	$page_name = isset($_GET['p']) ? trim($_GET['p']) : (isset($_GET['page']) ? trim($_GET['page']) : '');
+	if ($page_name !== '') {
+		$stmt = $pdo->prepare("
+			SELECT page_title, page_content, last_date
+			FROM pages
+			WHERE page_name = ? AND is_active = 1
+			LIMIT 1
+		");
+		$stmt->execute([$page_name]);
+		$row = $stmt->fetch();
+		if ($row) {
+			$page_title   = $row['page_title'];
+			$page_content = $row['page_content'];
+			$last_date    = $row['last_date'];
+			$stats        = "OK";
+			$p_title      = $page_title;
+		} else {
+			$page_title   = "Error";
+			$page_content = "<div class='alert alert-danger text-center'>Page not found or inactive.</div>";
+			$last_date    = $date;
+			$stats        = null;
+			$p_title      = "Error";
+		}
+	}
 
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-    
+    // Theme
+    require_once('theme/' . $default_theme . '/header.php');
+    require_once('theme/' . $default_theme . '/pages.php');
+    require_once('theme/' . $default_theme . '/footer.php');
+} catch (PDOException $e) {
+    die("Database error: " . $e->getMessage());
 }
-if (isset($_GET['page'])) {
-    $page_name = trim($_GET['page']);
-    $sql       = "SELECT * FROM pages where page_name='$page_name'";
-    $result    = mysqli_query($con, $sql);
-    
-    // Loop through each record
-    while ($row = mysqli_fetch_array($result)) {
-        // Populate and display results data in each row
-        $page_title   = $row['page_title'];
-        $page_content = $row['page_content'];
-        $last_date    = $row['last_date'];
-        $stats        = "OK";
-        $p_title      = $page_title;
-    }
-}
-// Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/pages.php');
-require_once('theme/' . $default_theme . '/footer.php');
 ?>

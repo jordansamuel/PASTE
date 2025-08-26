@@ -1,4 +1,44 @@
-# Paste 2.2
+Paste 3.1
+=======
+In progress: 3.2
+* improvements
+* integration of https://github.com/scrivo/highlight.php
+* (geshi or highlight in config.php)
+* theme picker if highlight.php enabled 
+* improved the layout for paste views, fixed some line number css bugs
+* added a "we has cookies" footer/just comment it out in /theme/default/footer.php if not required
+* live demo: https://paste.boxlabs.uk
+
+New version 3.1
+* Account deletion
+* reCAPTCHA v3 with server side integration and token handling (and v2 support)
+* 	Select reCAPTCHA in admin/configuration.php
+*	Select v2 or v3 depending on your keys
+* 	Default score can be set in /includes/recaptcha.php but 0.8 will catch 99% of bots, balancing false negatives.
+* 	Pastes and user account login/register are gated, with v3 users are no longer required to enter a captcha.
+* If signed up with OAuth2, ability to change username once in /profile.php - Support more platforms in future.
+* Search feature, archive/pagination
+* Improved admin panel with Bootstrap 5
+* Ability to add/remove admins
+* Fixed SMTP for user account emails/verification - Plain SMTP server or use OAuth2 for Google Mail
+* CSRF session tokens, improve security, stay logged in for 30 days with "Remember Me"
+* PHP version must be 8.1 or above - time to drag Paste into the future. 
+* Clean up the codebase, remove obsolete functions and added more comments
+* /tmp folder has gone bye bye - improved admin panel statistics, daily unique paste views
+
+Previous version - 3.0
+* PHP 8.4> compatibility
+* Replace mysqli with pdo
+* New default theme, upgrade paste2 theme from bootstrap 3 to 5
+* Dark mode
+* Admin panel changes
+* Google OAuth2 SMTP/User accounts
+* Security and bug fixes 
+* Improved installer, checks for existing database and updates schema as appropriate.
+* Improved database schema
+* Update Parsedown for Markdown
+* All pastes encrypted in the database with AES-256 by default
+
 [![Download PASTE](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/phpaste/files/latest/download)
 
 [![Download PASTE](https://img.shields.io/sourceforge/dw/phpaste.svg)](https://sourceforge.net/projects/phpaste/files/latest/download)
@@ -9,33 +49,63 @@ The original source is available from the previous owner's **[GitHub repository]
 
 A public version can be found **[here](https://paste.boxlabs.uk/)**
 
+<table style="padding:10px">
+  <tr>
+    <td><img src="https://i.imgur.com/Yrjl8w1.png" align="left" alt="1" width = 279px height = 496px></td>
+    <td><img src="https://i.imgur.com/VleCHjh.png" alt="2" width = 288px height = 512px></td>  
+  </tr>
+</table>
+
 IRC: If you would like support or want to contribute to Paste connect to irc.collectiveirc.net in channel #PASTE
 
 Any bugs can be reported at:
-https://github.com/jordansamuel/PASTE/issues/new
+https://github.com/boxlabss/PASTE/issues/new
 
 Requirements
 ===
-* Apache 2.X / Nginx
-* PHP 5.3.7 (or later) with php-openssl & GD enabled [PHP7.+ recommended]
-* MySQL 5.x+
+ - PHP 8.1 or higher with `pdo_mysql`, `openssl`, and `curl` extensions
+  - MySQL or MariaDB
+  - Composer for dependency management
+  - Web server (e.g., Apache/Nginx) with HTTPS enabled (if OAuth enabled as below)
 
+See docs/CHANGELOG
 ---
-
 Install
 ===
 * Create a database for PASTE.
 * Upload all files to a webfolder
 * Point your browser to http(s)://example.com/install
 * Input some settings, DELETE the install folder and you're ready to go.
-
-Manual install
-===
-Do the first two steps above and import the database schema using the CLI (or import via phpMyAdmin)
-```
-mysql -uuser -ppassword databasename < docs/paste.mysqlschema.sql
-```
-Move docs/config.example.php to config.php and edit
+* To configure OAuth, first you need to use composer to install phpmailer and google api/oauth2 client
+  - Install Composer dependencies:
+    ```bash
+    cd /oauth
+    composer require google/apiclient:^2.12 league/oauth2-client:^2.7
+    cd /mail
+    composer require phpmailer/phpmailer:^6.9
+    ```
+   - Enter database details (host, name, user, password) and OAuth settings (enable or disable Google/Facebook).
+   - This generates `config.php` with dynamic `G_REDIRECT_URI` based on your domain.
+   
+ **Set Up Google OAuth for User Logins**:
+   - Go to [Google Cloud Console](https://console.developers.google.com).
+   - Create a project and enable the Google+ API.
+   - Create OAuth 2.0 credentials (Web application).
+   - Set the Authorized Redirect URI to: `<baseurl>oauth/google.php` (e.g., `https://yourdomain.com/oauth/google.php`), where `<baseurl>` is from `site_info.baseurl`.
+   - Update `config.php` with:
+     ```php
+     define('G_CLIENT_ID', 'your_client_id');
+     define('G_CLIENT_SECRET', 'your_client_secret');
+     ```
+   - Ensure `enablegoog` is set to `yes` in `config.php`.
+ **Set Up Gmail SMTP with OAuth2**:
+   - In [Google Cloud Console](https://console.developers.google.com), enable the Gmail API.
+   - Create or reuse OAuth 2.0 credentials.
+   - Set the Authorized Redirect URI to: `<baseurl>oauth/google_smtp.php` (e.g., `https://yourdomain.com/oauth/google_smtp.php`), where `<baseurl>` is from `site_info.baseurl`.
+   - Log in to `/admin/configuration.php` as an admin.
+   - Enter the Client ID and Client Secret under "Google OAuth 2.0 Setup for Gmail SMTP".
+   - Click "Authorize Gmail SMTP" to authenticate and save the refresh token in the `mail` table.
+   - Configure SMTP settings (host: `smtp.gmail.com`, port: `587`, socket: `tls`, auth: `true`, protocol: `2`).
 
 Development setup
 ===
@@ -51,6 +121,11 @@ Now you can start coding and send in pull requests.
 
 Upgrading
 ===
+3.0/3.1 schema changes
+run the installer to update database
+(backup first)
+
+
 * 2.1 to 2.2
 no changes to database
 
@@ -73,12 +148,12 @@ Set mod_rewrite in config.php to 1
 
 For Apache, just use .htaccess
 
-For Nginx, use the example config in **[docs/nginx.example.conf](https://github.com/jordansamuel/PASTE/blob/HEAD/docs/nginx.example.conf)**
+For Nginx, use the example config in **[docs/nginx.example.conf](https://github.com/boxlabss/PASTE/blob/HEAD/docs/nginx.example.conf)**
 
 ---
 Changelog
 ===
-See **[docs/CHANGELOG.md](https://github.com/jordansamuel/PASTE/blob/HEAD/docs/CHANGELOG.md)**
+See **[docs/CHANGELOG.md](https://github.com/boxlabss/PASTE/blob/HEAD/docs/CHANGELOG.md)**
 
 ---
 Paste now supports pastes of upto 4GB in size, and this is configurable in config.php
@@ -93,25 +168,6 @@ However, this relies on the value of post_max_size in your PHP configuration fil
 $pastelimit = "1"; // 0.5 = 512 kilobytes, 1 = 1MB
 ```
 
-To enable registration with OAUTH see this block in config.php
-
-```php
-// OAUTH (to enable, change to yes and edit)
-$enablefb = "no";
-$enablegoog = "no";
-
-// "CHANGE THIS" = Replace with your details
-// Facebook
-define('FB_APP_ID', 'CHANGE THIS'); // Your application ID, see https://developers.facebook.com/docs/apps/register
-define('FB_APP_SECRET', 'CHANGE THIS');    // What's your Secret key
-
-// Google 
-define('G_Client_ID', 'CHANGE THIS'); // Get a Client ID from https://console.developers.google.com/projectselector/apis/library
-define('G_Client_Secret', 'CHANGE THIS'); // What's your Secret ID
-define('G_Redirect_Uri', 'http://urltoyour/installation/oauth/google.php'); // Leave this as is
-define('G_Application_Name', 'Paste'); // Make sure this matches the name of your application
-```
-
 Everything else can be configured using the admin panel.
 
 ---
@@ -124,12 +180,4 @@ Credits
 * **[Viktoria Rei Bauer](https://github.com/ToeiRei)** for her contributions to the project.
 * Roberto Rodriguez (roberto.rodriguez.pino[AT]gmail.com) for PostgreSQL support on v1.9.
 
-The Paste theme was built using Bootstrap, jQuery and various jQuery plugins for
-present and future features, but we do try to keep it bloat free.
-Icons are provided by FontAwesome.
-
-Screenshots
-===
-
-[![Frontend](http://i.imgur.com/UxZVxqo.png)](https://paste.boxlabs.uk/)
-[![Frontend](http://i.imgur.com/peFanYH.png)](https://paste.boxlabs.uk/)
+The Paste theme was built using Bootstrap 5

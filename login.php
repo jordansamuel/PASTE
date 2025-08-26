@@ -1,6 +1,9 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ *
+ * https://phpaste.sourceforge.io/
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,401 +13,347 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * GNU General Public License in LICENCE for more details.
  */
- 
-// PHP <5.5 compatibility
-require_once('includes/password.php'); 
+declare(strict_types=1);
 
-session_start();
+ob_start();
+$__clean = function () {
+    if (ob_get_level() > 0 && ob_get_length() !== false) { @ob_clean(); }
+};
 
-// Required functions
-require_once('config.php');
-require_once('includes/functions.php');
-require_once('mail/mail.php');
+require_once 'includes/session.php';
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 
-// Current Date & User IP
-$date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
+require_once 'config.php';
+require_once 'includes/password.php';
+require_once 'includes/functions.php';
+require_once 'mail/mail.php';
+require_once 'includes/recaptcha.php';
 
-// Mail
-$mail_type = "1";
+$error = null;
+$success = null;
 
-// Check if already logged in
-if (isset($_SESSION['token'])) {
-   header("Location: ./");
+// OAuth deps (soft)
+$oauth_ready = true;
+$oauth_autoloader = __DIR__ . '/oauth/vendor/autoload.php';
+if (!file_exists($oauth_autoloader)) {
+    $oauth_ready = false;
+} else {
+    require_once $oauth_autoloader;
+    if (!class_exists('League\OAuth2\Client\Provider\Google')) $oauth_ready = false;
+}
+// ensure defined for header.php
+$enablegoog = $enablegoog ?? 'no';
+$enablefb   = $enablefb   ?? 'no';
+if (!$oauth_ready) { $enablegoog = 'no'; $enablefb = 'no'; }
+
+// DB (PDO)
+try {
+    if (!isset($pdo) || !$pdo instanceof PDO) {
+        $pdo = new PDO("mysql:host=$dbhost;dbname=$dbname;charset=utf8mb4", $dbuser, $dbpassword, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]);
+    }
+} catch (Throwable $e) {
+    error_log("login.php: DB connect failed: " . $e->getMessage());
+    $error = "Unable to connect to database.";
 }
 
-// Database Connection
-$con = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
-// Get site info
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
+// Captcha session bootstrap (reads captcha table into $_SESSION) ---
+try {
+    if (
+        empty($_SESSION['cap_e']) ||
+        empty($_SESSION['mode']) ||
+        empty($_SESSION['recaptcha_version']) ||
+        empty($_SESSION['recaptcha_sitekey']) ||
+        empty($_SESSION['recaptcha_secretkey'])
+    ) {
+        $row = $pdo->query("SELECT cap_e, mode, recaptcha_version, recaptcha_sitekey, recaptcha_secretkey FROM captcha WHERE id = 1")
+                   ->fetch(PDO::FETCH_ASSOC) ?: [];
+        foreach (['cap_e','mode','recaptcha_version','recaptcha_sitekey','recaptcha_secretkey'] as $k) {
+            if (!isset($_SESSION[$k]) && isset($row[$k])) {
+                $_SESSION[$k] = $row[$k];
+            }
+        }
+    }
+} catch (Throwable $e) {
+    // best-effort; if this fails, require_human() will no-op unless cap_e==='on' and secrets exist
 }
 
-$admin_mail = $email;
-$admin_name = $site_name;
+// Site info
+try {
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = 1");
+    $site = $stmt->fetch() ?: [];
+} catch (Throwable $e) { $site = []; }
+$title       = trim($site['title'] ?? 'Paste');
+$des         = trim($site['des'] ?? '');
+$baseurl     = trim($site['baseurl'] ?? '');
+$keyword     = trim($site['keyword'] ?? '');
+$site_name   = trim($site['site_name'] ?? 'Paste');
+$email       = trim($site['email'] ?? '');
+$admin_mail  = $email;
+$admin_name  = $site_name;
+$mod_rewrite = (string)($site['mod_rewrite'] ?? ($mod_rewrite ?? '1')); // avoid undefined in header
 
-// Email information
-
-$query  = "SELECT * FROM mail WHERE id='1'";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-	$verification = Trim($row['verification']);
-    $smtp_host = Trim($row['smtp_host']);
-    $smtp_user = Trim($row['smtp_username']);
-    $smtp_pass = Trim($row['smtp_password']);
-    $smtp_port = Trim($row['smtp_port']);
-    $smtp_protocol  = Trim($row['protocol']);
-    $smtp_auth = Trim($row['auth']);
-    $smtp_sec  = Trim($row['socket']);
-}
-$mail_type = $smtp_protocol;
-
-// Check if IP is banned
-if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
-
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
+// UI: language & theme
+try {
+    $iface = $pdo->query("SELECT * FROM interface WHERE id = 1")->fetch() ?: [];
+} catch (Throwable $e) { $iface = []; }
+$default_lang  = trim($iface['lang'] ?? 'en.php');
+$default_theme = trim($iface['theme'] ?? 'default');
 require_once("langs/$default_lang");
 
-// Page title
-$p_title = $lang['login/register']; //"Login/Register";
+// Page title (avoid undefined in header)
+$p_title = $lang['login/register'] ?? 'Login / Register';
 
-// Ads
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
+// Ads (optional)
+try {
+    $ads = $pdo->query("SELECT * FROM ads WHERE id = 1")->fetch() ?: [];
+} catch (Throwable $e) { $ads = []; }
+$text_ads = trim($ads['text_ads'] ?? '');
+$ads_1    = trim($ads['ads_1'] ?? '');
+$ads_2    = trim($ads['ads_2'] ?? '');
 
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-}
+// CSRF / basics
+$ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+if (empty($_SESSION['csrf_token'])) { $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); }
+$csrf_token = $_SESSION['csrf_token'];
+
+// Ban check
+if (isset($pdo) && is_banned($pdo, $ip)) { $error = $lang['banned'] ?? 'You are banned.'; }
 
 // Logout
-if (isset($_GET['logout'])) {
-	header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    $_SESSION = [];
+    unset($_SESSION['token'], $_SESSION['oauth_uid'], $_SESSION['username'], $_SESSION['platform'], $_SESSION['id'], $_SESSION['oauth2state']);
+    @session_regenerate_id(true);
+    @session_destroy();
+    $__clean();
+    header('Location: ' . ($baseurl ?: './'));
+    exit;
 }
 
-if (strpos($banned_ip, $ip) !== false) {
-    die($lang['banned']); //"You have been banned from ".$site_name
+// Already logged in? 
+if (isset($_SESSION['token']) && !(isset($_GET['action']) && $_GET['action'] === 'logout')) {
+    $__clean();
+    header('Location: ./');
+    exit;
 }
 
-// Page views 
-$query = "SELECT @last_id := MAX(id) FROM page_view";
+// Mail settings (for verify/forgot)
+try {
+    $mail = $pdo->query("SELECT * FROM mail WHERE id = 1")->fetch() ?: [];
+} catch (Throwable $e) { $mail = []; }
+$verification = trim($mail['verification'] ?? 'disabled');
 
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['date'];
-    }
-}
-
-if ($last_date == $date) {
-    if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
+// Page views (best effort)
+try {
+    $today = date('Y-m-d');
+    $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
+    $stmt->execute([$today]);
+    $row = $stmt->fetch();
+    if ($row) {
+        $tpage = (int)$row['tpage'] + 1; $tvisit = (int)$row['tvisit'];
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+        $stmt->execute([$ip, $today]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            $tvisit++; $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)")->execute([$ip, $today]);
         }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP already exists, update page view
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
+        $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?")->execute([$tpage, $tvisit, $row['id']]);
     } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
-        }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+        $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, 1, 1)")->execute([$today]);
+        $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)")->execute([$ip, $today]);
     }
-} else {
-    // Delete the file and clear data_ip
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    
-    // New date is created
-    $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
-    // Update the IP
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
+} catch (Throwable $e) { /* ignore */ }
+
+// Actions (verify/resend/forgot/reset)
+$valid_csrf = static fn($token) => hash_equals($_SESSION['csrf_token'] ?? '', (string)$token);
+
+// verify (GET)
+if (isset($_GET['action'], $_GET['code'], $_GET['username']) && $_GET['action'] === 'verify') {
+    $u = filter_var((string)$_GET['username'], FILTER_SANITIZE_SPECIAL_CHARS);
+    $c = filter_var((string)$_GET['code'], FILTER_SANITIZE_SPECIAL_CHARS);
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? AND verification_code = ?");
+        $stmt->execute([$u, $c]);
+        if ($stmt->fetch()) {
+            $pdo->prepare("UPDATE users SET verified = '1', verification_code = NULL WHERE username = ?")->execute([$u]);
+            $success = $lang['email_verified'] ?? 'Email verified successfully. You can now log in.';
+        } else { $error = $lang['invalid_code'] ?? 'Invalid verification code or username.'; }
+    } catch (Throwable $e) { $error = "Verification error."; }
 }
-if (isset($_GET['resend'])) {
-    if (isset($_POST['email'])) {
-        $email  = htmlentities(trim($_POST['email']));
-        $query  = "SELECT * FROM users WHERE email_id='$email'";
-        $result = mysqli_query($con, $query);
-        if (mysqli_num_rows($result) > 0) {
-            // Username found
-            while ($row = mysqli_fetch_array($result)) {
-                $username     = $row['username'];
-                $db_email_id  = $row['email_id'];
-                $db_full_name = $row['full_name'];
-                $db_platform  = $row['platform'];
-                $db_password  = Trim($row['password']);
-                $db_verified  = $row['verified'];
-                $db_picture   = $row['picture'];
-                $db_date      = $row['date'];
-                $db_ip        = $row['ip'];
-                $db_id        = $row['id'];
-            }
-            if ($db_verified == '0') {
-                $protocol = paste_protocol();
-                $verify_url = $protocol . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/verify.php?username=$username&code=" . Md5('4et4$55765' . $db_email_id . 'd94ereg');
-                $sent_mail  = $email;
-                $subject    = $lang['mail_acc_con']; // "$site_name Account Confirmation";
-                $body       = "
-          Hello $db_full_name, Please verify your account by clicking the link below.<br /><br />
 
-          <a href='$verify_url' target='_self'>$verify_url</a>  <br /> <br />
-
-          After confirming your account you can log in using your username: <b>$username</b> and the password you used when signing up.
-          ";
-
-                if ($mail_type == '1') {
-                    default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
-                } else {
-                    smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
-                }
-                $success = $lang['mail_suc']; // "Verification code successfully sent to your email.";
-
-            } else {
-                $error = $lang['email_ver']; //"Email already verified.";
-            }
-
+// resend (POST)
+if (isset($_GET['action']) && $_GET['action'] === 'resend'
+    && isset($_POST['email'], $_POST['csrf_token']) && $valid_csrf($_POST['csrf_token'])) {
+    require_human('resend');
+    $email_in = filter_var((string)$_POST['email'], FILTER_SANITIZE_EMAIL);
+    try {
+        $stmt = $pdo->prepare("SELECT username, full_name, verified FROM users WHERE email_id = ?");
+        $stmt->execute([$email_in]);
+        $user = $stmt->fetch();
+        if ($user && (string)$user['verified'] === '0') {
+            $code = bin2hex(random_bytes(16));
+            $pdo->prepare("UPDATE users SET verification_code = ? WHERE email_id = ?")->execute([$code, $email_in]);
+            $verify_url = rtrim($baseurl, '/') . "/login.php?action=verify&username=" . urlencode($user['username']) . "&code=" . urlencode($code);
+            $subject = $lang['mail_acc_con'] ?? 'Account Confirmation';
+            $body    = "Hello " . htmlspecialchars((string)$user['full_name']) . ", please verify your account:<br><br><a href='$verify_url' target='_self'>$verify_url</a>";
+            send_mail($email_in, $subject, $body, $site_name, $_SESSION['csrf_token']);
+            $success = $lang['mail_suc'] ?? 'Verification email sent.';
         } else {
-            $error = $lang['email_not']; // "Email not found.";
+            $success = $lang['mail_suc'] ?? 'Verification email sent.'; // avoid enumeration
         }
-
-    }
+    } catch (Throwable $e) { $error = "Could not resend verification."; }
 }
 
-if (isset($_GET['forgot'])) {
-    if (isset($_POST['email'])) {
-        $email  = htmlentities(trim($_POST['email']));
-        $query  = "SELECT * FROM users WHERE email_id='$email'";
-        $result = mysqli_query($con, $query);
-        if (mysqli_num_rows($result) > 0) {
-            // Username found
-            while ($row = mysqli_fetch_array($result)) {
-                $username     = $row['username'];
-                $db_email_id  = $row['email_id'];
-                $db_full_name = $row['full_name'];
-                $db_platform  = $row['platform'];
-                $db_password  = Trim($row['password']);
-                $db_verified  = $row['verified'];
-                $db_picture   = $row['picture'];
-                $db_date      = $row['date'];
-                $db_ip        = $row['ip'];
-                $db_id        = $row['id'];
-            }
-            $new_pass     = uniqid(rand(), true);
-            $new_pass_hash = password_hash($new_pass, PASSWORD_DEFAULT);
-            
-            $query = "UPDATE users SET password='$new_pass_hash' WHERE username='$username'";
-            mysqli_query($con, $query);
-            if (mysqli_error($con)) {
-                $error = "Unable to access database.";
-            } else {
-                $success   = $lang['pass_change']; //"Password changed successfully and sent to your email address.";
-                $sent_mail = $email;
-                $subject   = "$site_name Password Reset";
-                $body      = "<br />
-          Hello, <br /><br />
-          
-          Your password has been reset: $new_pass  <br /> <br />
-          
-          You can now login and change your password. <br />
-          ";
-                if ($mail_type == '1') {
-                    default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
-                } else {
-                    smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
-                }
-                
-            }
-            
-        } else {
-            sleep(rand(0.4, 2));
-            $success   = $lang['pass_change'];
+// forgot (POST)
+if (isset($_GET['action']) && $_GET['action'] === 'forgot'
+    && isset($_POST['email'], $_POST['csrf_token']) && $valid_csrf($_POST['csrf_token'])) {
+    require_human('forgot');
+    $email_in = filter_var((string)$_POST['email'], FILTER_SANITIZE_EMAIL);
+    try {
+        $stmt = $pdo->prepare("SELECT username FROM users WHERE email_id = ?");
+        $stmt->execute([$email_in]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $code = bin2hex(random_bytes(16));
+            $exp  = date('Y-m-d H:i:s', strtotime('+1 hour'));
+            $pdo->prepare("UPDATE users SET reset_code = ?, reset_expiry = ? WHERE email_id = ?")->execute([$code, $exp, $email_in]);
+            $reset_url = rtrim($baseurl, '/') . "/login.php?action=reset&username=" . urlencode($user['username']) . "&code=" . urlencode($code);
+            $subject = "$site_name Password Reset";
+            $body    = "To reset your password, click:<br><br><a href='$reset_url' target='_self'>$reset_url</a><br><br>This link expires in 1 hour.";
+            send_mail($email_in, $subject, $body, $site_name, $_SESSION['csrf_token']);
         }
-        
-    }
-    
+        $success = $lang['pass_change'] ?? 'Password reset link sent. Check your email.';
+    } catch (Throwable $e) { $error = "Could not start reset process."; }
 }
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Check if logged in
-    if (isset($_SESSION['token'])) {
-        header("Location: ./");
-    } else {
-        // Login process
-        if (isset($_POST['signin'])) {
-            $username = htmlentities(trim($_POST['username']));
-            $password = $_POST['password'];
-            if ($username != null && $password != null) {
-                
-                $query  = "SELECT * FROM users WHERE username='$username'";
-                $result = mysqli_query($con, $query);
-                if (mysqli_num_rows($result) > 0) {
-                    // Username found
-                    while ($row = mysqli_fetch_array($result)) {
-                        $db_oauth_uid = $row['oauth_uid'];
-                        $db_email_id  = $row['email_id'];
-                        $db_full_name = $row['full_name'];
-                        $db_platform  = $row['platform'];
-                        $db_password  = $row['password'];
-                        $db_verified  = $row['verified'];
-                        $db_picture   = $row['picture'];
-                        $db_date      = $row['date'];
-                        $db_ip        = $row['ip'];
-                        $db_id        = $row['id'];
+
+// reset (POST)
+if (isset($_GET['action'], $_GET['username'], $_GET['code']) && $_GET['action'] === 'reset'
+    && isset($_POST['password'], $_POST['csrf_token']) && $valid_csrf($_POST['csrf_token'])) {
+    require_human('reset');
+    $u = filter_var((string)$_GET['username'], FILTER_SANITIZE_SPECIAL_CHARS);
+    $c = filter_var((string)$_GET['code'], FILTER_SANITIZE_SPECIAL_CHARS);
+    $pw = (string)$_POST['password'];
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? AND reset_code = ? AND reset_expiry > ?");
+        $stmt->execute([$u, $c, date('Y-m-d H:i:s')]);
+        if ($stmt->fetch()) {
+            $hash = password_hash($pw, PASSWORD_DEFAULT);
+            $pdo->prepare("UPDATE users SET password = ?, reset_code = NULL, reset_expiry = NULL WHERE username = ?")->execute([$hash, $u]);
+            $success = $lang['pass_reset'] ?? 'Password reset successful. You can now log in.';
+        } else { $error = $lang['invalid_code'] ?? 'Invalid or expired reset code.'; }
+    } catch (Throwable $e) { $error = "Could not reset password."; }
+}
+
+// Login / Signup (POST) — hard gate with reCAPTCHA
+$valid_post = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'
+    && isset($_POST['csrf_token']) && $valid_csrf($_POST['csrf_token']));
+
+if ($valid_post) {
+    // LOGIN
+    if (isset($_POST['signin'])) {
+        require_human('login');
+        $u = filter_var((string)($_POST['username'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
+        $p = (string)($_POST['password'] ?? '');
+        if ($u !== '' && $p !== '') {
+            try {
+                $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+                $stmt->execute([$u]);
+                $user = $stmt->fetch();
+                if ($user && password_verify($p, (string)$user['password'])) {
+                    if ((string)$user['verified'] === '1') {
+                        $new_token = bin2hex(random_bytes(32));
+                        $pdo->prepare("UPDATE users SET token = ? WHERE username = ?")->execute([$new_token, $u]);
+                        $_SESSION['token']     = $new_token;
+                        $_SESSION['oauth_uid'] = $user['oauth_uid'];
+                        $_SESSION['username']  = $u;
+                        $__clean();
+                        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $baseurl ?: './'));
+                        exit;
                     }
+                    $error = ((string)$user['verified'] === '2')
+                        ? ($lang['banned'] ?? 'Your account is banned.')
+                        : ($lang['notverified'] ?? 'Account not verified.');
+                } else { $error = $lang['incorrect'] ?? 'Incorrect username or password.'; }
+            } catch (Throwable $e) { $error = "Login failed due to a server error."; }
+        } else { $error = $lang['missingfields'] ?? 'Please fill in all fields.'; }
+    }
 
-                    if (password_verify($password, $db_password)) {
-                        if ($db_verified == "1") {
-                            // Login successful
-                            $_SESSION['token']     = Md5($db_id . $username);
-                            $_SESSION['oauth_uid'] = $db_oauth_uid;
-                            $_SESSION['username']  = $username;
-                            
-                            header('Location: ' . $_SERVER['HTTP_REFERER']);
-							
-                        } elseif ($db_verified == "2") {
-                            // User is banned
-                            $error = $lang['banned'];
-                        } else {
-                            // Account not verified
-                            $error = $lang['notverified'];
-                        }
+    // SIGNUP
+    if (isset($_POST['signup'])) {
+        require_human('signup');
+        $u  = filter_var((string)($_POST['username'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
+        $p  = (string)($_POST['password'] ?? '');
+        $em = filter_var((string)($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+        $fn = filter_var((string)($_POST['full'] ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
+
+        if ($u && $p && $em && $fn) {
+            if (isValidUsername($u)) {
+                try {
+                    // username unique
+                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ?");
+                    $stmt->execute([$u]);
+                    if ((int)$stmt->fetchColumn() > 0) {
+                        $error = $lang['userexists'] ?? 'Username already exists.';
                     } else {
-                        // Password wrong
-                        $error = $lang['incorrect'];
-                        
-                    }
-                } else {
-                    // Username not found
-                    $error = $lang['incorrect'];
-                }
-            } else {
-                $error = $lang['missingfields']; //"All fields must be filled out.";
-            }
-        }
-        
-        // Register process
-        if (isset($_POST['signup'])) {
-            $username  = htmlentities(trim($_POST['username']));
-            $password  = password_hash($_POST['password'], PASSWORD_DEFAULT);
-            $email     = htmlentities(trim($_POST['email']));
-            $full_name = htmlentities(trim($_POST['full']));
-            if ($username != null && $password != null && $full_name != null && $email != null) {
-                $res = isValidUsername($username);
-                if ($res == '1') {
-                    $query  = "SELECT * FROM users WHERE username='$username'";
-                    $result = mysqli_query($con, $query);
-                    if (mysqli_num_rows($result) > 0) {
-                        $error = $lang['userexists']; // "Username already taken.";
-                    } else {
-                        
-                        $query  = "SELECT * FROM users WHERE email_id='$email'";
-                        $result = mysqli_query($con, $query);
-                        if (mysqli_num_rows($result) > 0) {
-                            $error = $lang['emailexists']; // "Email already registered.";
+                        // email unique
+                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email_id = ?");
+                        $stmt->execute([$em]);
+                        if ((int)$stmt->fetchColumn() > 0) {
+                            $error = $lang['emailexists'] ?? 'Email already exists.';
                         } else {
-								if ($verification == 'disabled') {
-									$query = "INSERT INTO users (oauth_uid,username,email_id,full_name,platform,password,verified,picture,date,ip) VALUES ('0','$username','$email','$full_name','Direct','$password','1','NONE','$date','$ip')";
-								} else {
-									$query = "INSERT INTO users (oauth_uid,username,email_id,full_name,platform,password,verified,picture,date,ip) VALUES ('0','$username','$email','$full_name','Direct','$password','0','NONE','$date','$ip')";
-								}
-                            mysqli_query($con, $query);
-                            if (mysqli_error($con))
-                                $error = "Database Error";
-                            else {
-								if ($verification == 'disabled') {
-									$success    = $lang['registered']; // "Your account was successfully registered.";
-								} else {
-									$success    = $lang['registered']; // "Your account was successfully registered.";
-									$protocol   = paste_protocol();
-									$verify_url = $protocol . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/verify.php?username=$username&code=" . Md5('4et4$55765' . $email . 'd94ereg');
-									$sent_mail  = $email;
-									$subject    = $lang['mail_acc_con']; // "$site_name Account Confirmation";
-									$body       = "
-			  Hello $full_name, Your $site_name account has been created. Please verify your account by clicking the link below.<br /><br />
+                            $hash     = password_hash($p, PASSWORD_DEFAULT);
+                            $verified = ($verification === 'disabled') ? '1' : '0';
+                            $vcode    = ($verification === 'disabled') ? null : bin2hex(random_bytes(16));
+                            $pdo->prepare("
+                                INSERT INTO users (oauth_uid, username, email_id, full_name, platform, password, verified, picture, date, ip, verification_code)
+                                VALUES ('0', ?, ?, ?, 'Direct', ?, ?, 'NONE', ?, ?, ?)
+                            ")->execute([$u, $em, $fn, $hash, $verified, date('Y-m-d H:i:s'), $ip, $vcode]);
 
-			  <a href='$verify_url' target='_self'>$verify_url</a>  <br /> <br />
-
-			  After confirming your account you can log in using your username: <b>$username</b> and the password you used when signing up.
-			  ";
-									if ($mail_type == '1') {
-										default_mail($admin_mail, $admin_name, $sent_mail, $subject, $body);
-									} else {
-										smtp_mail($subject, $body, $sent_mail, $admin_mail, $admin_name, $smtp_auth, $smtp_user, $smtp_pass, $smtp_host, $smtp_port, $smtp_sec);
-									}
-								}
+                            if ($verification !== 'disabled') {
+                                $verify_url = rtrim($baseurl, '/') . "/login.php?action=verify&username=" . urlencode($u) . "&code=" . urlencode($vcode);
+                                $subject = $lang['mail_acc_con'] ?? 'Account Confirmation';
+                                $body    = "Hello $fn, verify your $site_name account:<br><br><a href='$verify_url' target='_self'>$verify_url</a>";
+                                $res = send_mail($em, $subject, $body, $site_name, $_SESSION['csrf_token']);
+                                if (($res['status'] ?? 'error') !== 'success') {
+                                    $error = ($lang['mail_error'] ?? 'Failed to send verification email.');
+                                }
+                            }
+                            if (!$error) {
+                                $success = ($lang['registered'] ?? 'Registration successful.')
+                                    . ($verification !== 'disabled' ? ' Please check your email to verify your account.' : '');
                             }
                         }
-
                     }
-                } else {
-                    $error = $lang['usrinvalid']; // "Username not valid. Usernames can't contain special characters.";
-                }
-            } else {
-                $error = $lang['missingfields']; // "All fields must be filled out";
-            }
-        }
+                } catch (Throwable $e) { $error = "Registration failed due to a server error."; }
+            } else { $error = $lang['usrinvalid'] ?? 'Invalid username. Use only letters, numbers, .#$'; }
+        } else { $error = $lang['missingfields'] ?? 'Please fill in all fields.'; }
     }
 }
 
-// Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/login.php');
-require_once('theme/' . $default_theme . '/footer.php');
-?>
+// Mirror messages for theme (which reads $_GET) 
+if (!empty($error))   { $_GET['error']   = $error; }
+if (!empty($success)) { $_GET['success'] = $success; }
+
+// OAuth launch (only if enabled & deps ok) -----
+if ($oauth_ready && isset($_GET['login']) && ($enablegoog === 'yes' || $enablefb === 'yes')) {
+    if ($_GET['login'] === 'google' && $enablegoog === 'yes') {
+        $__clean(); header("Location: oauth/google.php?login=1"); exit;
+    }
+    if ($_GET['login'] === 'facebook' && $enablefb === 'yes') {
+        $__clean(); header("Location: oauth/facebook.php?login=1"); exit;
+    }
+    $_GET['error'] = "Invalid OAuth provider or disabled in config.";
+}
+
+// Render--
+$__clean();
+header('Content-Type: text/html; charset=utf-8');
+require_once("theme/$default_theme/header.php");
+require_once("theme/$default_theme/login.php");
+require_once("theme/$default_theme/footer.php");

@@ -1,230 +1,211 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE>
+ * Paste 3 <old repo: https://github.com/jordansamuel/PASTE> new: https://github.com/boxlabss/PASTE
+ * Demo: https://paste.boxlabs.uk/
+ * https://phpaste.sourceforge.io/ - https://sourceforge.net/projects/phpaste/
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * Licensed under GNU General Public License, version 3 or later.
+ * See LICENCE for details.
  */
-session_start();
+require_once 'includes/session.php';
+require_once 'config.php';
+require_once 'includes/functions.php';
 
-require_once('config.php');
-require_once('includes/functions.php');
-
-// UTF-8
+// utf-8
 header('Content-Type: text/html; charset=utf-8');
 
-$date    = date('jS F Y');
-$ip      = $_SERVER['REMOTE_ADDR'];
-$data_ip = file_get_contents('tmp/temp.tdata');
-$con     = mysqli_connect($dbhost, $dbuser, $dbpassword, $dbname);
+// common
+$date = date('Y-m-d H:i:s');
+$ip   = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+global $pdo;
 
-if (mysqli_connect_errno()) {
-    die("Unable to connect to database");
-}
-$query  = "SELECT * FROM site_info";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $title				= Trim($row['title']);
-    $des				= Trim($row['des']);
-    $baseurl			= Trim($row['baseurl']);
-    $keyword			= Trim($row['keyword']);
-    $site_name			= Trim($row['site_name']);
-    $email				= Trim($row['email']);
-    $twit				= Trim($row['twit']);
-    $face				= Trim($row['face']);
-    $gplus				= Trim($row['gplus']);
-    $ga					= Trim($row['ga']);
-    $additional_scripts	= Trim($row['additional_scripts']);
+// JSON response for ajax delete
+function send_json($ok, $msg = '', $extra = []) {
+    header_remove('Content-Type');
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(array_merge(['success' => (bool)$ok, 'message' => $msg], $extra));
+    exit;
 }
 
-// Set theme and language
-$query  = "SELECT * FROM interface";
-$result = mysqli_query($con, $query);
+try {
+    // site_info
+    $stmt = $pdo->query("SELECT * FROM site_info WHERE id = '1'");
+    $si   = $stmt->fetch() ?: [];
+    $title   = trim($si['title'] ?? '');
+    $des     = trim($si['des'] ?? '');
+    $baseurl = rtrim(trim($si['baseurl'] ?? ''), '/') . '/';
+    $keyword = trim($si['keyword'] ?? '');
+    $site_name = trim($si['site_name'] ?? '');
+    $email     = trim($si['email'] ?? '');
+    $twit      = trim($si['twit'] ?? '');
+    $face      = trim($si['face'] ?? '');
+    $gplus     = trim($si['gplus'] ?? '');
+    $ga        = trim($si['ga'] ?? '');
+    $additional_scripts = trim($si['additional_scripts'] ?? '');
 
-while ($row = mysqli_fetch_array($result)) {
-    $default_lang  = Trim($row['lang']);
-    $default_theme = Trim($row['theme']);
-}
-require_once("langs/$default_lang");
+    // interface
+    $stmt = $pdo->query("SELECT * FROM interface WHERE id = '1'");
+    $iface = $stmt->fetch() ?: [];
+    $default_lang  = trim($iface['lang'] ?? 'en.php');
+    $default_theme = trim($iface['theme'] ?? 'default');
+    require_once("langs/$default_lang");
 
-// Check if IP is banned
-if ( is_banned($con, $ip) ) die($lang['banned']); // "You have been banned from ".$site_name;
-
-// Site permissions
-$query  = "SELECT * FROM site_permissions where id='1'";
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-	$siteprivate = Trim($row['siteprivate']);
-}
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-} else {
-	if ($siteprivate =="on") {
-		$privatesite = "on";
-    }
-}
-	
-// If username defined in URL, then check if it's exists in database. If invalid, redirect to main site.
-if ( isset( $_GET['user'] ) ) {
-    $profile_username = trim( $_GET['user'] );
-    if ( !existingUser( $con, $profile_username ) ) {
-        // Invalid username
-        header("Location: ../");
-    }
-} else { 
-		// No access to user.php
-        header("Location: ../");
-}
-
-$p_title = $profile_username . $lang['user_public_pastes']; // "Username's Public Pastes"
-
-// Stats for the profile page
-$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username'";
-$result = mysqli_query( $con, $query );
-while ($row = mysqli_fetch_array($result)) {
-    $profile_total_pastes = $row['count'];
-}
-$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username' and visible = 0";
-$result = mysqli_query( $con, $query );
-while ($row = mysqli_fetch_array($result)) {
-    $profile_total_public = $row['count'];
-}
-$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username' and visible = 1";
-$result = mysqli_query( $con, $query );
-while ($row = mysqli_fetch_array($result)) {
-    $profile_total_unlisted = $row['count'];
-}
-$query  = "SELECT count(*) as count FROM pastes where member = '$profile_username' and visible = 2";
-$result = mysqli_query( $con, $query );
-while ($row = mysqli_fetch_array($result)) {
-    $profile_total_private = $row['count'];
-}
-$query  = "SELECT sum(views) as total FROM pastes where member = '$profile_username'";
-$result = mysqli_query( $con, $query );
-while ($row = mysqli_fetch_array($result)) {
-    $profile_total_paste_views = $row['total'];
-}
-$query  = "SELECT date FROM users where username = '$profile_username'";
-$result = mysqli_query( $con, $query );
-while ($row = mysqli_fetch_array($result)) {
-    $profile_join_date = $row['date'];
-}
-
-
-// Logout
-if (isset($_GET['logout'])) {
-	header('Location: ' . $_SERVER['HTTP_REFERER']);
-    unset($_SESSION['token']);
-    unset($_SESSION['oauth_uid']);
-    unset($_SESSION['username']);
-    session_destroy();
-}
-
-// Page views
-$query = "SELECT @last_id := MAX(id) FROM page_view";
-
-$result = mysqli_query($con, $query);
-
-while ($row = mysqli_fetch_array($result)) {
-    $last_id = $row['@last_id := MAX(id)'];
-}
-
-if ($last_id) {
-    $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-    $result = mysqli_query($con, $query);
-
-    while ($row = mysqli_fetch_array($result)) {
-        $last_date = $row['date'];
-    }
-}
-
-if ($last_date == $date) {
-    if (str_contains($data_ip, $ip)) {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage = Trim($row['tpage']);
+    // ban check
+    if (is_banned($pdo, $ip)) {
+        // ajax delete path?
+        if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
+            send_json(false, $lang['banned'] ?? 'You are banned from this site.');
         }
-        $last_tpage = $last_tpage + 1;
-        
-        // IP already exists, update page views
-        $query = "UPDATE page_view SET tpage=$last_tpage WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-    } else {
-        $query  = "SELECT * FROM page_view WHERE id=" . Trim($last_id);
-        $result = mysqli_query($con, $query);
-        
-        while ($row = mysqli_fetch_array($result)) {
-            $last_tpage  = Trim($row['tpage']);
-            $last_tvisit = Trim($row['tvisit']);
-        }
-        $last_tpage  = $last_tpage + 1;
-        $last_tvisit = $last_tvisit + 1;
-        
-        // Update both tpage and tvisit.
-        $query = "UPDATE page_view SET tpage=$last_tpage,tvisit=$last_tvisit WHERE id=" . Trim($last_id);
-        mysqli_query($con, $query);
-        file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
+        die(htmlspecialchars($lang['banned'] ?? 'You are banned from this site.', ENT_QUOTES, 'UTF-8'));
     }
-} else {
-    // Delete the file and clear data_ip
-    unlink("tmp/temp.tdata");
-    $data_ip = "";
-    
-    // New date is created
-    $query = "INSERT INTO page_view (date,tpage,tvisit) VALUES ('$date','1','1')";
-    mysqli_query($con, $query);
-    
-    // Update the IP
-    file_put_contents('tmp/temp.tdata', $data_ip . "\r\n" . $ip);
-    
-}
 
-$query  = "SELECT * FROM ads WHERE id='1'";
-$result = mysqli_query($con, $query);
-while ($row = mysqli_fetch_array($result)) {
-    $text_ads = Trim($row['text_ads']);
-    $ads_1    = Trim($row['ads_1']);
-    $ads_2    = Trim($row['ads_2']);
-}
+    // permissions
+    $stmt = $pdo->query("SELECT * FROM site_permissions WHERE id = '1'");
+    $perm = $stmt->fetch() ?: [];
+    $siteprivate = trim($perm['siteprivate'] ?? 'off');
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $siteprivate === "1") {
+        $privatesite = "1";
+    }
 
-if ( isset($_GET['del']) ) {
-    if ( $_SESSION['token'] ) { // Prevent unauthorized deletes
-        $paste_id = htmlentities( Trim( $_GET['id'] ) );
-        // Check if logged in user owns the paste
-        $user_username = Trim($_SESSION['username']);
-        $query    = "SELECT * FROM pastes WHERE id='$paste_id' and member='$user_username'";
-        $result   = mysqli_query($con, $query);
-        $num_rows = mysqli_num_rows($result);
-        if ( $num_rows == 0 ) {
-            $error = $lang['delete_error_invalid']; // Does not exist or not paste owner
+    // profile username
+    if (!isset($_GET['user'])) {
+        header("Location: ../");
+        exit;
+    }
+    $profile_username = trim($_GET['user']);
+    if (!existingUser($pdo, $profile_username)) {
+        header("Location: ../");
+        exit;
+    }
+
+    $p_title = $profile_username . ($lang['user_public_pastes'] ?? 'Public Pastes');
+
+    // stats for profile page
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE member = ?");
+    $stmt->execute([$profile_username]);
+    $profile_total_pastes = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE member = ? AND visible = 0");
+    $stmt->execute([$profile_username]);
+    $profile_total_public = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE member = ? AND visible = 1");
+    $stmt->execute([$profile_username]);
+    $profile_total_unlisted = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE member = ? AND visible = 2");
+    $stmt->execute([$profile_username]);
+    $profile_total_private = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(COUNT(pv.id), 0) AS total_views
+        FROM pastes p
+        LEFT JOIN paste_views pv ON p.id = pv.paste_id
+        WHERE p.member = ?
+    ");
+    $stmt->execute([$profile_username]);
+    $profile_total_paste_views = (int)$stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT date FROM users WHERE username = ?");
+    $stmt->execute([$profile_username]);
+    $profile_join_date = $stmt->fetchColumn() ?: '';
+
+    // logout
+    if (isset($_GET['logout'])) {
+        $ref = $_SERVER['HTTP_REFERER'] ?? $baseurl;
+        unset($_SESSION['token'], $_SESSION['oauth_uid'], $_SESSION['username']);
+        session_destroy();
+        header('Location: ' . $ref);
+        exit;
+    }
+
+    // page views
+    $view_date = date('Y-m-d');
+    try {
+        $stmt = $pdo->prepare("SELECT id, tpage, tvisit FROM page_view WHERE date = ?");
+        $stmt->execute([$view_date]);
+        $pv = $stmt->fetch();
+        if ($pv) {
+            $page_view_id = $pv['id'];
+            $tpage = (int)$pv['tpage'] + 1;
+            $tvisit = (int)$pv['tvisit'];
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitor_ips WHERE ip = ? AND visit_date = ?");
+            $stmt->execute([$ip, $view_date]);
+            if ((int)$stmt->fetchColumn() === 0) {
+                $tvisit++;
+                $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+                $stmt->execute([$ip, $view_date]);
+            }
+            $stmt = $pdo->prepare("UPDATE page_view SET tpage = ?, tvisit = ? WHERE id = ?");
+            $stmt->execute([$tpage, $tvisit, $page_view_id]);
         } else {
-            $query    = "DELETE FROM pastes WHERE id='$paste_id' and member='$user_username'";
-            $result   = mysqli_query($con, $query);
-            
-            if ( mysqli_errno( $con ) ) {
-                $error = $lang['error']; // "Something went wrong";
+            $stmt = $pdo->prepare("INSERT INTO page_view (date, tpage, tvisit) VALUES (?, ?, ?)");
+            $stmt->execute([$view_date, 1, 1]);
+            $stmt = $pdo->prepare("INSERT INTO visitor_ips (ip, visit_date) VALUES (?, ?)");
+            $stmt->execute([$ip, $view_date]);
+        }
+    } catch (PDOException $e) {
+        error_log("Page view tracking error: " . $e->getMessage());
+    }
+
+    // DELETE paste (supports AJAX via POST ajax=1 and anchor GET fallback)
+    if (isset($_GET['del'])) {
+        $is_ajax = (isset($_POST['ajax']) && $_POST['ajax'] === '1');
+
+        if (empty($_SESSION['token']) || empty($_SESSION['username'])) {
+            if ($is_ajax) {
+                send_json(false, $lang['not_logged_in'] ?? 'You must be logged in to delete pastes.');
+            }
+            $error = $lang['not_logged_in'] ?? 'You must be logged in to delete pastes.';
+        } else {
+            $paste_id = (int)($_GET['id'] ?? 0);
+            $owner    = (string)($_SESSION['username'] ?? '');
+
+            if ($paste_id <= 0) {
+                if ($is_ajax) send_json(false, $lang['delete_error_invalid'] ?? 'Invalid paste or not authorized to delete.');
+                $error = $lang['delete_error_invalid'] ?? 'Invalid paste or not authorized to delete.';
             } else {
-                $success = $lang['pastedeleted']; // "Paste deleted successfully."; 
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM pastes WHERE id = ? AND member = ?");
+                $stmt->execute([$paste_id, $owner]);
+                if ((int)$stmt->fetchColumn() === 0) {
+                    if ($is_ajax) send_json(false, $lang['delete_error_invalid'] ?? 'Invalid paste or not authorized to delete.');
+                    $error = $lang['delete_error_invalid'] ?? 'Invalid paste or not authorized to delete.';
+                } else {
+                    // perform delete
+                    $stmt = $pdo->prepare("DELETE FROM pastes WHERE id = ? AND member = ?");
+                    $stmt->execute([$paste_id, $owner]);
+                    // also clean up views (optional)
+                    try {
+                        $stmt = $pdo->prepare("DELETE FROM paste_views WHERE paste_id = ?");
+                        $stmt->execute([$paste_id]);
+                    } catch (PDOException $e) {
+                        // ignore
+                    }
+                    if ($is_ajax) {
+                        send_json(true, $lang['pastedeleted'] ?? 'Paste deleted successfully.', ['id' => $paste_id]);
+                    }
+                    $success = $lang['pastedeleted'] ?? 'Paste deleted successfully.';
+                    // redirect for non-ajax
+                    $redirect = $baseurl . ($mod_rewrite ? 'user/' . urlencode($owner) : 'user.php?user=' . urlencode($owner));
+                    header('Location: ' . $redirect);
+                    exit;
+                }
             }
         }
-    } else {
-        $error = $lang['not_logged_in']; // Must be logged in to do that
+        // if we reach here and not ajax, fall through to render page with $error
     }
-}
 
-// Theme
-require_once('theme/' . $default_theme . '/header.php');
-require_once('theme/' . $default_theme . '/user_profile.php');
-require_once('theme/' . $default_theme . '/footer.php');
-?>
+    // ads
+    $stmt = $pdo->query("SELECT * FROM ads WHERE id = '1'");
+    $ads  = $stmt->fetch() ?: [];
+    $text_ads = trim($ads['text_ads'] ?? '');
+    $ads_1    = trim($ads['ads_1'] ?? '');
+    $ads_2    = trim($ads['ads_2'] ?? '');
+
+    // theme
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/header.php');
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/user_profile.php');
+    require_once('theme/' . htmlspecialchars($default_theme, ENT_QUOTES, 'UTF-8') . '/footer.php');
+} catch (PDOException $e) {
+    die("Database error: " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+}

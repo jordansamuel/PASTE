@@ -1,6 +1,9 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE> - Default theme
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ *
+ * https://phpaste.sourceforge.io/
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,71 +13,251 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * GNU General Public License in LICENCE for more details.
  */
 ?>
 
 <div class="content">
   <!-- START CONTAINER -->
-  <div class="container-padding">
+  <div class="container-xl my-5">
     <!-- Start Row -->
     <div class="row">
-      <!-- Start Panel -->
-		<div class="col-md-9 col-lg-10">
-		  <div class="panel panel-default">
-			<div class="panel-title">
-				<?php echo $lang['totalpastes'] . ' ' . $total_pastes . ' <a class="btn btn-light pull-right" href="user.php?user=' . $_SESSION['username'] . '" target="_self">' . $lang['mypastes'] . '</a>' ;?>
-			</div>
-			
-				<div class="login-form" style="padding-top: 0px;">
-				<?php 
-				if ($_SERVER['REQUEST_METHOD'] == 'POST') {	
-				if (isset($success)) {
-					echo '<div class="paste-alert alert3" style="text-align:center;">
-					'.$success.'
-					</div>'; 
-					} elseif (isset($error)) {
-						echo '<div class="paste-alert alert6" style="text-align:center;">
-					'.$error.'
-					</div>'; 
-					}
-				}
-				?>
-			<div class="panel-title" style="text-align:center;">
-				<?php echo $lang['myprofile']; ?>
-			</div>
-			  <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post">
-					<div class="form-area">
-					  <div class="group">
-						<input disabled="" type="text" class="form-control"  name="username" style="cursor:not-allowed;" placeholder="<?php echo $user_username; ?>">
-						<i class="fa fa-user"></i>
-					  </div>
-					  
-					  <div class="group">
-						<input <?php if ($user_verified == "1") { echo 'disabled=""'; } ?> type="text" class="form-control" name="email" placeholder="<?php echo $user_email_id; ?>">
-						<i class="fa fa-envelope-o"></i>
-					  </div>
+      <!-- Start Card -->
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-header bg-dark text-light rounded-top d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><?php echo htmlspecialchars($lang['myprofile'] ?? 'My Profile', ENT_QUOTES, 'UTF-8'); ?></h5>
+            <a class="btn btn-outline-light btn-sm" href="<?php echo htmlspecialchars(
+                $baseurl . ($mod_rewrite ? 'user/' . urlencode($_SESSION['username'] ?? '') : 'user.php?user=' . urlencode($_SESSION['username'] ?? '')),
+                ENT_QUOTES,
+                'UTF-8'
+            ); ?>" target="_self"><?php echo htmlspecialchars($lang['mypastes'] ?? 'My Pastes', ENT_QUOTES, 'UTF-8'); ?></a>
+          </div>
+          
+          <div class="card-body p-4">
+            <?php 
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {	
+              if (!empty($success)) {
+                echo '<div class="alert alert-success text-center rounded-3">' . htmlspecialchars($success, ENT_QUOTES, 'UTF-8') . '</div>'; 
+              } elseif (!empty($error)) {
+                echo '<div class="alert alert-danger text-center rounded-3">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>'; 
+              }
+            }
+            ?>
+            <form action="<?php echo htmlspecialchars($baseurl . 'profile.php', ENT_QUOTES, 'UTF-8'); ?>" method="post" class="mt-4">
+              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+              <div class="row justify-content-center">
+                <div class="col-md-6">
 
-					  <h5><?php echo $lang['chgpwd']; ?></h5>
-					  
-					  <div class="group">
-						<input type="password" class="form-control" name="old_password" placeholder="<?php echo $lang['curpwd']; ?>">
-						<i class="fa fa-key"></i>
-					  </div>
-					  
-					  <div class="group">
-						<input type="password" class="form-control" name="password" placeholder="<?php echo $lang['newpwd']; ?>">
-						<i class="fa fa-pencil"></i>
-					  </div>
+                  <!-- Username block -->
+                  <div class="mb-4 position-relative">
+                    <label class="form-label text-light"><?php echo htmlspecialchars($lang['username'] ?? 'Username', ENT_QUOTES, 'UTF-8'); ?></label>
 
-					  <div class="group">
-						<input type="password" class="form-control" name="cpassword" placeholder="<?php echo $lang['confpwd']; ?>">
-						<i class="fa fa-check"></i>
-					  </div>
-					  <button type="submit" name="submit" class="btn btn-default btn-block">Submit</button>
+                    <?php if (!empty($can_edit_username)): ?>
+                      <!-- One-time editable username for OAuth accounts -->
+                      <input type="hidden" name="set_username_once" value="1">
+                      <input
+                        type="text"
+                        class="form-control bg-dark text-light pe-5"
+                        name="new_username"
+                        value="<?php echo htmlspecialchars($user_username ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                        placeholder="<?php echo htmlspecialchars($lang['setuser'] ?? 'Set your Username', ENT_QUOTES, 'UTF-8'); ?>"
+                        required
+                      >
+                      <small class="text-muted d-block mt-1">
+                        <?php echo htmlspecialchars($lang['keepuser'] ?? 'Keep autogenerated name? You can change it once.', ENT_QUOTES, 'UTF-8'); ?>
+                      </small>
+                    <?php else: ?>
+                      <!-- Locked / regular view -->
+                      <input
+                        disabled
+                        type="text"
+                        class="form-control bg-dark text-light pe-5"
+                        name="username"
+                        value="<?php echo htmlspecialchars($user_username ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                      >
+                    <?php endif; ?>
+
+                    <i class="bi bi-person position-absolute" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem;"></i>
+                  </div>
+					<div class="mb-4 position-relative">
+					  <label class="form-label text-light">
+						<?php echo htmlspecialchars($lang['fullname'] ?? 'Full Name', ENT_QUOTES, 'UTF-8'); ?>
+					  </label>
+					  <input
+						type="text"
+						class="form-control bg-dark text-light pe-5"
+						name="full"
+						value="<?php echo htmlspecialchars($user_full_name ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+						placeholder="<?php echo htmlspecialchars($lang['fullname'] ?? 'Full Name', ENT_QUOTES, 'UTF-8'); ?>"
+					  >
+					  <i class="bi bi-person-badge position-absolute"
+						 style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem;"></i>
 					</div>
-				  </form>
-				</div>
-			</div>
-		</div>
-<?php require_once('theme/'.$default_theme.'/sidebar.php'); ?>
+                  <div class="mb-4 position-relative">
+                    <label class="form-label text-light"><?php echo htmlspecialchars($lang['email'] ?? 'Email', ENT_QUOTES, 'UTF-8'); ?></label>
+                    <input
+                      <?php if (!empty($user_verified) && $user_verified === "1") { echo 'disabled'; } ?>
+                      type="text"
+                      class="form-control bg-dark text-light pe-5"
+                      name="email"
+                      value="<?php echo htmlspecialchars($user_email_id ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                    >
+                    <i class="bi bi-person position-absolute" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem;"></i>
+                  </div>
+
+                  <h5 class="text-center mb-4 text-light"><?php echo htmlspecialchars($lang['chgpwd'] ?? 'Change Password', ENT_QUOTES, 'UTF-8'); ?></h5>
+                  
+                  <div class="mb-4 position-relative">
+                    <label class="form-label text-light"><?php echo htmlspecialchars($lang['curpwd'] ?? 'Current Password', ENT_QUOTES, 'UTF-8'); ?></label>
+                    <input type="password" class="form-control bg-dark text-light pe-5" name="old_password" placeholder="<?php echo htmlspecialchars($lang['curpwd'] ?? 'Current Password', ENT_QUOTES, 'UTF-8'); ?>">
+                    <i class="bi bi-key position-absolute password-toggle" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
+                  </div>
+                  
+                  <div class="mb-4 position-relative">
+                    <label class="form-label text-light"><?php echo htmlspecialchars($lang['newpwd'] ?? 'New Password', ENT_QUOTES, 'UTF-8'); ?></label>
+                    <input type="password" class="form-control bg-dark text-light pe-5" name="password" placeholder="<?php echo htmlspecialchars($lang['newpwd'] ?? 'New Password', ENT_QUOTES, 'UTF-8'); ?>">
+                    <i class="bi bi-pencil position-absolute password-toggle" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
+                  </div>
+
+                  <div class="mb-4 position-relative">
+                    <label class="form-label text-light"><?php echo htmlspecialchars($lang['confpwd'] ?? 'Confirm Password', ENT_QUOTES, 'UTF-8'); ?></label>
+                    <input type="password" class="form-control bg-dark text-light pe-5" name="cpassword" placeholder="<?php echo htmlspecialchars($lang['confpwd'] ?? 'Confirm Password', ENT_QUOTES, 'UTF-8'); ?>">
+                    <i class="bi bi-check position-absolute password-toggle" style="right: 12px; top: 50%; color: #6c757d; font-size: 1.1rem; cursor: pointer;"></i>
+                  </div>
+
+                  <button type="submit" name="submit" class="btn btn-outline-light w-100 rounded-3">
+                    <?php echo htmlspecialchars($lang['submit'] ?? 'Submit', ENT_QUOTES, 'UTF-8'); ?>
+                  </button>
+
+                  <hr class="my-4">
+
+                  <div class="text-center">
+                    <!-- Trigger: Delete account -->
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                      <i class="bi bi-trash"></i> <?php echo htmlspecialchars($lang['deleteaccount'] ?? 'Delete My Account', ENT_QUOTES, 'UTF-8'); ?>
+                    </button>
+                  </div>
+
+                  <!-- Confirm Delete Modal -->
+                  <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content bg-dark text-light">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="deleteAccountModalLabel"><?php echo htmlspecialchars($lang['deleteaccount'] ?? 'Delete My Account', ENT_QUOTES, 'UTF-8'); ?></h5>
+                          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+
+                        <div class="modal-body">
+                          <p class="mb-2">
+                            <?php echo htmlspecialchars($lang['deletewarn'] ?? 'This will permanently remove your account and all your pastes. This action cannot be undone.', ENT_QUOTES, 'UTF-8'); ?>
+                          </p>
+                          <p class="mb-3">
+                            <?php echo htmlspecialchars($lang['typedelete'] ?? 'Type DELETE to confirm.', ENT_QUOTES, 'UTF-8'); ?>
+                          </p>
+
+                          <div class="mb-3">
+                            <input type="text" class="form-control bg-dark text-light" id="deleteConfirmInput" placeholder="DELETE" autocomplete="off">
+                            <div class="form-text text-muted">
+                              <?php echo htmlspecialchars($lang['confirmdeletehint'] ?? 'You must type DELETE (all caps).', ENT_QUOTES, 'UTF-8'); ?>
+                            </div>
+                          </div>
+
+                          <div id="deleteAccountFeedback" class="text-danger small" style="min-height:1rem;"></div>
+                        </div>
+
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">
+                            <?php echo htmlspecialchars($lang['cancel'] ?? 'Cancel', ENT_QUOTES, 'UTF-8'); ?>
+                          </button>
+                          <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                            <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($lang['confirmdelete'] ?? 'Confirm Delete', ENT_QUOTES, 'UTF-8'); ?>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <?php require_once('theme/' . $default_theme . '/sidebar.php'); ?>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Optional: Toggle password visibility
+  const toggles = document.querySelectorAll('.password-toggle');
+  toggles.forEach(function(toggle){
+    toggle.addEventListener('click', function(){
+      const input = this.parentElement.querySelector('input');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        this.classList.remove('bi-key', 'bi-pencil', 'bi-check');
+        this.classList.add('bi-eye');
+      } else {
+        input.type = 'password';
+        this.classList.remove('bi-eye');
+        // icon choice based on field
+        if (input.name === 'old_password') this.classList.add('bi-key');
+        else if (input.name === 'password') this.classList.add('bi-pencil');
+        else this.classList.add('bi-check');
+      }
+    });
+  });
+});
+</script>
+
+<script>
+(function(){
+  const input = document.getElementById('deleteConfirmInput');
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const feedback = document.getElementById('deleteAccountFeedback');
+
+  function check() {
+    const ok = (input.value.trim() === 'DELETE');
+    confirmBtn.disabled = !ok;
+    feedback.textContent = '';
+  }
+
+  if (input && confirmBtn) {
+    input.addEventListener('input', check);
+    check();
+
+    confirmBtn.addEventListener('click', function(){
+      confirmBtn.disabled = true;
+      feedback.textContent = '';
+
+      const formData = new FormData();
+      formData.append('csrf_token', <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?>);
+      formData.append('delete_account', '1');
+      formData.append('ajax', '1');
+
+      fetch(<?php echo json_encode($baseurl . "profile.php"); ?>, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+        credentials: 'same-origin'
+      }).then(r => r.json()).then(data => {
+        if (data && data.ok) {
+          window.location.href = data.redirect || <?php echo json_encode(rtrim($baseurl, '/') . '/accountdeleted.php'); ?>;
+        } else {
+          feedback.textContent = (data && data.error) ? data.error : 'Failed to delete account.';
+          confirmBtn.disabled = false;
+        }
+      }).catch(err => {
+        console.error('delete_account error', err);
+        feedback.textContent = 'Network error. Please try again.';
+        confirmBtn.disabled = false;
+      });
+    });
+  }
+})();
+</script>

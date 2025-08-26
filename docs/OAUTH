@@ -1,0 +1,60 @@
+3. **Set Up Google OAuth for User Logins**:
+   - Go to [Google Cloud Console](https://console.developers.google.com).
+   - Create a project and enable the Google+ API.
+   - Create OAuth 2.0 credentials (Web application).
+   - Set the Authorized Redirect URI to: `<baseurl>oauth/google.php` (e.g., `https://yourdomain.com/oauth/google.php`), where `<baseurl>` is from `site_info.baseurl`.
+   - Update `config.php` with:
+     ```php
+     define('G_CLIENT_ID', 'your_client_id');
+     define('G_CLIENT_SECRET', 'your_client_secret');
+     ```
+   - Ensure `enablegoog` is set to `yes` in `config.php`.
+
+4. **Set Up Gmail SMTP with OAuth2**:
+   - In [Google Cloud Console](https://console.developers.google.com), enable the Gmail API.
+   - Create or reuse OAuth 2.0 credentials.
+   - Set the Authorized Redirect URI to: `<baseurl>oauth/google_smtp.php` (e.g., `https://yourdomain.com/oauth/google_smtp.php`), where `<baseurl>` is from `site_info.baseurl`.
+   - Log in to `/admin/configuration.php` as an admin.
+   - Enter the Client ID and Client Secret under "Google OAuth 2.0 Setup for Gmail SMTP".
+   - Click "Authorize Gmail SMTP" to authenticate and save the refresh token in the `mail` table.
+   - Configure SMTP settings (host: `smtp.gmail.com`, port: `587`, socket: `tls`, auth: `true`, protocol: `2`).
+
+5. **Set Permissions**:
+   - Secure `config.php`:
+     ```bash
+     chmod 600 /path/to/pastedev/config.php
+     ```
+   - Remove the `/install` directory after setup:
+     ```bash
+     rm -rf /path/to/pastedev/install
+     ```
+
+6. **Test the Application**:
+   - Register a user via `/login.php?signup` to test manual registration and email verification.
+   - Log in via Google OAuth at `/login.php`.
+   - Test SMTP by sending a test email from `/admin/configuration.php`.
+   - Check `/var/log/php_errors.log` for errors.
+
+## Troubleshooting
+
+- **OAuth Errors**:
+  - Verify `G_CLIENT_ID`, `G_CLIENT_SECRET`, and `G_REDIRECT_URI` in `config.php`.
+  - Ensure `site_info.baseurl` matches your domain.
+  - Check redirect URIs in Google Cloud Console.
+- **SMTP Errors**:
+  - Confirm `oauth_client_id`, `oauth_client_secret`, and `oauth_refresh_token` in the `mail` table.
+  - Enable `SMTP_DEBUG` in `config.php`:
+    ```php
+    define('SMTP_DEBUG', true);
+    ```
+  - Check logs and disable debugging after testing.
+- **CSRF Errors**:
+  - Ensure `verify.php` and other callers pass the correct `$_SESSION['csrf_token']`.
+- **Dependency Errors**:
+  - Reinstall dependencies:
+    ```bash
+    cd /path/to/pastedev/oauth
+    composer require google/apiclient:^2.12 league/oauth2-client:^2.7
+    cd /path/to/pastedev/mail
+    composer require phpmailer/phpmailer:^6.9
+    ```

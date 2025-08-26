@@ -3,6 +3,5 @@ Disallow: /admin/
 Disallow: /includes/
 Disallow: /theme/
 Disallow: /langs/
-Disallow: /tmp/
 Disallow: /oauth/
 Disallow: /mail/

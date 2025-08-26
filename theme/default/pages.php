@@ -1,6 +1,9 @@
 <?php
 /*
- * Paste <https://github.com/jordansamuel/PASTE> - Default theme
+ * Paste $v3.1 2025/08/16 https://github.com/boxlabss/PASTE
+ * demo: https://paste.boxlabs.uk/
+ *
+ * https://phpaste.sourceforge.io/
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,32 +13,35 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License in GPL.txt for more details.
+ * GNU General Public License in LICENCE for more details.
  */
 ?>
 
 <div class="content">
   <!-- START CONTAINER -->
-  <div class="container-padding">
+  <div class="container-xl my-4">
     <!-- Start Row -->
     <div class="row">
-      <!-- Start Panel -->
-		<div class="col-md-9 col-lg-10">
-		  <div class="panel panel-default">
-			<div class="panel-title" style="text-align:center;">
-				<h6><?php echo $page_title; ?></h6>
-			</div>
-				<div class="panel-body">
-				<?php
-				if (isset($stats)) {
-					echo $page_content;
-				} else {
-					echo '<div class="paste-alert alert6"><p>' . $lang['notfound'] . '</p></div>';
-				}
-				?>
-				</div>
-			</div>
-		</div>
-		
-<?php require_once('theme/'.$default_theme.'/sidebar.php'); ?>
-<?php echo $ads_2; ?> 
+      <!-- Start Card -->
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-header text-center">
+            <h6><?php echo htmlspecialchars($page_title ?? ''); ?></h6>
+          </div>
+          <div class="card-body">
+            <?php
+            if (isset($stats)) {
+              echo htmlspecialchars_decode($page_content ?? '');
+            } else {
+              echo '<div class="alert alert-dark text-center"><p>' . htmlspecialchars($lang['notfound'] ?? '404 Not Found') . '</p></div>';
+            }
+            ?>
+          </div>
+        </div>
+      </div>
+      
+      <?php require_once('theme/' . $default_theme . '/sidebar.php'); ?>
+            <?php echo $ads_1 ?? ''; ?>
+    </div>
+  </div>
+</div>
